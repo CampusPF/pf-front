@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
+/* Habilita la variante `dark:` con toggle manual + preferencia de sistema.
+   El grueso del theming ocurre por tokens (ver overrides más abajo), no por `dark:`. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ── Design Tokens — Light (fuente de verdad) ─────────────────────
+   Van en @theme para que Tailwind v4 genere las utilidades
+   (bg-bg, text-primary, border-border, rounded-lg, shadow-xl, …).
+   Las utilidades compilan a var(--token), así que redefinir el token
+   bajo [data-theme="dark"] cambia el tema sin recompilar nada. */
+@theme {
+  /* Colors */
+  --color-bg:               #FAFAFA;
+  --color-surface:          #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
+  --color-border:           #E4E4EA;
+
+  --color-text:             #0F0F14;
+  --color-text-secondary:   #4A4A57;
+  --color-text-muted:       #8B8B9E;
+
+  --color-primary:          #6366F1;
+  --color-primary-hover:    #4F46E5;
+  --color-primary-subtle:   #EEF2FF;   /* light tint for badges / highlights */
+
+  --color-accent:           #F97316;
+  --color-accent-hover:     #EA6C10;
+  --color-accent-subtle:    #FFF7ED;
+
+  --color-success:          #10B981;
+  --color-success-subtle:   #ECFDF5;
+  --color-warning:          #F59E0B;
+  --color-warning-subtle:   #FFFBEB;
+  --color-danger:           #EF4444;
+  --color-danger-subtle:    #FEF2F2;
+
+  /* Shadows */
+  --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg:   0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-xl:   0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+
+  /* Typography — --font-sans también define la fuente por defecto del documento */
+  --font-sans:   var(--font-inter), 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono:   var(--font-jetbrains-mono), ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+
+  /* Border radius */
+  --radius-sm:   0.25rem;   /* 4px  */
+  --radius-md:   0.5rem;    /* 8px  */
+  --radius-lg:   0.75rem;   /* 12px */
+  --radius-xl:   1rem;      /* 16px */
+  --radius-2xl:  1.5rem;    /* 24px */
+  --radius-3xl:  2rem;      /* 32px */
+  --radius-full: 9999px;
+}
+
+/* ── Tokens auxiliares ────────────────────────────────────────────
+   Fuera de @theme a propósito: --text-*, --leading-* y --font-* son
+   namespaces propios de Tailwind v4 y declararlos ahí pisaría la
+   escala por defecto (que ya usamos vía text-sm, leading-tight, …). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --text-xs:     0.75rem;    /* 12px */
+  --text-sm:     0.875rem;   /* 14px */
+  --text-base:   1rem;       /* 16px */
+  --text-lg:     1.125rem;   /* 18px */
+  --text-xl:     1.25rem;    /* 20px */
+  --text-2xl:    1.5rem;     /* 24px */
+  --text-3xl:    1.875rem;   /* 30px */
+  --text-4xl:    2.25rem;    /* 36px */
+
+  --leading-tight:   1.25;
+  --leading-snug:    1.375;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+
+  --font-normal:   400;
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;
+
+  /* Spacing scale */
+  --space-1:   0.25rem;   /* 4px  */
+  --space-2:   0.5rem;    /* 8px  */
+  --space-3:   0.75rem;   /* 12px */
+  --space-4:   1rem;      /* 16px */
+  --space-5:   1.25rem;   /* 20px */
+  --space-6:   1.5rem;    /* 24px */
+  --space-8:   2rem;      /* 32px */
+  --space-10:  2.5rem;    /* 40px */
+  --space-12:  3rem;      /* 48px */
+  --space-16:  4rem;      /* 64px */
+  --space-20:  5rem;      /* 80px */
+  --space-24:  6rem;      /* 96px */
+
+  /* Layout */
+  --max-w-content:  72rem;   /* 1152px — main content wrapper */
+  --max-w-prose:    65ch;    /* readable text width          */
+  --sidebar-w:      16rem;   /* 256px                        */
+
+  /* Transitions */
+  --transition-fast:   150ms ease;
+  --transition-base:   200ms ease;
+  --transition-slow:   300ms ease;
+
+  /* Z-index scale */
+  --z-base:     0;
+  --z-raised:   10;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-overlay:  300;
+  --z-modal:    400;
+  --z-toast:    500;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* ── Design Tokens — Dark Mode (system preference) ──────────────── */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --color-bg:               #0A0A0F;
+    --color-surface:          #14141C;
+    --color-surface-elevated: #1F1F2B;
+    --color-border:           #2A2A38;
+
+    --color-text:             #F5F5F8;
+    --color-text-secondary:   #A8A8B8;
+    --color-text-muted:       #6E6E82;
+
+    --color-primary:          #818CF8;
+    --color-primary-hover:    #A5B4FC;
+    --color-primary-subtle:   #1E1B4B;
+
+    --color-accent:           #FB923C;
+    --color-accent-hover:     #FDBA74;
+    --color-accent-subtle:    #431407;
+
+    --color-success:          #34D399;
+    --color-success-subtle:   #022C22;
+    --color-warning:          #FBBF24;
+    --color-warning-subtle:   #1C1400;
+    --color-danger:           #F87171;
+    --color-danger-subtle:    #2D0707;
+
+    --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg:   0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-xl:   0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.3);
   }
 }
 
+/* ── Design Tokens — Dark Mode (manual toggle wins both ways) ───── */
+:root[data-theme="dark"] {
+  --color-bg:               #0A0A0F;
+  --color-surface:          #14141C;
+  --color-surface-elevated: #1F1F2B;
+  --color-border:           #2A2A38;
+
+  --color-text:             #F5F5F8;
+  --color-text-secondary:   #A8A8B8;
+  --color-text-muted:       #6E6E82;
+
+  --color-primary:          #818CF8;
+  --color-primary-hover:    #A5B4FC;
+  --color-primary-subtle:   #1E1B4B;
+
+  --color-accent:           #FB923C;
+  --color-accent-hover:     #FDBA74;
+  --color-accent-subtle:    #431407;
+
+  --color-success:          #34D399;
+  --color-success-subtle:   #022C22;
+  --color-warning:          #FBBF24;
+  --color-warning-subtle:   #1C1400;
+  --color-danger:           #F87171;
+  --color-danger-subtle:    #2D0707;
+
+  --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg:   0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl:   0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+}
+
+/* ── Base ────────────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* El toggle de tema cambia decenas de tokens a la vez; sin esto el
+   salto light↔dark es abrupto. Se respeta prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    transition: background-color var(--transition-base),
+                color var(--transition-base);
+  }
 }
