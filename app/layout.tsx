@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -40,7 +42,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="bg-bg text-text flex min-h-full flex-col">{children}</body>
+      <body className="bg-bg text-text flex min-h-full flex-col">
+        <Navbar />
+        {children}
+        <Footer />
+        </body>
     </html>
   );
 }

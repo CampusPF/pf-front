@@ -1,5 +1,4 @@
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+
 import HeroSection from "@/components/landing/HeroSection";
 import StatsBar from "@/components/landing/StatsBar";
 import FeaturedCourses from "@/components/landing/FeaturedCourses";
@@ -10,7 +9,6 @@ import PricingSection from "@/components/landing/PricingSection";
 export default function Home() {
   return (
     <>
-      <Navbar />
       <main className="bg-bg flex-1">
         <HeroSection />
         <StatsBar />
@@ -19,7 +17,6 @@ export default function Home() {
         <HowItWorks />
         <PricingSection />
       </main>
-      <Footer />
     </>
   );
 }
