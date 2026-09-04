@@ -1,6 +1,6 @@
 import { Bookmark, Star } from "lucide-react";
 
-type Course = {
+interface Course {
   category: string;
   gradient: string;
   tags: string[];
