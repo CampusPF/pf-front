@@ -1,13 +1,48 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useFormik } from 'formik';
 import { GraduationCap } from 'lucide-react';
 
+import { ApiError } from '@/services/api-client';
+import { getGoogleAuthUrl, login } from '@/services/auth/auth.service';
+import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
+
+const initialValues: LoginFormValues = { email: '', password: '' };
+
 export const LoginCard = () => {
+  const router = useRouter();
+
+  const formik = useFormik<LoginFormValues>({
+    initialValues,
+    validationSchema: loginSchema,
+    onSubmit: async (values, { setStatus, setSubmitting }) => {
+      setStatus(undefined);
+
+      try {
+        await login(values);
+        // TODO(campus): destino post-login. Hoy va al catálogo.
+        router.push('/courses');
+        router.refresh();
+      } catch (caught) {
+        setStatus(
+          caught instanceof ApiError
+            ? caught.message
+            : 'Algo salió mal. Probá de nuevo en un momento.',
+        );
+        // Sólo reactivamos el botón si falló: si salió bien ya estamos navegando.
+        setSubmitting(false);
+      }
+    },
+  });
+
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col items-center justify-center pt-28 pb-12 px-4">
-      
+
       {/* Contenedor central */}
       <div className="w-full max-w-md space-y-6">
-        
+
         {/* Encabezado con Ícono Lucide + Título */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2.5">
@@ -24,7 +59,11 @@ export const LoginCard = () => {
         {/* Botón de Google */}
         <button
           type="button"
-          className="w-full py-3 px-4 bg-surface hover:bg-surface-hover border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer"
+          onClick={() => {
+            // Es un 302 del back hacia Google: tiene que ser navegación, no fetch.
+            window.location.href = getGoogleAuthUrl();
+          }}
+          className="w-full py-3 px-4 bg-surface hover:bg-surface-elevated border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -56,17 +95,35 @@ export const LoginCard = () => {
         </div>
 
         {/* Formulario */}
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={formik.handleSubmit} noValidate>
+          {formik.status && (
+            <p
+              role="alert"
+              className="bg-danger-subtle text-danger border border-danger/30 rounded-xl px-4 py-3 text-xs"
+            >
+              {formik.status}
+            </p>
+          )}
+
           <div>
             <label className="block text-xs font-medium text-text mb-1.5" htmlFor="email">
               Email
             </label>
             <input
               id="email"
+              name="email"
               type="email"
+              autoComplete="email"
+              value={formik.values.email}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              aria-invalid={Boolean(formik.touched.email && formik.errors.email)}
               placeholder="tu@email.com"
               className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
+            {formik.touched.email && formik.errors.email && (
+              <p className="text-danger text-xs mt-1">{formik.errors.email}</p>
+            )}
           </div>
 
           <div>
@@ -77,10 +134,19 @@ export const LoginCard = () => {
             </div>
             <input
               id="password"
+              name="password"
               type="password"
+              autoComplete="current-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              aria-invalid={Boolean(formik.touched.password && formik.errors.password)}
               placeholder="••••••••"
               className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
+            {formik.touched.password && formik.errors.password && (
+              <p className="text-danger text-xs mt-1">{formik.errors.password}</p>
+            )}
           </div>
 
           {/* Recordarme */}
@@ -88,7 +154,7 @@ export const LoginCard = () => {
             <input
               type="checkbox"
               id="remember"
-              className="rounded border-border bg-surface text-primary focus:ring-0 cursor-pointer"
+              className="rounded border-border bg-surface accent-primary focus:ring-0 cursor-pointer"
             />
             <label htmlFor="remember" className="text-xs text-text-muted cursor-pointer">
               Recordarme en este dispositivo
@@ -98,17 +164,18 @@ export const LoginCard = () => {
           {/* Botón Principal Submit */}
           <button
             type="submit"
-            className="w-full py-3.5 px-4 bg-primary hover:bg-primary-hover text-surface font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+            disabled={formik.isSubmitting}
+            className="w-full py-3.5 px-4 bg-primary hover:bg-primary-hover text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <span>Iniciar sesión</span>
-            <span>→</span>
+            <span>{formik.isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}</span>
+            {!formik.isSubmitting && <span>→</span>}
           </button>
         </form>
 
         {/* Footer */}
         <div className="text-center text-xs text-text-muted">
           ¿No tenés una cuenta?{' '}
-          <Link href="/register" className="text-primary font-medium hover:underline">
+          <Link href="/register" className="text-primary font-medium hover:underline cursor-pointer">
             Crear cuenta
           </Link>
         </div>
