@@ -2,13 +2,15 @@
 
 import { useSyncExternalStore } from "react";
 import { GraduationCap, Moon, Sun } from "lucide-react";
+import Link from 'next/link';
 
 type Theme = "light" | "dark";
 
 const NAV_LINKS = [
-  { label: "Cursos", href: "#cursos" },
-  { label: "Cómo funciona", href: "#como-funciona" },
-  { label: "Precios", href: "#precios" },
+  { label: "Inicio", href: "/" },
+  { label: "Cursos", href: "/#cursos" },
+  { label: "Cómo funciona", href: "/#como-funciona" },
+  { label: "Precios", href: "/#precios" },
 ];
 
 /* ── Store del tema ────────────────────────────────────────────────
@@ -63,23 +65,23 @@ export default function Navbar() {
   return (
     <header className="bg-surface/80 border-border fixed top-0 z-50 w-full border-b backdrop-blur">
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        <a
+        <Link
           href="#"
           className="text-text flex cursor-pointer items-center gap-2 font-semibold transition-colors duration-150"
         >
           <GraduationCap className="text-primary size-6" aria-hidden />
           Campus
-        </a>
+        </Link>
 
         <ul className="hidden items-center gap-8 text-sm md:flex">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>
-              <a
+              <Link
                 href={link.href}
                 className="text-text-secondary hover:text-text cursor-pointer transition-colors duration-150"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -102,19 +104,20 @@ export default function Navbar() {
             )}
           </button>
 
-          <button
-            type="button"
+          <Link
+            href="/login"
             className="text-text-secondary hover:text-text hidden cursor-pointer px-3 py-2 text-sm transition-colors duration-150 sm:block"
           >
             Iniciar sesión
-          </button>
+          </Link>
 
-          <button
+          <Link
+            href="/register"
             type="button"
             className="bg-primary hover:bg-primary-hover cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
           >
             Registrarse
-          </button>
+          </Link>
         </div>
       </nav>
     </header>
