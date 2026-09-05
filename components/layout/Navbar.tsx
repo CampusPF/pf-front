@@ -2,13 +2,14 @@
 
 import { useSyncExternalStore } from "react";
 import { GraduationCap, Moon, Sun } from "lucide-react";
+import Link from 'next/link';
 
 type Theme = "light" | "dark";
 
 const NAV_LINKS = [
-  { label: "Cursos", href: "#cursos" },
-  { label: "Cómo funciona", href: "#como-funciona" },
-  { label: "Precios", href: "#precios" },
+  { label: "Cursos", href: "/#cursos" },
+  { label: "Cómo funciona", href: "/#como-funciona" },
+  { label: "Precios", href: "/#precios" },
 ];
 
 /* ── Store del tema ────────────────────────────────────────────────
@@ -102,19 +103,21 @@ export default function Navbar() {
             )}
           </button>
 
-          <button
+          <Link
+            href="/login"
             type="button"
             className="text-text-secondary hover:text-text hidden cursor-pointer px-3 py-2 text-sm transition-colors duration-150 sm:block"
           >
             Iniciar sesión
-          </button>
+          </Link>
 
-          <button
+          <Link
+            href="/register"
             type="button"
             className="bg-primary hover:bg-primary-hover cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
           >
             Registrarse
-          </button>
+          </Link>
         </div>
       </nav>
     </header>
