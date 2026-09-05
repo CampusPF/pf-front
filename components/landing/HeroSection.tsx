@@ -75,7 +75,7 @@ export default function HeroSection() {
           </span>
         </div>
 
-        <div className="bg-bg max-h-[26rem] space-y-3 overflow-y-auto px-4 py-4">
+        <div className="bg-bg max-h-26rem space-y-3 overflow-y-auto px-4 py-4">
           <p className="bg-primary ml-auto max-w-[80%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
             ¿Qué es un callback en JavaScript y cuándo debería usarlo?
           </p>
