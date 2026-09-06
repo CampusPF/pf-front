@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import AuthProvider from "@/components/auth/AuthProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,8 +20,8 @@ export const metadata: Metadata = {
 };
 
 /* Corre antes del primer paint: sin esto la página pinta en light y salta a
-   dark en cuanto hidrata el Navbar. Sin preferencia guardada no toca nada y
-   manda el @media (prefers-color-scheme) de globals.css. */
+   dark en cuanto hidrata. Sin preferencia guardada no toca nada y manda el
+   @media (prefers-color-scheme) de globals.css. */
 const themeScript = `(function () {
   try {
     var t = localStorage.getItem("theme");
@@ -32,6 +31,9 @@ const themeScript = `(function () {
   } catch (e) {}
 })();`;
 
+/* Root layout mínimo a propósito: solo html/body + providers globales.
+   El chrome (Navbar/Footer vs. sidebar del dashboard) lo pone cada route
+   group — (marketing) y (app) — con su propio layout. */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -43,10 +45,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="bg-bg text-text flex min-h-full flex-col">
-        <Navbar />
-        {children}
-        <Footer />
-        </body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
