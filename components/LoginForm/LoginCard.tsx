@@ -1,18 +1,21 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormik } from 'formik';
 import { GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
-import { getGoogleAuthUrl, login } from '@/services/auth/auth.service';
+import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
 
 const initialValues: LoginFormValues = { email: '', password: '' };
 
 export const LoginCard = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
 
   const formik = useFormik<LoginFormValues>({
     initialValues,
@@ -22,9 +25,8 @@ export const LoginCard = () => {
 
       try {
         await login(values);
-        // TODO(campus): destino post-login. Hoy va al catálogo.
-        router.push('/courses');
-        router.refresh();
+        const redirect = searchParams.get('redirect');
+        router.push(redirect?.startsWith('/') ? redirect : '/courses');
       } catch (caught) {
         setStatus(
           caught instanceof ApiError

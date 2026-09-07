@@ -1,24 +1,23 @@
 import { API_URL, ApiError, apiFetch } from "@/services/api-client";
-import {
-  clearSession,
-  saveSession,
-} from "@/services/auth/token-storage";
+import { clearSession, saveSession } from "@/services/auth/token-storage";
 import type {
-  AuthSession,
+  AuthResponse,
   LoginPayload,
   RawAuthResponse,
   RegisterPayload,
+  User,
 } from "@/services/auth/auth.types";
 
-function normalize(raw: RawAuthResponse): AuthSession {
-  const token = raw.access_token ?? raw.accessToken ?? raw.token;
+/* Única puerta de entrada del token. De acá para arriba sólo existe
+   `accessToken`; `access_token` no se lee en ningún otro archivo del front.
 
-  if (!token) {
-    throw new ApiError(
-      "El servidor no devolvió un token de sesión.",
-      500,
-      raw,
-    );
+   TODO(back): el back devuelve `access_token` (snake_case) y el contrato dice
+   `accessToken`. Cuando lo migre, sacar el fallback y el campo de RawAuthResponse. */
+function normalizeAuthResponse(raw: RawAuthResponse): AuthResponse {
+  const accessToken = raw.access_token ?? raw.accessToken;
+
+  if (!accessToken) {
+    throw new ApiError("El servidor no devolvió un token de sesión.", 500, raw);
   }
 
   if (!raw.user) {
@@ -29,33 +28,33 @@ function normalize(raw: RawAuthResponse): AuthSession {
     );
   }
 
-  return { token, user: raw.user };
+  return { accessToken, user: raw.user };
 }
 
 /** POST /auth/register — crea la cuenta y deja la sesión guardada. */
 export async function register(
   payload: RegisterPayload,
-): Promise<AuthSession> {
+): Promise<AuthResponse> {
   const raw = await apiFetch<RawAuthResponse>("/auth/register", {
     method: "POST",
     body: payload,
   });
 
-  const session = normalize(raw);
-  saveSession(session.token, session.user);
+  const session = normalizeAuthResponse(raw);
+  saveSession(session.accessToken, session.user);
 
   return session;
 }
 
 /** POST /auth/login */
-export async function login(payload: LoginPayload): Promise<AuthSession> {
+export async function login(payload: LoginPayload): Promise<AuthResponse> {
   const raw = await apiFetch<RawAuthResponse>("/auth/login", {
     method: "POST",
     body: payload,
   });
 
-  const session = normalize(raw);
-  saveSession(session.token, session.user);
+  const session = normalizeAuthResponse(raw);
+  saveSession(session.accessToken, session.user);
 
   return session;
 }
@@ -76,7 +75,31 @@ export function getGoogleAuthUrl(): string {
   return `${API_URL}/auth/google`;
 }
 
-/* TODO(campus): falta cerrar el contrato de /auth/google/callback. Cuando el
-   back redirija de vuelta al front hay que saber cómo manda el token —lo más
-   común es ?token=... a una ruta tipo /auth/callback— y ahí creamos esa página
-   para leerlo y llamar a saveSession(). */
+/** GET /users/me — trae el usuario autenticado a partir del token guardado.
+    Se usa para el login con Google (donde sólo llega el token, sin user) y
+    para rehidratar la sesión al recargar la página. */
+export async function fetchCurrentUser(): Promise<User> {
+  return apiFetch<User>("/users/me", { auth: true });
+}
+
+/* Cierra el login que empezó el back con Google. El back redirige a
+   /auth/callback?token=... con SÓLO el token; acá lo guardamos para que el
+   apiFetch de /users/me pueda mandar el Bearer, traemos el user y volvemos a
+   guardar la sesión ya completa. */
+export async function completeGoogleLogin(
+  accessToken: string,
+): Promise<AuthResponse> {
+  // Paso 1: guardar el token pelado para que fetchCurrentUser mande el Bearer.
+  saveSession(accessToken, null);
+
+  try {
+    const user = await fetchCurrentUser();
+    // Paso 2: ahora sí, sesión completa con los datos del usuario.
+    saveSession(accessToken, user);
+    return { accessToken, user };
+  } catch (error) {
+    // Si /users/me falla, no dejamos una sesión a medias (token sin user).
+    clearSession();
+    throw error;
+  }
+}
