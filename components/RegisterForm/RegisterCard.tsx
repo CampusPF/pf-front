@@ -1,12 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormik } from 'formik';
 import { GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
-import { getGoogleAuthUrl, register } from '@/services/auth/auth.service';
+import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { useAuth } from '@/components/auth/AuthProvider';
 import {
   MIN_PASSWORD_LENGTH,
   registerSchema,
@@ -23,6 +24,8 @@ const initialValues: RegisterFormValues = {
 
 export const RegisterCard = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { register } = useAuth();
 
   const formik = useFormik<RegisterFormValues>({
     initialValues,
@@ -36,9 +39,8 @@ export const RegisterCard = () => {
           email: values.email.trim(),
           password: values.password,
         });
-        // TODO(campus): destino post-registro. Hoy va directo al catálogo.
-        router.push('/courses');
-        router.refresh();
+        const redirect = searchParams.get('redirect');
+        router.push(redirect?.startsWith('/') ? redirect : '/courses');
       } catch (caught) {
         setStatus(
           caught instanceof ApiError
