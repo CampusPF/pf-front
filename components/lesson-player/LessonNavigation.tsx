@@ -8,7 +8,7 @@ const SECONDARY =
   "border-border text-text-secondary hover:bg-surface-elevated hover:text-text flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-150";
 
 const PRIMARY =
-  "bg-primary hover:bg-primary-hover flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors duration-150";
+  "bg-primary-solid hover:bg-primary-solid-hover flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors duration-150";
 
 export default function LessonNavigation({
   courseSlug,

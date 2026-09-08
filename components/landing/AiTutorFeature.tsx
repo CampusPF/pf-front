@@ -75,7 +75,7 @@ console.log(dobles); // [2, 4, 6]`;
           </div>
 
           <div className="space-y-3 px-4 py-4">
-            <p className="bg-primary ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
+            <p className="bg-primary-solid ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
               ¿Cómo uso .reduce() para devolver el doble de cada elemento?
             </p>
 
@@ -91,7 +91,7 @@ console.log(dobles); // [2, 4, 6]`;
               </pre>
             </div>
 
-            <p className="bg-primary ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
+            <p className="bg-primary-solid ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
               ¡Genial! Funcionó a la primera 🎉
             </p>
           </div>

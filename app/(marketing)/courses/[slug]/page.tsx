@@ -68,7 +68,7 @@ export default async function CoursePage(props: PageProps<"/courses/[slug]">) {
                 {course.levelLabel}
               </span>
               {course.isPremium && (
-                <span className="bg-accent rounded-full px-3 py-1 text-xs font-medium">
+                <span className="bg-accent-solid rounded-full px-3 py-1 text-xs font-medium">
                   Premium
                 </span>
               )}

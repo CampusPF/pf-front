@@ -61,7 +61,7 @@ export default function ChatInput({
         type="submit"
         disabled={isEmpty}
         aria-label="Enviar mensaje"
-        className="bg-primary hover:bg-primary-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-white transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+        className="bg-primary-solid hover:bg-primary-solid-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-white transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Send className="size-5" aria-hidden />
       </button>

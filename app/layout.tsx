@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/auth/AuthProvider";
+import AiTutorProvider from "@/components/ai-tutor/AiTutorProvider";
+import AiTutorFAB from "@/components/ai-tutor/AiTutorFAB";
+import AiTutorDrawer from "@/components/ai-tutor/AiTutorDrawer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -33,7 +36,12 @@ const themeScript = `(function () {
 
 /* Root layout mínimo a propósito: solo html/body + providers globales.
    El chrome (Navbar/Footer vs. sidebar del dashboard) lo pone cada route
-   group — (marketing) y (app) — con su propio layout. */
+   group — (marketing) y (app) — con su propio layout.
+
+   El tutor IA (FAB + drawer) vive acá, no en el reproductor de lecciones:
+   tiene que poder abrirse desde cualquier pantalla. Dentro de una lección,
+   LessonTutorContext le avisa al provider en qué lección está el usuario
+   para personalizar el saludo; en el resto de la app queda genérico. */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -45,7 +53,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="bg-bg text-text flex min-h-full flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AiTutorProvider>
+            {children}
+            <AiTutorFAB />
+            <AiTutorDrawer />
+          </AiTutorProvider>
+        </AuthProvider>
       </body>
     </html>
   );

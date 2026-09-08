@@ -44,7 +44,7 @@ export default function EnrollCTA({ course }: { course: Course }) {
         {firstLesson && (
           <Link
             href={lessonHref(course.slug, firstLesson.id)}
-            className="bg-primary hover:bg-primary-hover block cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
+            className="bg-primary-solid hover:bg-primary-solid-hover block cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
           >
             Empezar curso
           </Link>

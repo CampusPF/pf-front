@@ -9,7 +9,7 @@ export interface ChatMessageData {
 export default function ChatMessage({ message }: { message: ChatMessageData }) {
   if (message.role === "user") {
     return (
-      <p className="bg-primary ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
+      <p className="bg-primary-solid ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
         {message.text}
       </p>
     );

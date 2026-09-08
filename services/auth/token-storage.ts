@@ -1,31 +1,20 @@
 import type { User } from "@/services/auth/auth.types";
 
-/* La sesión vive en localStorage porque el back devuelve el JWT en el body.
-   Todos los accesos van envueltos en try/catch y con guard de SSR: en modo
+/* La sesión vive en localStorage porque el back devuelve el JWT en el body y
+   así viaja como Authorization: Bearer en cada request autenticado. Todos
+   los accesos van envueltos en try/catch y con guard de SSR: en modo
    privado el storage tira, y en el server directamente no existe.
 
-   TODO(back): el token ADEMÁS se duplica en una cookie no-HttpOnly (ver
-   setCookie/deleteCookie más abajo) para que middleware.ts pueda leerlo en el
-   edge y proteger rutas — localStorage es invisible ahí. Esto es un parche
-   temporal: el día que /auth/login y /auth/register respondan con
-   `Set-Cookie: HttpOnly`, borrar COOKIE_NAME/setCookie/deleteCookie y sus usos
-   acá, agregar `credentials: "include"` en apiFetch, y habilitar CORS con
-   `Access-Control-Allow-Credentials` en el back. */
+   El back TAMBIÉN setea una cookie HttpOnly `campus.token` (ver
+   apiFetch → credentials: "include"), pero es un canal aparte que ni
+   leemos ni escribimos desde acá — JS no puede tocar una cookie HttpOnly,
+   y de todos modos front y back son dominios distintos en producción, así
+   que esa cookie no le sirve a Next para proteger rutas en el server (ver
+   components/auth/RequireAuth.tsx y RedirectIfAuthenticated.tsx, que hacen
+   ese trabajo del lado del cliente en base a este localStorage). */
 
 const TOKEN_KEY = "campus.token";
 const USER_KEY = "campus.user";
-const COOKIE_NAME = "campus.token";
-const COOKIE_MAX_AGE_DAYS = 7;
-
-function setCookie(name: string, value: string, days: number) {
-  const maxAge = days * 24 * 60 * 60;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
-}
-
-function deleteCookie(name: string) {
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
-}
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -57,13 +46,6 @@ export function saveSession(accessToken: string, user: User | null) {
   } catch {
     // Storage bloqueado: la sesión igual sirve mientras dure la pestaña.
   }
-
-  try {
-    setCookie(COOKIE_NAME, accessToken, COOKIE_MAX_AGE_DAYS);
-  } catch {
-    // Sin cookie no hay protección de rutas en el middleware, pero la sesión
-    // sigue andando vía localStorage + Authorization header.
-  }
 }
 
 export function clearSession() {
@@ -74,12 +56,6 @@ export function clearSession() {
     localStorage.removeItem(USER_KEY);
   } catch {
     // Nada que limpiar si el storage no está disponible.
-  }
-
-  try {
-    deleteCookie(COOKIE_NAME);
-  } catch {
-    // Nada que limpiar si document.cookie no está disponible.
   }
 }
 

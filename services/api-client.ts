@@ -140,6 +140,10 @@ export async function apiFetch<T>(
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
+      // Front y back son orígenes distintos: sin esto el navegador ignora
+      // cualquier Set-Cookie de la respuesta (login/register/logout) y nunca
+      // manda cookies existentes. El back ya tiene CORS con credentials:true.
+      credentials: "include",
     });
   } catch (error) {
     // fetch sólo rechaza por red/CORS: el back apagado cae acá, no en !response.ok.
