@@ -24,6 +24,8 @@ export const MOCK_COURSES: Course[] = [
     tags: ["ES2024", "Async/Await", "Fetch API"],
     coverGradient: "from-blue-600 to-indigo-800",
     isPremium: false,
+    priceInCents: 0,
+    currency: "usd",
     modules: [
       {
         id: "m1",
@@ -85,6 +87,8 @@ export const MOCK_COURSES: Course[] = [
     tags: ["React 18", "Hooks", "TanStack Query"],
     coverGradient: "from-emerald-600 to-teal-800",
     isPremium: false,
+    priceInCents: 0,
+    currency: "usd",
     modules: [
       {
         id: "m4",
@@ -133,6 +137,8 @@ export const MOCK_COURSES: Course[] = [
     tags: ["App Router", "Server Components", "PostgreSQL"],
     coverGradient: "from-orange-500 to-red-700",
     isPremium: true,
+    priceInCents: 4999,
+    currency: "usd",
     modules: [
       {
         id: "m6",
