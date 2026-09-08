@@ -56,8 +56,10 @@ export function useStripeAppearance(): Appearance {
   );
 
   useEffect(() => {
-    setAppearance(buildAppearance());
-
+    // El valor inicial ya lo resuelve bien el inicializador perezoso de
+    // useState de arriba (corre en el cliente, con `window` ya disponible) —
+    // no hace falta volver a setearlo acá. Este efecto sólo se encarga de
+    // reaccionar a cambios de tema DESPUÉS del mount.
     const observer = new MutationObserver(() => setAppearance(buildAppearance()));
     observer.observe(document.documentElement, {
       attributes: true,

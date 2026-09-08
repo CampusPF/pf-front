@@ -17,7 +17,7 @@ export function getStripe(): Promise<Stripe | null> {
 
     if (!publishableKey) {
       console.error(
-        "Falta VITE_STRIPE_PUBLISHABLE_KEY en las variables de entorno."
+        "Falta NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY en las variables de entorno."
       );
     }
 
