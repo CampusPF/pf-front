@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ArrowLeft,
   BookOpen,
   Compass,
   GraduationCap,
@@ -81,6 +82,19 @@ export default function DashboardSidebar({
           </button>
         </div>
 
+        {/* Volver al sitio público: el resto de la navegación es interna al
+            dashboard, esta es la única salida hacia la landing. */}
+        <div className="border-border border-b p-3">
+          <Link
+            href="/"
+            onClick={onClose}
+            className="text-text-secondary hover:text-text hover:bg-surface-elevated flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150"
+          >
+            <ArrowLeft className="size-5" aria-hidden />
+            Volver al inicio
+          </Link>
+        </div>
+
         {/* Navegación */}
         <nav className="flex-1 overflow-y-auto p-3">
           <ul className="flex flex-col gap-1">
@@ -110,7 +124,7 @@ export default function DashboardSidebar({
         {/* Usuario + toggle de tema */}
         <div className="border-border flex items-center gap-3 border-t p-4">
           <span
-            className="bg-primary flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+            className="bg-primary-solid flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
             aria-hidden
           >
             {DASHBOARD_USER.name.charAt(0)}

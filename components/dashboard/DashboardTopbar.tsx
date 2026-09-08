@@ -58,7 +58,7 @@ export default function DashboardTopbar({
 
         {/* Avatar */}
         <span
-          className="bg-primary flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white"
+          className="bg-primary-solid flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white"
           aria-hidden
         >
           {DASHBOARD_USER.name.charAt(0)}

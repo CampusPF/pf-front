@@ -66,7 +66,7 @@ function CallbackInner() {
         </div>
         <Link
           href="/login"
-          className="bg-primary hover:bg-primary-hover mt-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
+          className="bg-primary-solid hover:bg-primary-solid-hover mt-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
         >
           Volver a iniciar sesión
         </Link>

@@ -64,7 +64,7 @@ export default function PricingSection() {
 
         {/* ── Plan Premium ──────────────────────────────────────────── */}
         <div className="bg-surface border-primary relative flex h-full flex-col rounded-2xl border-2 p-8 shadow-lg">
-          <span className="bg-primary absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-white">
+          <span className="bg-primary-solid absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-white">
             <Sparkles className="size-3" aria-hidden />
             Recomendado
           </span>
@@ -92,7 +92,7 @@ export default function PricingSection() {
           <div className="mt-auto pt-8">
             <button
               type="button"
-              className="bg-primary hover:bg-primary-hover w-full cursor-pointer rounded-lg py-3 font-medium text-white transition-colors duration-150"
+              className="bg-primary-solid hover:bg-primary-solid-hover w-full cursor-pointer rounded-lg py-3 font-medium text-white transition-colors duration-150"
             >
               Hacerme Premium
             </button>

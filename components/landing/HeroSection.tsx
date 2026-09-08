@@ -38,7 +38,7 @@ export default function HeroSection() {
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            className="bg-primary hover:bg-primary-hover cursor-pointer rounded-lg px-6 py-3 font-medium text-white transition-colors duration-150"
+            className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg px-6 py-3 font-medium text-white transition-colors duration-150"
           >
             Explorar cursos
           </button>
@@ -76,7 +76,7 @@ export default function HeroSection() {
         </div>
 
         <div className="bg-bg max-h-26rem space-y-3 overflow-y-auto px-4 py-4">
-          <p className="bg-primary ml-auto max-w-[80%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
+          <p className="bg-primary-solid ml-auto max-w-[80%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm text-white">
             ¿Qué es un callback en JavaScript y cuándo debería usarlo?
           </p>
 
@@ -127,7 +127,7 @@ export default function HeroSection() {
           <button
             type="button"
             aria-label="Enviar mensaje"
-            className="bg-primary hover:bg-primary-hover cursor-pointer rounded-lg p-2 text-white transition-colors duration-150"
+            className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg p-2 text-white transition-colors duration-150"
           >
             <Send className="size-4" aria-hidden />
           </button>

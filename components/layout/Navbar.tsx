@@ -216,7 +216,7 @@ export default function Navbar() {
 
                 <Link
                   href="/register"
-                  className="bg-primary hover:bg-primary-hover cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
+                  className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
                 >
                   Registrarse
                 </Link>
@@ -291,7 +291,7 @@ export default function Navbar() {
                 <Link
                   href="/register"
                   onClick={closeMenus}
-                  className="bg-primary hover:bg-primary-hover mt-1 cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
+                  className="bg-primary-solid hover:bg-primary-solid-hover mt-1 cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
                 >
                   Registrarse
                 </Link>

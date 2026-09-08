@@ -14,12 +14,20 @@ export interface AuthResponse {
   user: User;
 }
 
-/* TODO(campus): confirmar los nombres de campo con el back. Si el DTO de
-   registro espera `fullName` en vez de `name`, se cambia acá y en el form. */
+/* Contrato confirmado contra pf-back/src/auth/dto/register.dto.ts — todos los
+   campos salvo address/city/country son obligatorios ahí. birthDate va en
+   ISO "YYYY-MM-DD" (lo que devuelve un <input type="date"> nativo) y phone
+   con código de país en formato internacional (+549...). */
 export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  confirmPassword: string;
+  birthDate: string;
+  phone: string;
+  address?: string;
+  city?: string;
+  country?: string;
 }
 
 export interface LoginPayload {
