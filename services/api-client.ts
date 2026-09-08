@@ -1,8 +1,12 @@
 import { getToken } from "@/services/auth/token-storage";
 
 /* Cliente HTTP único del front. Todo lo que hable con el back pasa por acá:
-   así la base URL, el header de auth y el formato de error viven en un solo
-   lugar. La URL sale de NEXT_PUBLIC_API_URL (ver .env.local). */
+   base URL, header de auth, desenvoltura del envelope y formato de error viven
+   en un solo lugar. La URL sale de NEXT_PUBLIC_API_URL (ver .env.local).
+
+   Este archivo es el que absorbe las diferencias entre el contrato y lo que el
+   back devuelve hoy. Los componentes no saben nada de esto. */
+
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -24,12 +28,31 @@ export class ApiError extends Error {
   }
 }
 
+export type QueryParams = Record<
+  string,
+  string | number | boolean | undefined | null
+>;
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
+  /** Query params; los `undefined` / `null` se descartan. */
+  query?: QueryParams;
   /** Manda el Authorization: Bearer con el token guardado. */
   auth?: boolean;
   signal?: AbortSignal;
+}
+
+export function buildQueryString(query: QueryParams = {}): string {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === "") continue;
+    params.set(key, String(value));
+  }
+
+  const serialized = params.toString();
+  return serialized ? `?${serialized}` : "";
 }
 
 async function readBody(response: Response): Promise<unknown> {
@@ -45,17 +68,52 @@ async function readBody(response: Response): Promise<unknown> {
   }
 }
 
-/* Nest devuelve { statusCode, error, message } y `message` puede ser un array
-   con los errores de class-validator. Sacamos algo mostrable de todo eso. */
+/* TODO(back): el contrato define respuestas envueltas en `{ data, message? }`,
+   pero el back hoy devuelve el objeto crudo. Desenvolvemos de forma tolerante
+   para que el día que empiece a envolver no haya que tocar ni un componente.
+
+   El cuidado está en no confundir un envelope con un payload que legítimamente
+   tiene `data`: `PaginatedResponse<T>` es `{ data, meta }`. Por eso sólo
+   desenvolvemos cuando las claves hermanas son de envelope — si hay `meta`,
+   el objeto ES el payload y se devuelve entero. */
+const ENVELOPE_SIBLING_KEYS = new Set([
+  "message",
+  "statusCode",
+  "success",
+  "timestamp",
+  "path",
+]);
+
+function unwrapEnvelope(body: unknown): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+
+  const record = body as Record<string, unknown>;
+  if (!("data" in record)) return body;
+
+  const isEnvelope = Object.keys(record).every(
+    (key) => key === "data" || ENVELOPE_SIBLING_KEYS.has(key),
+  );
+
+  return isEnvelope ? record.data : body;
+}
+
+/* Igual de tolerante para el error: puede venir como `{ error, message,
+   statusCode }` de Nest, como string pelado, o envuelto en `{ data }`.
+   `message` además puede ser un array con los errores de class-validator. */
 function extractMessage(payload: unknown): string | null {
-  if (typeof payload === "string" && payload.trim()) return payload;
+  if (typeof payload === "string" && payload.trim()) return payload.trim();
+  if (!payload || typeof payload !== "object") return null;
 
-  if (payload && typeof payload === "object" && "message" in payload) {
-    const message = (payload as { message: unknown }).message;
+  const record = payload as Record<string, unknown>;
 
-    if (typeof message === "string") return message;
-    if (Array.isArray(message)) return message.join(". ");
-  }
+  const message = record.message;
+  if (typeof message === "string" && message.trim()) return message.trim();
+  if (Array.isArray(message) && message.length > 0) return message.join(". ");
+
+  const error = record.error;
+  if (typeof error === "string" && error.trim()) return error.trim();
+
+  if ("data" in record) return extractMessage(record.data);
 
   return null;
 }
@@ -64,7 +122,7 @@ export async function apiFetch<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, auth = false, signal } = options;
+  const { method = "GET", body, query, auth = false, signal } = options;
 
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -77,11 +135,15 @@ export async function apiFetch<T>(
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${API_URL}${path}${buildQueryString(query)}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
+      // Front y back son orígenes distintos: sin esto el navegador ignora
+      // cualquier Set-Cookie de la respuesta (login/register/logout) y nunca
+      // manda cookies existentes. El back ya tiene CORS con credentials:true.
+      credentials: "include",
     });
   } catch (error) {
     // fetch sólo rechaza por red/CORS: el back apagado cae acá, no en !response.ok.
@@ -102,5 +164,5 @@ export async function apiFetch<T>(
     );
   }
 
-  return payload as T;
+  return unwrapEnvelope(payload) as T;
 }

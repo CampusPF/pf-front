@@ -18,21 +18,49 @@
 
   --color-text:             #0F0F14;
   --color-text-secondary:   #4A4A57;
-  --color-text-muted:       #8B8B9E;
+  /* #6C6C82: ~5.1:1 sobre --color-bg/--color-surface. El valor original
+     (#8B8B9E) daba 3.3:1, por debajo del mínimo WCAG AA (4.5:1) para texto
+     normal — se usa para ayudas de formulario (ej. "incluí el código de
+     país") que necesitan poder leerse bien. */
+  --color-text-muted:       #6C6C82;
 
   --color-primary:          #6366F1;
   --color-primary-hover:    #4F46E5;
   --color-primary-subtle:   #EEF2FF;   /* light tint for badges / highlights */
 
-  --color-accent:           #F97316;
+  /* Relleno sólido para botones/badges/avatares con texto BLANCO encima
+     (bg-primary-solid + text-white). --color-primary de arriba está afinado
+     para usarse como texto/ícono/borde sobre el fondo del tema (en dark
+     mode se aclara para poder leerse); eso mismo lo vuelve demasiado claro
+     para hostear texto blanco (Lighthouse: 2.98:1 con la variante dark).
+     Este token no varía entre temas a propósito — es el mismo indigo "de
+     marca" en claro y oscuro — y da 6.3:1 en reposo y 7.9:1 en hover. */
+  --color-primary-solid:       #4F46E5;
+  --color-primary-solid-hover: #4338CA;
+
+  /* #F97316 original daba 2.8:1 como texto sobre --color-accent-subtle (su
+     combinación real en todos los usos: badge PRO, racha del dashboard) —
+     falla WCAG AA. #C2410C da 4.9:1 ahí y 5.2:1 sobre blanco. Sólo se toca
+     el valor de light mode: en dark mode --color-accent ya funciona bien
+     como texto (accent-subtle ahí es un tinte OSCURO, no claro). */
+  --color-accent:           #C2410C;
   --color-accent-hover:     #EA6C10;
   --color-accent-subtle:    #FFF7ED;
+
+  /* Mismo caso que --color-primary-solid: --color-accent da sólo 2.8:1 con
+     texto blanco (falla WCAG AA incluso en light mode). Fijo en ambos temas,
+     da 5.2:1 en reposo. */
+  --color-accent-solid:        #C2410C;
+  --color-accent-solid-hover:  #9A3412;
 
   --color-success:          #10B981;
   --color-success-subtle:   #ECFDF5;
   --color-warning:          #F59E0B;
   --color-warning-subtle:   #FFFBEB;
-  --color-danger:           #EF4444;
+  /* #B91C1C: ~6.5:1 sobre blanco. El valor original (#EF4444) daba 3.8:1,
+     por debajo del mínimo WCAG AA — insuficiente para el texto de error de
+     los formularios, que es justamente el caso de uso principal del token. */
+  --color-danger:           #B91C1C;
   --color-danger-subtle:    #FEF2F2;
 
   /* Shadows */
@@ -123,7 +151,9 @@
 
     --color-text:             #F5F5F8;
     --color-text-secondary:   #A8A8B8;
-    --color-text-muted:       #6E6E82;
+    /* #9494AA: ~6.6:1 sobre --color-bg/--color-surface oscuros. El original
+       (#6E6E82) daba ~3.7:1, por debajo del mínimo WCAG AA. */
+    --color-text-muted:       #9494AA;
 
     --color-primary:          #818CF8;
     --color-primary-hover:    #A5B4FC;
@@ -156,7 +186,8 @@
 
   --color-text:             #F5F5F8;
   --color-text-secondary:   #A8A8B8;
-  --color-text-muted:       #6E6E82;
+  /* Ver el bloque @media de arriba: mismo fix de contraste. */
+  --color-text-muted:       #9494AA;
 
   --color-primary:          #818CF8;
   --color-primary-hover:    #A5B4FC;

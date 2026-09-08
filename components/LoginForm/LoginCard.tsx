@@ -1,18 +1,30 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormik } from 'formik';
-import { GraduationCap } from 'lucide-react';
+import { AlertCircle, GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
-import { getGoogleAuthUrl, login } from '@/services/auth/auth.service';
+import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
 
 const initialValues: LoginFormValues = { email: '', password: '' };
 
+/* Un solo lugar para el estilo de los inputs: el borde cambia a
+   --color-danger cuando el campo tiene error, así el error no depende sólo
+   del texto rojo de abajo (WCAG 1.4.1 — no usar el color como único medio). */
+function inputClass(hasError: boolean) {
+  return `w-full px-4 py-3 bg-surface border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+    hasError ? 'border-danger' : 'border-border'
+  }`;
+}
+
 export const LoginCard = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
 
   const formik = useFormik<LoginFormValues>({
     initialValues,
@@ -22,9 +34,8 @@ export const LoginCard = () => {
 
       try {
         await login(values);
-        // TODO(campus): destino post-login. Hoy va al catálogo.
-        router.push('/courses');
-        router.refresh();
+        const redirect = searchParams.get('redirect');
+        router.push(redirect?.startsWith('/') ? redirect : '/courses');
       } catch (caught) {
         setStatus(
           caught instanceof ApiError
@@ -36,6 +47,9 @@ export const LoginCard = () => {
       }
     },
   });
+
+  const emailHasError = Boolean(formik.touched.email && formik.errors.email);
+  const passwordHasError = Boolean(formik.touched.password && formik.errors.password);
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col items-center justify-center pt-28 pb-12 px-4">
@@ -99,9 +113,10 @@ export const LoginCard = () => {
           {formik.status && (
             <p
               role="alert"
-              className="bg-danger-subtle text-danger border border-danger/30 rounded-xl px-4 py-3 text-xs"
+              className="bg-danger-subtle text-danger border border-danger/30 rounded-xl px-4 py-3 text-xs flex items-start gap-2"
             >
-              {formik.status}
+              <AlertCircle className="size-4 shrink-0 mt-0.5" aria-hidden />
+              <span>{formik.status}</span>
             </p>
           )}
 
@@ -117,12 +132,15 @@ export const LoginCard = () => {
               value={formik.values.email}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              aria-invalid={Boolean(formik.touched.email && formik.errors.email)}
+              aria-invalid={emailHasError}
+              aria-describedby={emailHasError ? 'email-error' : undefined}
               placeholder="tu@email.com"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className={inputClass(emailHasError)}
             />
-            {formik.touched.email && formik.errors.email && (
-              <p className="text-danger text-xs mt-1">{formik.errors.email}</p>
+            {emailHasError && (
+              <p id="email-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.email}
+              </p>
             )}
           </div>
 
@@ -140,12 +158,15 @@ export const LoginCard = () => {
               value={formik.values.password}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              aria-invalid={Boolean(formik.touched.password && formik.errors.password)}
+              aria-invalid={passwordHasError}
+              aria-describedby={passwordHasError ? 'password-error' : undefined}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className={inputClass(passwordHasError)}
             />
-            {formik.touched.password && formik.errors.password && (
-              <p className="text-danger text-xs mt-1">{formik.errors.password}</p>
+            {passwordHasError && (
+              <p id="password-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.password}
+              </p>
             )}
           </div>
 
@@ -165,7 +186,7 @@ export const LoginCard = () => {
           <button
             type="submit"
             disabled={formik.isSubmitting}
-            className="w-full py-3.5 px-4 bg-primary hover:bg-primary-hover text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full py-3.5 px-4 bg-primary-solid hover:bg-primary-solid-hover text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span>{formik.isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}</span>
             {!formik.isSubmitting && <span>→</span>}
@@ -175,7 +196,7 @@ export const LoginCard = () => {
         {/* Footer */}
         <div className="text-center text-xs text-text-muted">
           ¿No tenés una cuenta?{' '}
-          <Link href="/register" className="text-primary font-medium hover:underline cursor-pointer">
+          <Link href="/register" className="text-primary font-medium underline underline-offset-2 hover:text-primary-hover cursor-pointer">
             Crear cuenta
           </Link>
         </div>

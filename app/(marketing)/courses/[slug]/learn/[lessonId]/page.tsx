@@ -14,9 +14,7 @@ import {
   getAllLessons,
   getLessonPosition,
 } from "@/lib/course-utils";
-import AiTutorDrawer from "@/components/ai-tutor/AiTutorDrawer";
-import AiTutorFAB from "@/components/ai-tutor/AiTutorFAB";
-import AiTutorProvider from "@/components/ai-tutor/AiTutorProvider";
+import LessonTutorContext from "@/components/ai-tutor/LessonTutorContext";
 import LessonContent from "@/components/lesson-player/LessonContent";
 import LessonHeader from "@/components/lesson-player/LessonHeader";
 import LessonNavigation from "@/components/lesson-player/LessonNavigation";
@@ -59,7 +57,9 @@ export default async function LessonPlayerPage(
   const { index, total } = getLessonPosition(course, lessonId);
 
   return (
-    <AiTutorProvider>
+    <>
+      <LessonTutorContext lessonTitle={lesson.title} />
+
       <LessonHeader
         courseSlug={course.slug}
         courseTitle={course.title}
@@ -92,9 +92,6 @@ export default async function LessonPlayerPage(
           </div>
         </main>
       </div>
-
-      <AiTutorFAB />
-      <AiTutorDrawer lessonTitle={lesson.title} />
-    </AiTutorProvider>
+    </>
   );
 }

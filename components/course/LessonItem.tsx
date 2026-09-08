@@ -15,8 +15,10 @@ export default function LessonItem({
 }) {
   return (
     <Link
-      /* TODO(campus): las lecciones pagas linkean igual que las gratis. La
-         protección real (redirect a checkout / login) llega con auth. */
+      /* La autenticación ya la resuelve middleware.ts para todo /courses/*.
+         TODO(campus): las lecciones pagas linkean igual que las gratis; falta
+         el gate de pago/checkout para lecciones no gratuitas (autorización,
+         no autenticación). */
       href={lessonHref(courseSlug, lesson.id)}
       className="group hover:bg-surface-elevated flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150"
     >

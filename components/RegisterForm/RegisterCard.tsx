@@ -1,13 +1,16 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormik } from 'formik';
-import { GraduationCap } from 'lucide-react';
+import { AlertCircle, ChevronDown, GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
-import { getGoogleAuthUrl, register } from '@/services/auth/auth.service';
+import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { useAuth } from '@/components/auth/AuthProvider';
 import {
+  MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
   registerSchema,
   type RegisterFormValues,
@@ -18,11 +21,28 @@ const initialValues: RegisterFormValues = {
   email: '',
   password: '',
   confirmPassword: '',
+  birthDate: '',
+  phone: '',
+  address: '',
+  city: '',
+  country: '',
   acceptedTerms: false,
 };
 
+/* Un solo lugar para el estilo de los inputs: el borde cambia a
+   --color-danger cuando el campo tiene error, así el error no depende sólo
+   del texto rojo de abajo (WCAG 1.4.1 — no usar el color como único medio). */
+function inputClass(hasError: boolean) {
+  return `w-full px-4 py-3 bg-surface border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+    hasError ? 'border-danger' : 'border-border'
+  }`;
+}
+
 export const RegisterCard = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { register } = useAuth();
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
   const formik = useFormik<RegisterFormValues>({
     initialValues,
@@ -35,10 +55,15 @@ export const RegisterCard = () => {
           name: values.fullName.trim(),
           email: values.email.trim(),
           password: values.password,
+          confirmPassword: values.confirmPassword,
+          birthDate: values.birthDate,
+          phone: values.phone.trim(),
+          address: values.address?.trim() || undefined,
+          city: values.city?.trim() || undefined,
+          country: values.country?.trim() || undefined,
         });
-        // TODO(campus): destino post-registro. Hoy va directo al catálogo.
-        router.push('/courses');
-        router.refresh();
+        const redirect = searchParams.get('redirect');
+        router.push(redirect?.startsWith('/') ? redirect : '/courses');
       } catch (caught) {
         setStatus(
           caught instanceof ApiError
@@ -49,6 +74,21 @@ export const RegisterCard = () => {
       }
     },
   });
+
+  const fullNameHasError = Boolean(formik.touched.fullName && formik.errors.fullName);
+  const emailHasError = Boolean(formik.touched.email && formik.errors.email);
+  const passwordHasError = Boolean(formik.touched.password && formik.errors.password);
+  const confirmPasswordHasError = Boolean(
+    formik.touched.confirmPassword && formik.errors.confirmPassword,
+  );
+  const birthDateHasError = Boolean(formik.touched.birthDate && formik.errors.birthDate);
+  const phoneHasError = Boolean(formik.touched.phone && formik.errors.phone);
+  const addressHasError = Boolean(formik.touched.address && formik.errors.address);
+  const cityHasError = Boolean(formik.touched.city && formik.errors.city);
+  const countryHasError = Boolean(formik.touched.country && formik.errors.country);
+  const acceptedTermsHasError = Boolean(
+    formik.touched.acceptedTerms && formik.errors.acceptedTerms,
+  );
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col items-center justify-center pt-28 pb-12 px-4">
@@ -111,9 +151,10 @@ export const RegisterCard = () => {
           {formik.status && (
             <p
               role="alert"
-              className="bg-danger-subtle text-danger border border-danger/30 rounded-xl px-4 py-3 text-xs"
+              className="bg-danger-subtle text-danger border border-danger/30 rounded-xl px-4 py-3 text-xs flex items-start gap-2"
             >
-              {formik.status}
+              <AlertCircle className="size-4 shrink-0 mt-0.5" aria-hidden />
+              <span>{formik.status}</span>
             </p>
           )}
 
@@ -129,12 +170,15 @@ export const RegisterCard = () => {
               value={formik.values.fullName}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              aria-invalid={Boolean(formik.touched.fullName && formik.errors.fullName)}
+              aria-invalid={fullNameHasError}
+              aria-describedby={fullNameHasError ? 'fullName-error' : undefined}
               placeholder="Ej. Alex Morgan"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className={inputClass(fullNameHasError)}
             />
-            {formik.touched.fullName && formik.errors.fullName && (
-              <p className="text-danger text-xs mt-1">{formik.errors.fullName}</p>
+            {fullNameHasError && (
+              <p id="fullName-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.fullName}
+              </p>
             )}
           </div>
 
@@ -150,12 +194,15 @@ export const RegisterCard = () => {
               value={formik.values.email}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              aria-invalid={Boolean(formik.touched.email && formik.errors.email)}
+              aria-invalid={emailHasError}
+              aria-describedby={emailHasError ? 'email-error' : undefined}
               placeholder="tu@email.com"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className={inputClass(emailHasError)}
             />
-            {formik.touched.email && formik.errors.email && (
-              <p className="text-danger text-xs mt-1">{formik.errors.email}</p>
+            {emailHasError && (
+              <p id="email-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.email}
+              </p>
             )}
           </div>
 
@@ -171,15 +218,18 @@ export const RegisterCard = () => {
               value={formik.values.password}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              aria-invalid={Boolean(formik.touched.password && formik.errors.password)}
+              aria-invalid={passwordHasError}
+              aria-describedby="password-hint"
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className={inputClass(passwordHasError)}
             />
-            {formik.touched.password && formik.errors.password ? (
-              <p className="text-danger text-xs mt-1">{formik.errors.password}</p>
+            {passwordHasError ? (
+              <p id="password-hint" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.password}
+              </p>
             ) : (
-              <p className="text-[11px] text-text-muted mt-1 flex items-center gap-1">
-                <span>ⓘ</span> Mínimo {MIN_PASSWORD_LENGTH} caracteres
+              <p id="password-hint" className="text-[11px] text-text-muted mt-1 flex items-center gap-1">
+                <span aria-hidden>ⓘ</span> {MIN_PASSWORD_LENGTH}-{MAX_PASSWORD_LENGTH} caracteres, con mayúscula, minúscula y número
               </p>
             )}
           </div>
@@ -196,14 +246,159 @@ export const RegisterCard = () => {
               value={formik.values.confirmPassword}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              aria-invalid={Boolean(
-                formik.touched.confirmPassword && formik.errors.confirmPassword,
-              )}
+              aria-invalid={confirmPasswordHasError}
+              aria-describedby={confirmPasswordHasError ? 'confirmPassword-error' : undefined}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className={inputClass(confirmPasswordHasError)}
             />
-            {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-              <p className="text-danger text-xs mt-1">{formik.errors.confirmPassword}</p>
+            {confirmPasswordHasError && (
+              <p id="confirmPassword-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.confirmPassword}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text mb-1.5" htmlFor="birthDate">
+              Fecha de nacimiento
+            </label>
+            <input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              autoComplete="bday"
+              value={formik.values.birthDate}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              aria-invalid={birthDateHasError}
+              aria-describedby={birthDateHasError ? 'birthDate-error' : undefined}
+              className={inputClass(birthDateHasError)}
+            />
+            {birthDateHasError && (
+              <p id="birthDate-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.birthDate}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text mb-1.5" htmlFor="phone">
+              Teléfono
+            </label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              value={formik.values.phone}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              aria-invalid={phoneHasError}
+              aria-describedby="phone-hint"
+              placeholder="+5491122334455"
+              className={inputClass(phoneHasError)}
+            />
+            {phoneHasError ? (
+              <p id="phone-hint" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.phone}
+              </p>
+            ) : (
+              <p id="phone-hint" className="text-[11px] text-text-muted mt-1 flex items-center gap-1">
+                <span aria-hidden>ⓘ</span> Incluí el código de país con &quot;+&quot;, ej. +5491122334455
+              </p>
+            )}
+          </div>
+
+          {/* Datos adicionales (opcional) */}
+          <div className="border border-border rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowOptionalFields((prev) => !prev)}
+              aria-expanded={showOptionalFields}
+              aria-controls="optional-fields"
+              className="w-full flex items-center justify-between px-4 py-3 text-xs font-medium text-text cursor-pointer"
+            >
+              Datos adicionales (opcional)
+              <ChevronDown
+                className={`size-4 text-text-muted transition-transform duration-150 ${showOptionalFields ? 'rotate-180' : ''}`}
+                aria-hidden
+              />
+            </button>
+
+            {showOptionalFields && (
+              <div id="optional-fields" className="space-y-4 px-4 pb-4 pt-1">
+                <div>
+                  <label className="block text-xs font-medium text-text mb-1.5" htmlFor="address">
+                    Dirección
+                  </label>
+                  <input
+                    id="address"
+                    name="address"
+                    type="text"
+                    autoComplete="street-address"
+                    value={formik.values.address}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    aria-invalid={addressHasError}
+                    aria-describedby={addressHasError ? 'address-error' : undefined}
+                    placeholder="Av. Siempre Viva 742"
+                    className={inputClass(addressHasError)}
+                  />
+                  {addressHasError && (
+                    <p id="address-error" role="alert" className="text-danger text-xs mt-1">
+                      {formik.errors.address}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-text mb-1.5" htmlFor="city">
+                    Ciudad
+                  </label>
+                  <input
+                    id="city"
+                    name="city"
+                    type="text"
+                    autoComplete="address-level2"
+                    value={formik.values.city}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    aria-invalid={cityHasError}
+                    aria-describedby={cityHasError ? 'city-error' : undefined}
+                    placeholder="Córdoba"
+                    className={inputClass(cityHasError)}
+                  />
+                  {cityHasError && (
+                    <p id="city-error" role="alert" className="text-danger text-xs mt-1">
+                      {formik.errors.city}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-text mb-1.5" htmlFor="country">
+                    País
+                  </label>
+                  <input
+                    id="country"
+                    name="country"
+                    type="text"
+                    autoComplete="country-name"
+                    value={formik.values.country}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    aria-invalid={countryHasError}
+                    aria-describedby={countryHasError ? 'country-error' : undefined}
+                    placeholder="Argentina"
+                    className={inputClass(countryHasError)}
+                  />
+                  {countryHasError && (
+                    <p id="country-error" role="alert" className="text-danger text-xs mt-1">
+                      {formik.errors.country}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -217,22 +412,26 @@ export const RegisterCard = () => {
                 checked={formik.values.acceptedTerms}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
+                aria-invalid={acceptedTermsHasError}
+                aria-describedby={acceptedTermsHasError ? 'acceptedTerms-error' : undefined}
                 className="mt-0.5 rounded border-border bg-surface accent-primary focus:ring-0 cursor-pointer"
               />
               <label htmlFor="acceptedTerms" className="text-xs text-text-muted leading-tight cursor-pointer">
                 Acepto los{' '}
-                <a href="#" className="text-primary hover:underline cursor-pointer">
+                <a href="#" className="text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer">
                   términos y condiciones
                 </a>{' '}
                 y la{' '}
-                <a href="#" className="text-primary hover:underline cursor-pointer">
+                <a href="#" className="text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer">
                   política de privacidad
                 </a>
                 .
               </label>
             </div>
-            {formik.touched.acceptedTerms && formik.errors.acceptedTerms && (
-              <p className="text-danger text-xs mt-1">{formik.errors.acceptedTerms}</p>
+            {acceptedTermsHasError && (
+              <p id="acceptedTerms-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.acceptedTerms}
+              </p>
             )}
           </div>
 
@@ -240,7 +439,7 @@ export const RegisterCard = () => {
           <button
             type="submit"
             disabled={formik.isSubmitting}
-            className="w-full py-3.5 px-4 bg-primary hover:bg-primary-hover text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full py-3.5 px-4 bg-primary-solid hover:bg-primary-solid-hover text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span>{formik.isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}</span>
             {!formik.isSubmitting && <span>→</span>}
@@ -250,7 +449,7 @@ export const RegisterCard = () => {
         {/* Footer */}
         <div className="text-center text-xs text-text-muted">
           ¿Ya tenés cuenta?{' '}
-          <Link href="/login" className="text-primary font-medium hover:underline cursor-pointer">
+          <Link href="/login" className="text-primary font-medium underline underline-offset-2 hover:text-primary-hover cursor-pointer">
             Iniciar sesión
           </Link>
         </div>

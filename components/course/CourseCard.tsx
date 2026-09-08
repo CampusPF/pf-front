@@ -48,7 +48,7 @@ export default function CourseCard({ course }: { course: Course }) {
           </div>
 
           {course.isPremium && (
-            <span className="bg-accent rounded-full px-2 py-0.5 text-xs font-medium text-white">
+            <span className="bg-accent-solid rounded-full px-2 py-0.5 text-xs font-medium text-white">
               Premium
             </span>
           )}

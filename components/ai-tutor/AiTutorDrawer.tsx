@@ -15,14 +15,21 @@ contador = 1;        // ✅ se puede reasignar
 const limite = 10;
 limite = 20;         // ❌ TypeError: Assignment to constant variable`;
 
-export default function AiTutorDrawer({ lessonTitle }: { lessonTitle: string }) {
-  const { isOpen, close } = useAiTutor();
-  const bodyRef = useRef<HTMLDivElement>(null);
+/* Adentro de una lección el tutor arranca con el ejemplo de let/const como
+   demo de que puede leer el contenido; en cualquier otra pantalla (todavía
+   sin endpoint real) sólo tiene sentido el saludo genérico. */
+function buildInitialMessages(lessonTitle: string | null): ChatMessageData[] {
+  if (!lessonTitle) {
+    return [
+      {
+        id: "1",
+        role: "tutor",
+        text: "¡Hola! Preguntame lo que necesites sobre programación, tus cursos o cómo usar Campus.",
+      },
+    ];
+  }
 
-  /* TODO(campus): conversación mockeada. Cuando exista el endpoint del tutor,
-     `send` pasa a llamarlo con el contexto de la lección y a hacer streaming
-     de la respuesta. */
-  const [messages, setMessages] = useState<ChatMessageData[]>(() => [
+  return [
     {
       id: "1",
       role: "tutor",
@@ -39,7 +46,25 @@ export default function AiTutorDrawer({ lessonTitle }: { lessonTitle: string }) 
       text: "Las dos declaran variables de bloque. La diferencia está en la reasignación: con let podés apuntar la variable a otro valor, con const no.",
       code: SAMPLE_CODE,
     },
-  ]);
+  ];
+}
+
+export default function AiTutorDrawer() {
+  const { isOpen, close, lessonTitle } = useAiTutor();
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  /* TODO(campus): conversación mockeada. Cuando exista el endpoint del tutor,
+     `send` pasa a llamarlo con el contexto (lección actual, si hay) y a
+     hacer streaming de la respuesta. */
+  const [messages, setMessages] = useState<ChatMessageData[]>(() =>
+    buildInitialMessages(lessonTitle),
+  );
+
+  // Cambiar de lección (o salir de una) arranca una conversación nueva —
+  // si no, quedaría el mensaje de "estoy leyendo X" de la lección anterior.
+  useEffect(() => {
+    setMessages(buildInitialMessages(lessonTitle));
+  }, [lessonTitle]);
 
   // ESC cierra el drawer.
   useEffect(() => {

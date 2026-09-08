@@ -14,7 +14,7 @@ export default function AiTutorFAB() {
       onClick={open}
       aria-label="Abrir tutor IA"
       aria-expanded={isOpen}
-      className="bg-primary hover:bg-primary-hover fixed right-6 bottom-6 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full text-white shadow-2xl transition-all duration-200 hover:scale-110"
+      className="bg-primary-solid hover:bg-primary-solid-hover fixed right-6 bottom-6 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full text-white shadow-2xl transition-all duration-200 hover:scale-110"
     >
       <MessageSquare className="size-6" aria-hidden />
       {/* Dot de "tengo algo para contarte" — decorativo por ahora. */}
