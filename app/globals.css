@@ -224,3 +224,121 @@ body {
                 color var(--transition-base);
   }
 }
+
+/* ── Checkout success — animación de entrada del ícono ─────────────
+   La usa components/checkout/CheckoutSuccess.tsx. El ícono arranca
+   oculto (scale 0); cuando el componente monta se le agrega
+   `.checkout-fx--in` al contenedor y hace: pop (crece a 1.2, 200ms ease-out) →
+   settle (vuelve a 1, 150ms ease-in-out). El checkmark aparece con un
+   pequeño delay y después se dispara un pulse ring que se repite 2 veces. */
+@keyframes checkout-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1); /* ease-out — pop */
+  }
+  57% {
+    opacity: 1;
+    transform: scale(1.2);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* ease-in-out — settle */
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes checkout-check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes checkout-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+.checkout-fx .checkout-icon {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.checkout-fx .checkout-check {
+  opacity: 0;
+}
+
+.checkout-fx .checkout-ring {
+  opacity: 0;
+}
+
+.checkout-fx--in .checkout-icon {
+  /* 350ms = 200ms pop + 150ms settle (ver los timing-function por keyframe) */
+  animation: checkout-pop 350ms both;
+}
+
+.checkout-fx--in .checkout-check {
+  animation: checkout-check-in 150ms ease-out 300ms both;
+}
+
+.checkout-fx--in .checkout-ring {
+  /* arranca cuando el ícono terminó de asentarse (350ms) y se repite 2 veces */
+  animation: checkout-ring 1000ms ease-out 350ms 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-fx .checkout-icon,
+  .checkout-fx--in .checkout-icon,
+  .checkout-fx .checkout-check,
+  .checkout-fx--in .checkout-check {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .checkout-fx--in .checkout-ring {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ── Checkout — entrada suave de las columnas ─────────────────────
+   Micro-animación de las dos tarjetas del checkout (resumen + pago).
+   Framer Motion no está en el proyecto, así que va con keyframes. */
+@keyframes checkout-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.checkout-rise {
+  animation: checkout-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.checkout-rise-2 {
+  animation-delay: 90ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-rise,
+  .checkout-rise-2 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -22,6 +22,12 @@ export interface SubscriptionPlan {
   priceInCents: number;
   currency: string;
   interval: "month" | "year";
+  /** Precio de lista antes de la promo, para tacharlo. Opcional. */
+  originalPriceInCents?: number;
+  /** Etiqueta del descuento aplicado, ej. "Descuento de bienvenida (-35%)". */
+  discountLabel?: string;
+  /** Bullets de lo que incluye el plan (columna de resumen del checkout). */
+  features?: string[];
 }
 
 export type CheckoutInput =

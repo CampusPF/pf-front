@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Lock } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CreditCard,
+  Loader2,
+  Lock,
+  ShieldCheck,
+} from "lucide-react";
 import {
   PaymentElement,
   useElements,
@@ -16,21 +23,25 @@ interface PaymentFormProps {
    * de SSR — window no existe en el servidor).
    */
   returnUrl?: string;
-  /** Texto del botón, por si quieren personalizarlo ("Pagar $49.99", etc.) */
+  /** Texto del botón, ya con el precio ("Suscribirme — US$ 19,00 / mes"). */
   submitLabel: string;
 }
+
+const PAYMENT_BRANDS = ["Visa", "Mastercard", "Amex", "Mercado Pago"];
 
 export function PaymentForm({ returnUrl, submitLabel }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!stripe || !elements) {
-      // Stripe.js todavía no cargó, el botón debería estar deshabilitado en este caso
+    if (!stripe || !elements || !acceptedTerms) {
+      // Stripe.js todavía no cargó o falta aceptar los términos: el botón
+      // debería estar deshabilitado en este caso.
       return;
     }
 
@@ -39,7 +50,8 @@ export function PaymentForm({ returnUrl, submitLabel }: PaymentFormProps) {
 
     // Se calcula acá, dentro del handler de un click real del usuario,
     // así que siempre corre en el navegador. Nunca durante el render.
-    const finalReturnUrl = returnUrl ?? `${window.location.origin}/checkout/success`;
+    const finalReturnUrl =
+      returnUrl ?? `${window.location.origin}/checkout/success`;
 
     const { error } = await stripe.confirmPayment({
       elements,
@@ -62,32 +74,95 @@ export function PaymentForm({ returnUrl, submitLabel }: PaymentFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-border bg-surface p-6 shadow-md"
+      className="relative overflow-hidden rounded-2xl bg-[#1C1C2E] p-6"
     >
-      <div className="mb-5 flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-success" />
-        <h2 className="text-base font-semibold text-text">Datos de pago</h2>
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-[#6366F1] to-[#22C55E]"
+      />
+
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-white">Datos de pago</h2>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-[#22C55E]">
+            <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
+            Transacción cifrada y protegida por protocolos bancarios
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px] text-[#9A9AAB]">
+          <CreditCard className="size-3.5" aria-hidden />
+          Stripe / MP Network
+        </span>
       </div>
 
-      <PaymentElement />
+      {/* Stripe Elements se encarga del selector de método y de los campos
+          de tarjeta / documento — no los replicamos a mano. */}
+      <div className="mt-5">
+        <PaymentElement />
+      </div>
 
       {errorMessage && (
-        <div className="mt-4 rounded-xl bg-danger-subtle px-4 py-3 text-sm text-danger">
+        <div className="mt-4 rounded-xl bg-[#F87171]/10 px-4 py-3 text-sm text-[#F87171]">
           {errorMessage}
         </div>
       )}
 
+      <label className="mt-5 flex items-start gap-2.5 text-xs leading-relaxed text-[#9A9AAB]">
+        <input
+          type="checkbox"
+          checked={acceptedTerms}
+          onChange={(event) => setAcceptedTerms(event.target.checked)}
+          className="mt-0.5 size-4 shrink-0 rounded border-white/20 bg-[#0F0F1A] accent-[#6366F1]"
+        />
+        <span>
+          Acepto los{" "}
+          <a href="#" className="text-[#A5B4FC] hover:underline">
+            Términos del Servicio
+          </a>
+          , la{" "}
+          <a href="#" className="text-[#A5B4FC] hover:underline">
+            Política de Privacidad
+          </a>{" "}
+          y autorizo la facturación recurrente mensual cancelable en cualquier
+          momento.
+        </span>
+      </label>
+
       <button
         type="submit"
-        disabled={!stripe || !elements || isSubmitting}
-        className="mt-6 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={!stripe || !elements || isSubmitting || !acceptedTerms}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#6366F1] px-4 py-3.5 text-sm font-semibold text-white transition duration-150 hover:scale-[1.01] hover:bg-[#4F46E5] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
       >
-        {isSubmitting ? "Procesando..." : submitLabel}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            Procesando…
+          </>
+        ) : (
+          <>
+            <Lock className="size-4" aria-hidden />
+            {submitLabel}
+            <ArrowRight className="size-4" aria-hidden />
+          </>
+        )}
       </button>
 
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-text-muted">
-        <Lock className="h-3.5 w-3.5" />
-        Pago procesado de forma segura por Stripe
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] uppercase tracking-wider text-[#6B6B7B]">
+        {PAYMENT_BRANDS.map((brand) => (
+          <span key={brand} className="flex items-center gap-2">
+            {brand}
+            <span aria-hidden>·</span>
+          </span>
+        ))}
+        <span className="flex items-center gap-1">
+          <Check className="size-3" aria-hidden />
+          PCI DSS Compliant
+        </span>
+      </div>
+
+      <p className="mt-3 text-center text-[11px] text-[#8A8A99]">
+        Tus datos viajan encriptados de extremo a extremo y nunca almacenamos el
+        código de seguridad.
       </p>
     </form>
   );
