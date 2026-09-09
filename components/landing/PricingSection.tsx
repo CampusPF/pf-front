@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Check, Sparkles } from "lucide-react";
 
 const FREE_FEATURES = [
@@ -53,12 +54,12 @@ export default function PricingSection() {
           {/* mt-auto en el wrapper (no en el botón) para que ambas cards
               igualen altura con el CTA anclado abajo. */}
           <div className="mt-auto pt-8">
-            <button
-              type="button"
-              className="border-border text-text hover:bg-surface-elevated w-full cursor-pointer rounded-lg border-2 py-3 font-medium transition-colors duration-150"
+            <Link
+              href="/register"
+              className="border-border text-text hover:bg-surface-elevated block w-full cursor-pointer rounded-lg border-2 py-3 text-center font-medium transition-colors duration-150"
             >
               Empezar gratis
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -90,12 +91,12 @@ export default function PricingSection() {
           </ul>
 
           <div className="mt-auto pt-8">
-            <button
-              type="button"
-              className="bg-primary-solid hover:bg-primary-solid-hover w-full cursor-pointer rounded-lg py-3 font-medium text-white transition-colors duration-150"
+            <Link
+              href="/checkout?plan=premium"
+              className="bg-primary-solid hover:bg-primary-solid-hover block w-full cursor-pointer rounded-lg py-3 text-center font-medium text-white transition-colors duration-150"
             >
               Hacerme Premium
-            </button>
+            </Link>
           </div>
         </div>
       </div>

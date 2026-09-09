@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
+import { formatPrice } from "@/types/checkout";
 import {
   getFirstLesson,
   getLessonsCount,
@@ -28,26 +29,40 @@ export default function EnrollCTA({ course }: { course: Course }) {
     <aside className="bg-surface border-border rounded-2xl border p-6 shadow-lg lg:sticky lg:top-24 lg:self-start">
       <p className="text-text flex items-baseline gap-1">
         <span className="text-3xl font-bold">
-          {course.isPremium ? "$19" : "Gratis"}
+          {course.isPremium ? formatPrice(course.priceInCents, course.currency) : "Gratis"}
         </span>
-        {course.isPremium && (
-          <span className="text-text-muted text-sm">/mes</span>
-        )}
       </p>
       <p className="text-text-muted mt-1 text-sm">
         {course.isPremium
-          ? "Incluido en la suscripción Campus Pro."
+          ? "Pago único, acceso de por vida a este curso."
           : "Sin tarjeta de crédito. Empezás ahora."}
       </p>
 
       <div className="mt-5 space-y-2">
-        {firstLesson && (
-          <Link
-            href={lessonHref(course.slug, firstLesson.id)}
-            className="bg-primary-solid hover:bg-primary-solid-hover block cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
-          >
-            Empezar curso
-          </Link>
+        {course.isPremium ? (
+          <>
+            <Link
+              href={`/checkout?courseId=${course.slug}`}
+              className="bg-primary-solid hover:bg-primary-solid-hover block cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
+            >
+              Comprar este curso
+            </Link>
+            <Link
+              href="/checkout?plan=premium"
+              className="border-border text-text-secondary hover:bg-surface-elevated hover:text-text block cursor-pointer rounded-lg border px-4 py-2.5 text-center text-sm font-medium transition-colors duration-150"
+            >
+              O suscribirme a Premium ($19/mes, todos los cursos)
+            </Link>
+          </>
+        ) : (
+          firstLesson && (
+            <Link
+              href={lessonHref(course.slug, firstLesson.id)}
+              className="bg-primary-solid hover:bg-primary-solid-hover block cursor-pointer rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150"
+            >
+              Empezar curso
+            </Link>
+          )
         )}
 
         {hasProgress && (
