@@ -17,10 +17,19 @@ import type { CheckoutInput, Course, SubscriptionPlan } from "@/types/checkout";
 const PREMIUM_PLAN: SubscriptionPlan = {
   id: "premium",
   name: "Plan Premium",
-  description: "Acceso ilimitado a todo el catálogo de cursos",
+  description:
+    "Acceso ilimitado a todo el catálogo de cursos de ingeniería de software, arquitecturas cloud, IA aplicada y mentorías semanales.",
   priceInCents: 1900,
   currency: "usd",
   interval: "month",
+  originalPriceInCents: 2900,
+  discountLabel: "Descuento de bienvenida (-35%)",
+  features: [
+    "+120 cursos de frontend, backend e IA",
+    "Certificados oficiales verificables en GitHub / LinkedIn",
+    "Comunidad exclusiva en Discord y code reviews en vivo",
+    "Entornos de laboratorio y sandboxes en la nube",
+  ],
 };
 
 /* El checkout necesita mostrar título/instructor/precio, pero no toda la
