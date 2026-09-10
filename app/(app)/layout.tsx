@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import DashboardDataProvider from "@/components/dashboard/DashboardDataProvider";
 import RequireAuth from "@/components/auth/RequireAuth";
 
 /* Chrome del área logueada (sidebar + topbar). Route group (app): no agrega
@@ -16,7 +17,9 @@ export default function AppLayout({
   return (
     <Suspense>
       <RequireAuth>
-        <DashboardShell>{children}</DashboardShell>
+        <DashboardDataProvider>
+          <DashboardShell>{children}</DashboardShell>
+        </DashboardDataProvider>
       </RequireAuth>
     </Suspense>
   );

@@ -17,15 +17,17 @@ import {
 } from "lucide-react";
 
 import { applyTheme, useTheme } from "@/lib/use-theme";
-import { DASHBOARD_USER } from "@/data/dashboard.mock";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
-/* TODO(campus): salvo "Inicio" y "Explorar", estas rutas todavía no existen.
-   Se van creando a medida que se arman las vistas del área logueada. */
+/* TODO(campus): "Mis cursos", "Tutor IA" y "Logros" todavía no existen como
+   rutas. Se van creando a medida que se arman las vistas del área logueada
+   ("Configuración" ya está). */
 const NAV_ITEMS = [
   { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
   { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen },
   { label: "Explorar", href: "/courses", icon: Compass },
-  { label: "Tutor IA", href: "/dashboard/tutor", icon: Sparkles },
+  { label: "Tutor IA", href: "#", icon: Sparkles },
   { label: "Logros", href: "/dashboard/logros", icon: Trophy },
   { label: "Configuración", href: "/dashboard/configuracion", icon: Settings },
 ];
@@ -45,6 +47,15 @@ export default function DashboardSidebar({
 }) {
   const pathname = usePathname();
   const theme = useTheme();
+  const { user } = useAuth();
+  const { data } = useDashboardData();
+
+  // Nombre e inicial: reales (GET /users/me). Plan: real (GET /subscriptions/me).
+  // El rol sigue fijo — /users/me trae role pero el tipo User del front no lo
+  // modela todavía y hoy son todos "student". TODO(back).
+  const name = user?.name?.trim() || "Invitado";
+  const isPro = data?.plan === "PRO";
+  const roleLabel = "Estudiante";
 
   return (
     <>
@@ -127,20 +138,18 @@ export default function DashboardSidebar({
             className="bg-primary-solid flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
             aria-hidden
           >
-            {DASHBOARD_USER.name.charAt(0)}
+            {name.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-text flex items-center gap-1.5 text-sm font-medium">
-              <span className="truncate">{DASHBOARD_USER.name}</span>
-              {DASHBOARD_USER.plan === "PRO" && (
+              <span className="truncate">{name}</span>
+              {isPro && (
                 <span className="bg-accent-subtle text-accent rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide">
                   PRO
                 </span>
               )}
             </p>
-            <p className="text-text-muted truncate text-xs">
-              {DASHBOARD_USER.role}
-            </p>
+            <p className="text-text-muted truncate text-xs">{roleLabel}</p>
           </div>
           <button
             type="button"

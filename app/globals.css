@@ -11,7 +11,7 @@
    bajo [data-theme="dark"] cambia el tema sin recompilar nada. */
 @theme {
   /* Colors */
-  --color-bg:               #FAFAFA;
+  --color-bg:               #F6F6F7;
   --color-surface:          #FFFFFF;
   --color-surface-elevated: #FFFFFF;
   --color-border:           #E4E4EA;

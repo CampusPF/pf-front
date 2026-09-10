@@ -72,10 +72,13 @@ export default function PricingSection() {
 
           <h3 className="text-primary font-semibold">Premium</h3>
           <p className="mt-3">
-            <span className="text-primary text-4xl font-bold">$19</span>
+            {/* $9,99 = PLAN_PRICES_IN_CENTS[PREMIUM] en subscriptions.service.ts
+                (999 centavos) — tiene que coincidir con lo que Stripe cobra de
+                verdad. No hay plan anual del lado del back, así que no se
+                anuncia acá (antes decía "$150/año", no existe ese plan). */}
+            <span className="text-primary text-4xl font-bold">$9,99</span>
             <span className="text-text-muted ml-2 text-sm">/mes</span>
           </p>
-          <p className="text-text-muted mt-1 text-xs">o $150/año (ahorrá 34%)</p>
           <p className="text-text-secondary mt-3 text-sm">
             Acceso total e ilimitado a todo el ecosistema de contenidos y
             herramientas.

@@ -81,6 +81,14 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
     ? `Confirmar inscripción — ${formatPrice(price, currency)}`
     : `Suscribirme — ${formatPrice(price, currency)} / mes`;
 
+  // La pantalla de éxito necesita saber QUÉ confirmar contra el back
+  // (GET /course-enrollments/me o /subscriptions/me) — Stripe redirige a
+  // returnUrl agregando sus propios params (payment_intent, etc.), así que
+  // estos viajan igual.
+  const successParams: Record<string, string> = isCourse
+    ? { type: "course", courseId: checkout.course.id }
+    : { type: "subscription" };
+
   const backHref = isCourse ? "/courses" : "/#precios";
   const backLabel = isCourse ? "Volver a cursos" : "Volver a planes";
 
@@ -131,7 +139,11 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
                 stripe={getStripe()}
                 options={{ clientSecret, appearance: CHECKOUT_STRIPE_APPEARANCE }}
               >
-                <PaymentForm returnUrl={returnUrl} submitLabel={submitLabel} />
+                <PaymentForm
+                returnUrl={returnUrl}
+                successParams={successParams}
+                submitLabel={submitLabel}
+              />
               </Elements>
             ) : (
               <PaymentPanelPlaceholder />

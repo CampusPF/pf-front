@@ -6,6 +6,23 @@ export interface User {
   name: string;
   email: string;
   avatarUrl?: string | null;
+
+  /* Los campos de abajo sólo llegan por GET /users/me (ver
+     services/profile/). El `user` que devuelven login y register trae
+     únicamente id/name/email, así que todos son opcionales: tipar lo
+     contrario obligaría a inventarlos al guardar la sesión. */
+
+  role?: "student" | "teacher" | "admin";
+  /** ISO "YYYY-MM-DD". */
+  birthDate?: string | null;
+  /** Formato internacional, con el "+" y el código de país. */
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  /** `false` = cuenta creada con Google que todavía no seteó contraseña. */
+  hasPassword?: boolean;
+  isGoogleAccount?: boolean;
 }
 
 /** Sesión ya normalizada. Nadie fuera de este módulo lee `access_token`. */

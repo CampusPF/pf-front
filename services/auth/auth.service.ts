@@ -70,9 +70,14 @@ export async function logout(): Promise<void> {
 
 /* GET /auth/google — es una redirección del navegador, no un fetch: el back
    necesita responder un 302 hacia Google y Google vuelve a
-   /auth/google/callback. Por eso se navega con window.location. */
-export function getGoogleAuthUrl(): string {
-  return `${API_URL}/auth/google`;
+   /auth/google/callback. Por eso se navega con window.location.
+
+   `flow` le dice al back desde qué pantalla arrancó el usuario (viaja por el
+   `state` de OAuth): en "login" Google no crea cuentas, en "register" sí crea
+   si el email no existe y rebota si ya existe. El back devuelve al usuario a
+   /login o /register con ?error= según el caso (ver services/auth/oauth-error). */
+export function getGoogleAuthUrl(flow: "login" | "register" = "login"): string {
+  return `${API_URL}/auth/google?flow=${flow}`;
 }
 
 /** GET /users/me — trae el usuario autenticado a partir del token guardado.

@@ -7,19 +7,13 @@ import { AlertCircle, GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { googleOAuthError } from '@/services/auth/oauth-error';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
+import { inputClass } from '@/components/ui/input-styles';
 
 const initialValues: LoginFormValues = { email: '', password: '' };
-
-/* Un solo lugar para el estilo de los inputs: el borde cambia a
-   --color-danger cuando el campo tiene error, así el error no depende sólo
-   del texto rojo de abajo (WCAG 1.4.1 — no usar el color como único medio). */
-function inputClass(hasError: boolean) {
-  return `w-full px-4 py-3 bg-surface border rounded-xl text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
-    hasError ? 'border-danger' : 'border-border'
-  }`;
-}
 
 export const LoginCard = () => {
   const router = useRouter();
@@ -51,6 +45,12 @@ export const LoginCard = () => {
   const emailHasError = Boolean(formik.touched.email && formik.errors.email);
   const passwordHasError = Boolean(formik.touched.password && formik.errors.password);
 
+  // El back rebota acá con ?error= cuando "Continuar con Google" falla (ej.
+  // el email no está registrado). El error de submit (formik.status) tiene
+  // prioridad: es la acción más reciente del usuario.
+  const alertMessage =
+    formik.status ?? googleOAuthError(searchParams.get('error'));
+
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col items-center justify-center pt-28 pb-12 px-4">
 
@@ -75,7 +75,7 @@ export const LoginCard = () => {
           type="button"
           onClick={() => {
             // Es un 302 del back hacia Google: tiene que ser navegación, no fetch.
-            window.location.href = getGoogleAuthUrl();
+            window.location.href = getGoogleAuthUrl('login');
           }}
           className="w-full py-3 px-4 bg-surface hover:bg-surface-elevated border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer"
         >
@@ -110,13 +110,13 @@ export const LoginCard = () => {
 
         {/* Formulario */}
         <form className="space-y-4" onSubmit={formik.handleSubmit} noValidate>
-          {formik.status && (
+          {alertMessage && (
             <p
               role="alert"
               className="bg-danger-subtle text-danger border border-danger/30 rounded-xl px-4 py-3 text-xs flex items-start gap-2"
             >
               <AlertCircle className="size-4 shrink-0 mt-0.5" aria-hidden />
-              <span>{formik.status}</span>
+              <span>{alertMessage}</span>
             </p>
           )}
 
@@ -150,10 +150,9 @@ export const LoginCard = () => {
                 Contraseña
               </label>
             </div>
-            <input
+            <PasswordField
               id="password"
               name="password"
-              type="password"
               autoComplete="current-password"
               value={formik.values.password}
               onChange={formik.handleChange}

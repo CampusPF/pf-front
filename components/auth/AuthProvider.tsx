@@ -34,6 +34,8 @@ interface AuthValue {
   register: (payload: RegisterPayload) => Promise<void>;
   loginWithGoogleToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Vuelve a pedir GET /users/me y actualiza la sesión guardada. */
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -52,11 +54,37 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Chequeo rápido y local (sin red) para el mount normal: si no hay token
-  // guardado, no hay sesión, punto — no hace falta preguntarle al back.
+  // Mount en dos pasos:
+  //
+  //   1. Chequeo local (sin red): pinta de inmediato lo que haya en
+  //      localStorage y resuelve isLoading sin flicker.
+  //   2. Revalidación en segundo plano contra GET /users/me.
+  //
+  // El paso 2 hace falta porque el user que cachea `login`/`register` sale de
+  // la respuesta de esos endpoints, que trae MENOS campos que /users/me
+  // (faltaba el nombre): sin esto el saludo del dashboard mostraba "Hola, de
+  // nuevo" hasta que el usuario editaba el perfil o volvía con el botón
+  // "atrás". De paso corrige la sesión si cambió algo en otro dispositivo o
+  // si el token venció mientras la pestaña estaba cerrada.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(isLoggedIn() ? getStoredUser() : null);
     setIsLoading(false);
+
+    if (!getToken()) return;
+
+    authService
+      .fetchCurrentUser()
+      .then((freshUser) => {
+        saveSession(getToken()!, freshUser);
+        setUser(freshUser);
+      })
+      .catch(() => {
+        // 401 u otro error: el token guardado ya no sirve (expiró, se
+        // revocó). No dejamos una sesión fantasma.
+        clearSession();
+        setUser(null);
+      });
   }, []);
 
   // Revalidación real contra el back, para el caso bfcache (ver comentario
@@ -120,6 +148,21 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     setUser(null);
   }, []);
 
+  /* La pantalla de configuración edita datos que se muestran en el chrome del
+     dashboard (el nombre del sidebar, la inicial del avatar). Sin esto habría
+     que recargar la página para verlos actualizados. Devuelve el usuario
+     fresco para que quien llame pueda usarlo sin esperar al re-render. */
+  const refreshUser = useCallback(async () => {
+    const token = getToken();
+    if (!token) return null;
+
+    const freshUser = await authService.fetchCurrentUser();
+    saveSession(token, freshUser);
+    setUser(freshUser);
+
+    return freshUser;
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -129,8 +172,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       register,
       loginWithGoogleToken,
       logout,
+      refreshUser,
     }),
-    [user, isLoading, login, register, loginWithGoogleToken, logout],
+    [user, isLoading, login, register, loginWithGoogleToken, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

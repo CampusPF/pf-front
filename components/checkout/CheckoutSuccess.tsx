@@ -2,26 +2,90 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
+
+import {
+  syncPayment,
+  waitForAccessConfirmation,
+} from "@/services/checkout.service";
+import { formatPrice } from "@/types/checkout";
+import { PREMIUM_PLAN } from "@/data/plans";
+
+interface CheckoutSuccessProps {
+  type: "course" | "subscription";
+  /** UUID real del curso (viene de CheckoutPage vía successParams). Nulo si
+      type es "subscription" o si algo raro pasó con la URL de retorno. */
+  courseId: string | null;
+  /** `payment_intent` que Stripe agrega a la return_url. */
+  paymentIntentId: string | null;
+}
+
+type Phase = "confirming" | "confirmed" | "timeout";
 
 /* Pantalla de confirmación tras un pago exitoso. Ocupa toda la ventana
    (fixed inset-0) a propósito: tapa el Navbar/Footer del layout (marketing)
    para replicar el diseño de confirmación "a foco completo".
 
-   Los datos del plan / próxima facturación / ID de transacción son fijos
-   por ahora — placeholders del diseño. Cuando el backend exponga el
-   endpoint que consulta el estado real del pago (ver el TODO en
-   app/(marketing)/checkout/success/page.tsx) hay que leer
-   ?payment_intent=... de la query y traer estos valores de ahí. */
-export function CheckoutSuccess() {
-  // El ícono arranca oculto (scale 0) y anima al montar. La ruta ya
-  // depende de JS (RequireAuth es client-side), así que no hay fallback
-  // sin JS que cuidar. El rAF asegura que el navegador haya "pintado" el
-  // estado inicial antes de arrancar la animación.
+   stripe.confirmPayment() redirige acá apenas Stripe confirma el cobro.
+   Llegar a esta URL no prueba nada por sí solo, así que:
+
+     1. Le pide al back que sincronice el pago (POST /payments/:id/sync): el
+        back le pregunta a Stripe y, si el cobro está confirmado, activa el
+        acceso en el acto. Es lo que hace que funcione sin webhook.
+     2. Después pollea GET /course-enrollments/me o /subscriptions/me hasta
+        ver el acceso real (ver waitForAccessConfirmation). Si el paso 1
+        falló por lo que sea, esto sigue esperando al webhook como respaldo. */
+export function CheckoutSuccess({
+  type,
+  courseId,
+  paymentIntentId,
+}: CheckoutSuccessProps) {
+  const [phase, setPhase] = useState<Phase>("confirming");
   const [animateIcon, setAnimateIcon] = useState(false);
+
   useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      if (paymentIntentId) await syncPayment(paymentIntentId);
+
+      const confirmed = await waitForAccessConfirmation(
+        type === "course" && courseId
+          ? { mode: "course", courseId }
+          : { mode: "subscription" },
+      );
+
+      if (!cancelled) setPhase(confirmed ? "confirmed" : "timeout");
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [type, courseId, paymentIntentId]);
+
+  useEffect(() => {
+    if (phase === "confirming") return;
     const id = requestAnimationFrame(() => setAnimateIcon(true));
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [phase]);
+
+  const heading =
+    phase === "confirming"
+      ? "Confirmando tu pago…"
+      : phase === "timeout"
+        ? "¡Pago recibido!"
+        : type === "course"
+          ? "¡Listo, el curso ya es tuyo!"
+          : "¡Listo, ya sos parte de Campus Premium!";
+
+  const description =
+    phase === "confirming"
+      ? "Esto tarda unos segundos — estamos confirmando el pago con Stripe."
+      : phase === "timeout"
+        ? "El pago se confirmó, pero activarlo está tardando un poco más de lo normal. Va a estar disponible en tu dashboard en breve."
+        : type === "course"
+          ? "Te enviamos un email de confirmación. Ya tenés acceso de por vida a este curso."
+          : "Te enviamos un email de confirmación. Tu suscripción está activa desde ahora.";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0B0B14] px-4 py-10">
@@ -55,90 +119,93 @@ export function CheckoutSuccess() {
           <span className="text-[15px] font-semibold text-white">Campus.</span>
         </div>
 
-        {/* Ícono de éxito animado (keyframes en app/globals.css) */}
-        <div
-          className={`checkout-fx relative mx-auto mt-8 flex size-16 items-center justify-center ${
-            animateIcon ? "checkout-fx--in" : ""
-          }`}
-        >
-          <span
-            aria-hidden
-            className="checkout-ring absolute inset-0 rounded-full bg-[#22C55E]"
-          />
-          <span className="checkout-icon relative flex size-16 items-center justify-center rounded-full bg-[#22C55E]">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="checkout-check size-8 text-white"
-              aria-hidden="true"
+        {/* Ícono: spinner mientras confirma, check animado ya resuelto */}
+        <div className="relative mx-auto mt-8 flex size-16 items-center justify-center">
+          {phase === "confirming" ? (
+            <Loader2 className="size-10 animate-spin text-[#6366F1]" aria-hidden />
+          ) : (
+            <div
+              className={`checkout-fx relative flex size-16 items-center justify-center ${
+                animateIcon ? "checkout-fx--in" : ""
+              }`}
             >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
+              <span
+                aria-hidden
+                className="checkout-ring absolute inset-0 rounded-full bg-[#22C55E]"
+              />
+              <span className="checkout-icon relative flex size-16 items-center justify-center rounded-full bg-[#22C55E]">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="checkout-check size-8 text-white"
+                  aria-hidden="true"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </span>
+            </div>
+          )}
         </div>
 
-        <h1 className="mt-6 text-center text-2xl font-bold text-white">
-          ¡Listo, ya sos parte de Campus Premium!
-        </h1>
+        <h1 className="mt-6 text-center text-2xl font-bold text-white">{heading}</h1>
         <p className="mx-auto mt-2 max-w-sm text-center text-sm text-[#A1A1AA]">
-          Te enviamos un email de confirmación. Tu suscripción está activa desde
-          ahora.
+          {description}
         </p>
 
-        <hr className="my-6 border-white/10" />
+        {phase !== "confirming" && (
+          <>
+            <hr className="my-6 border-white/10" />
 
-        {/* Resumen */}
-        <div className="rounded-xl bg-white/3 px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-bold text-white">
-              Plan Premium · US$ 19,00 / mes
-            </span>
-            <span className="shrink-0 rounded-full bg-[#6366F1] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-              Activo
-            </span>
-          </div>
-          <p className="mt-1.5 text-xs text-[#8A8A99]">
-            Próxima facturación: 9 de octubre de 2026
-          </p>
-          <div className="mt-3 flex items-center justify-between border-t border-white/6 pt-3">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-[#8A8A99]">
-              ID Transacción
-            </span>
-            <span className="font-mono text-xs text-[#A1A1AA]">
-              CMP-8942-TX-PRM
-            </span>
-          </div>
-        </div>
+            {/* Resumen */}
+            <div className="rounded-xl bg-white/3 px-4 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-white">
+                  {type === "course"
+                    ? "Curso comprado"
+                    : `${PREMIUM_PLAN.name} · ${formatPrice(PREMIUM_PLAN.priceInCents, PREMIUM_PLAN.currency)} / mes`}
+                </span>
+                <span className="shrink-0 rounded-full bg-[#6366F1] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                  {phase === "timeout" ? "Procesando" : "Activo"}
+                </span>
+              </div>
+              <p className="mt-1.5 text-xs text-[#8A8A99]">
+                {type === "course"
+                  ? "Acceso de por vida, sin vencimiento."
+                  : "Se renueva automáticamente cada mes — cancelás cuando quieras."}
+              </p>
+            </div>
 
-        {/* Acciones */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Link
-            href="/dashboard"
-            className="rounded-lg bg-[#6366F1] px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150 hover:bg-[#5558E3]"
-          >
-            Ir a mi dashboard
-          </Link>
-          <Link
-            href="/courses"
-            className="rounded-lg border border-white/15 px-4 py-2.5 text-center text-sm font-medium text-[#D4D4D8] transition-colors duration-150 hover:bg-white/6"
-          >
-            Explorar cursos
-          </Link>
-        </div>
+            {/* Acciones */}
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-[#6366F1] px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150 hover:bg-[#5558E3]"
+              >
+                Ir a mi dashboard
+              </Link>
+              <Link
+                href="/courses"
+                className="rounded-lg border border-white/15 px-4 py-2.5 text-center text-sm font-medium text-[#D4D4D8] transition-colors duration-150 hover:bg-white/6"
+              >
+                Explorar cursos
+              </Link>
+            </div>
 
-        <p className="mt-6 text-center text-[11px] text-[#6B6B7B]">
-          ¿Dudas? Escribinos a{" "}
-          <a
-            href="mailto:soporte@campus.com"
-            className="text-[#8A8A99] transition-colors duration-150 hover:text-[#A1A1AA]"
-          >
-            soporte@campus.com
-          </a>
-        </p>
+            <p className="mt-6 text-center text-[11px] text-[#6B6B7B]">
+              ¿Dudas? Escribinos a{" "}
+              <a
+                href="mailto:soporte@campus.com"
+                className="text-[#8A8A99] transition-colors duration-150 hover:text-[#A1A1AA]"
+              >
+                soporte@campus.com
+              </a>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

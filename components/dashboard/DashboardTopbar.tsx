@@ -2,14 +2,18 @@
 
 import { Bell, Flame, Menu, Search } from "lucide-react";
 
-import { DASHBOARD_STATS, DASHBOARD_USER } from "@/data/dashboard.mock";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { DASHBOARD_STATS } from "@/data/dashboard.mock";
 
 export default function DashboardTopbar({
   onMenuClick,
 }: {
   onMenuClick: () => void;
 }) {
+  const { user } = useAuth();
+  // TODO(back): la racha sigue mockeada — no hay endpoint de streak.
   const streak = DASHBOARD_STATS.find((s) => s.key === "streak")?.value ?? "";
+  const initial = user?.name?.charAt(0)?.toUpperCase() ?? "?";
 
   return (
     <header className="bg-surface/80 border-border sticky top-0 z-30 flex h-16 items-center gap-3 border-b px-4 backdrop-blur md:px-6">
@@ -56,13 +60,7 @@ export default function DashboardTopbar({
           <span className="bg-danger ring-surface absolute top-1.5 right-1.5 size-2 rounded-full ring-2" />
         </button>
 
-        {/* Avatar */}
-        <span
-          className="bg-primary-solid flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white"
-          aria-hidden
-        >
-          {DASHBOARD_USER.name.charAt(0)}
-        </span>
+
       </div>
     </header>
   );
