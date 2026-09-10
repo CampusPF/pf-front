@@ -23,13 +23,19 @@ interface PaymentFormProps {
    * de SSR — window no existe en el servidor).
    */
   returnUrl?: string;
+  /**
+   * Query params que la pantalla de éxito necesita para saber QUÉ confirmar
+   * (curso o suscripción, y de cuál) — Stripe agrega los suyos propios
+   * (payment_intent, redirect_status) al mismo return_url, no lo pisa.
+   */
+  successParams?: Record<string, string>;
   /** Texto del botón, ya con el precio ("Suscribirme — US$ 19,00 / mes"). */
   submitLabel: string;
 }
 
-const PAYMENT_BRANDS = ["Visa", "Mastercard", "Amex", "Mercado Pago"];
+const PAYMENT_BRANDS = ["Visa", "Mastercard", "Amex"];
 
-export function PaymentForm({ returnUrl, submitLabel }: PaymentFormProps) {
+export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,8 +56,13 @@ export function PaymentForm({ returnUrl, submitLabel }: PaymentFormProps) {
 
     // Se calcula acá, dentro del handler de un click real del usuario,
     // así que siempre corre en el navegador. Nunca durante el render.
-    const finalReturnUrl =
-      returnUrl ?? `${window.location.origin}/checkout/success`;
+    const url = new URL(returnUrl ?? "/checkout/success", window.location.origin);
+    if (successParams) {
+      for (const [key, value] of Object.entries(successParams)) {
+        url.searchParams.set(key, value);
+      }
+    }
+    const finalReturnUrl = url.toString();
 
     const { error } = await stripe.confirmPayment({
       elements,
@@ -91,7 +102,7 @@ export function PaymentForm({ returnUrl, submitLabel }: PaymentFormProps) {
         </div>
         <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px] text-[#9A9AAB]">
           <CreditCard className="size-3.5" aria-hidden />
-          Stripe / MP Network
+          Stripe
         </span>
       </div>
 
