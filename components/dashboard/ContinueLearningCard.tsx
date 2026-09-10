@@ -1,13 +1,56 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Code2 } from "lucide-react";
 
-import { CONTINUE_LEARNING } from "@/data/dashboard.mock";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
 /* Card destacado "Continuá donde dejaste". Es un bloque de color sólido con
    texto blanco a propósito (no usa tokens de texto): ancla visualmente la
-   home logueada. */
+   home logueada.
+
+   Datos: el curso, el % de avance y el link salen de GET /course-enrollments/me
+   (inscripción más reciente sin terminar). El módulo, la próxima lección y la
+   portada NO están disponibles en ese endpoint, así que se omiten y el
+   gradiente es fijo (ver services/dashboard/dashboard.view.ts). */
 export default function ContinueLearningCard() {
-  const c = CONTINUE_LEARNING;
+  const { data, isLoading } = useDashboardData();
+
+  if (isLoading && !data) {
+    return (
+      <div
+        className="bg-surface-elevated h-44 animate-pulse rounded-2xl"
+        aria-hidden
+      />
+    );
+  }
+
+  const c = data?.continueLearning;
+
+  if (!c) {
+    return (
+      <section
+        aria-labelledby="continue-title"
+        className="border-border bg-surface flex flex-col gap-3 rounded-2xl border border-dashed p-6 md:flex-row md:items-center md:justify-between"
+      >
+        <div>
+          <h2 id="continue-title" className="text-text text-lg font-semibold">
+            Todavía no empezaste ningún curso
+          </h2>
+          <p className="text-text-muted mt-1 text-sm">
+            Explorá el catálogo y arrancá tu primera lección.
+          </p>
+        </div>
+        <Link
+          href="/courses"
+          className="bg-primary-solid hover:bg-primary-solid-hover inline-flex shrink-0 items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-150"
+        >
+          Ver cursos
+          <ArrowRight className="size-4" aria-hidden />
+        </Link>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -26,7 +69,9 @@ export default function ContinueLearningCard() {
             <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-white uppercase">
               En curso
             </span>
-            <span className="text-sm text-white/80">{c.moduleLabel}</span>
+            {c.moduleLabel && (
+              <span className="text-sm text-white/80">{c.moduleLabel}</span>
+            )}
           </div>
 
           <h2
@@ -35,10 +80,12 @@ export default function ContinueLearningCard() {
           >
             {c.courseTitle}
           </h2>
-          <p className="mt-1 text-sm text-white/80">
-            Próxima lección:{" "}
-            <span className="font-medium text-white">{c.nextLessonTitle}</span>
-          </p>
+          {c.nextLessonTitle && (
+            <p className="mt-1 text-sm text-white/80">
+              Próxima lección:{" "}
+              <span className="font-medium text-white">{c.nextLessonTitle}</span>
+            </p>
+          )}
 
           {/* Progreso */}
           <div className="mt-4 flex items-center gap-3">

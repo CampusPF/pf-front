@@ -21,6 +21,19 @@ export default async function CheckoutSuccessPage(
   const type = searchParams.type === "subscription" ? "subscription" : "course";
   const courseId =
     typeof searchParams.courseId === "string" ? searchParams.courseId : null;
+  // Lo agrega Stripe a la return_url. Con él, CheckoutSuccess le pide al back
+  // que verifique el cobro contra Stripe y active el acceso sin esperar al
+  // webhook.
+  const paymentIntentId =
+    typeof searchParams.payment_intent === "string"
+      ? searchParams.payment_intent
+      : null;
 
-  return <CheckoutSuccess type={type} courseId={courseId} />;
+  return (
+    <CheckoutSuccess
+      type={type}
+      courseId={courseId}
+      paymentIntentId={paymentIntentId}
+    />
+  );
 }

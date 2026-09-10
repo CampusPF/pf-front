@@ -2,7 +2,14 @@ import CourseCard from "@/components/course/CourseCard";
 import { RECOMMENDED_COURSES } from "@/data/dashboard.mock";
 
 /* Reusa la CourseCard del catálogo para que las recomendaciones se vean y
-   linkeen igual que en /courses. */
+   linkeen igual que en /courses.
+
+   TODO(back): sigue mockeado. GET /courses existe, pero el `Course` del back
+   (title, slug, description, difficulty, imageUrl, priceInCents) no tiene los
+   campos que CourseCard necesita (rating, studentsCount, coverGradient,
+   categoryLabel, level/labels, tags, modules...). Falta un adapter back→front
+   del catálogo — es la misma pieza pendiente que en app/(marketing)/courses.
+   Cuando exista, esto pasa a `getCourses()` filtrando por interés. */
 export default function RecommendedSection() {
   return (
     <section aria-labelledby="recommended-title">

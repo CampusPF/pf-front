@@ -1,40 +1,27 @@
 import * as yup from "yup";
 
+import {
+  birthDateRule,
+  nameRule,
+  passwordRule,
+  phoneRule,
+} from "@/services/auth/validation-rules";
+
 /* Schemas de Yup para los forms de auth. Separados de los componentes para que
    Formik y la validación se puedan testear o reusar sin importar JSX. Esto es
-   validación de front nada más — la que manda sigue siendo la del back. */
+   validación de front nada más — la que manda sigue siendo la del back.
 
-export const MIN_PASSWORD_LENGTH = 6;
-export const MAX_PASSWORD_LENGTH = 50;
+   Las reglas de cada campo viven en validation-rules.ts, compartidas con la
+   pantalla de perfil. Acá sólo se decide qué es obligatorio en el registro. */
 
-/* Mismo regex que pf-back/src/auth/dto/register.dto.ts (@Matches en
-   `password`): al menos una minúscula, una mayúscula y un número. Validarlo
-   acá evita el viaje redondo al back sólo para enterarse de esto. */
-const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-
-/* El teléfono se pide como número local, sin código de país ni "+": ese
-   prefijo lo agrega el form según el país elegido (ver RegisterCard). Acá
-   sólo se valida que sean dígitos y que el largo sea plausible para un
-   número real. */
-const PHONE_MIN_DIGITS = 6;
-const PHONE_MAX_DIGITS = 14;
-
-/* Rango válido de fecha de nacimiento: entre 18 y 120 años atrás. Se
-   calcula una vez al cargar el módulo. Formato "YYYY-MM-DD" para poder
-   usarlo tal cual en el min/max del <input type="date"> y comparar
-   lexicográficamente (que para ese formato equivale a comparar fechas). */
-function toYmd(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-const _now = new Date();
-export const MAX_BIRTH_DATE = toYmd(
-  new Date(_now.getFullYear() - 18, _now.getMonth(), _now.getDate()),
-);
-export const MIN_BIRTH_DATE = toYmd(
-  new Date(_now.getFullYear() - 120, _now.getMonth(), _now.getDate()),
-);
+// Re-exportadas: los componentes las consumen desde acá desde siempre y varias
+// se usan en el JSX (el min/max del <input type="date">, el hint de contraseña).
+export {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  MIN_BIRTH_DATE,
+  MAX_BIRTH_DATE,
+} from "@/services/auth/validation-rules";
 
 export const loginSchema = yup.object({
   email: yup
@@ -48,61 +35,20 @@ export const loginSchema = yup.object({
 export type LoginFormValues = yup.InferType<typeof loginSchema>;
 
 export const registerSchema = yup.object({
-  fullName: yup
-    .string()
-    .trim()
-    .required("Escribí tu nombre completo.")
-    .min(2, "El nombre necesita al menos 2 caracteres.")
-    .max(100, "El nombre no puede superar los 100 caracteres.")
-    .matches(/^\D*$/, "El nombre no puede contener números."),
+  fullName: nameRule().required("Escribí tu nombre completo."),
   email: yup
     .string()
     .trim()
     .required("Escribí tu email.")
     .email("Ese email no es válido.")
     .max(255, "El email no puede superar los 255 caracteres."),
-  password: yup
-    .string()
-    .required("Escribí una contraseña.")
-    .min(
-      MIN_PASSWORD_LENGTH,
-      `La contraseña necesita al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
-    )
-    .max(MAX_PASSWORD_LENGTH, `La contraseña no puede superar los ${MAX_PASSWORD_LENGTH} caracteres.`)
-    .matches(
-      PASSWORD_PATTERN,
-      "Debe incluir mayúscula, minúscula y número.",
-    ),
+  password: passwordRule().required("Escribí una contraseña."),
   confirmPassword: yup
     .string()
     .required("Confirmá tu contraseña.")
     .oneOf([yup.ref("password")], "Las contraseñas no coinciden."),
-  birthDate: yup
-    .string()
-    .trim()
-    .required("Seleccioná tu fecha de nacimiento.")
-    .test("fecha-real", function (value) {
-      if (!value) return true; // el required() se encarga del vacío
-      if (Number.isNaN(new Date(value).getTime())) {
-        return this.createError({ message: "Ingresá una fecha válida." });
-      }
-      if (value > MAX_BIRTH_DATE) {
-        return this.createError({ message: "Tenés que ser mayor de 18 años." });
-      }
-      if (value < MIN_BIRTH_DATE) {
-        return this.createError({
-          message: "Ingresá una fecha de nacimiento real.",
-        });
-      }
-      return true;
-    }),
-  phone: yup
-    .string()
-    .trim()
-    .required("Escribí tu teléfono.")
-    .matches(/^\d*$/, "El teléfono sólo puede tener números.")
-    .min(PHONE_MIN_DIGITS, `El teléfono necesita al menos ${PHONE_MIN_DIGITS} dígitos.`)
-    .max(PHONE_MAX_DIGITS, `El teléfono no puede tener más de ${PHONE_MAX_DIGITS} dígitos.`),
+  birthDate: birthDateRule().required("Seleccioná tu fecha de nacimiento."),
+  phone: phoneRule().required("Escribí tu teléfono."),
   country: yup.string().required("Elegí tu país."),
   acceptedTerms: yup
     .boolean()

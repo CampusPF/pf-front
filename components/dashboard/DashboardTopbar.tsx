@@ -11,6 +11,7 @@ export default function DashboardTopbar({
   onMenuClick: () => void;
 }) {
   const { user } = useAuth();
+  // TODO(back): la racha sigue mockeada — no hay endpoint de streak.
   const streak = DASHBOARD_STATS.find((s) => s.key === "streak")?.value ?? "";
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? "?";
 
@@ -59,13 +60,7 @@ export default function DashboardTopbar({
           <span className="bg-danger ring-surface absolute top-1.5 right-1.5 size-2 rounded-full ring-2" />
         </button>
 
-        {/* Avatar */}
-        <span
-          className="bg-primary-solid flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white"
-          aria-hidden
-        >
-          {initial}
-        </span>
+
       </div>
     </header>
   );

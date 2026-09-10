@@ -9,36 +9,8 @@ import { CheckoutPage } from "@/components/checkout/CheckoutPage";
 import { createPaymentIntent, hasAccess } from "@/services/checkout.service";
 import { getCourseBySlug } from "@/services/courses/courses.service";
 import type { Course as CatalogCourse } from "@/types/course.types";
-import type { CheckoutInput, Course, SubscriptionPlan } from "@/types/checkout";
-
-/* Único plan pago hoy (ver components/landing/PricingSection.tsx). Cuando
-   haya más de uno esto pasa a salir de una llamada al back en vez de estar
-   hardcodeado acá.
-
-   priceInCents/currency TIENEN que coincidir con lo que de verdad cobra el
-   back (PLAN_PRICES_IN_CENTS en subscriptions.service.ts) — no hay ningún
-   endpoint que exponga el precio real, así que hoy es un valor duplicado a
-   mano en los dos lados. Estaba en 1900 ($19,00) mientras el back cobra
-   999 ($9,99) — el usuario paga un precio distinto al que el checkout le
-   mostró, además de que /#precios sigue anunciando $19. Corregido acá al
-   valor real; falta alinear también la landing (ver PricingSection.tsx) y,
-   más a fondo, que el precio salga de un solo lugar. Saqué el descuento
-   falso (-35% de $29) porque no correspondía a ningún precio real. */
-const PREMIUM_PLAN: SubscriptionPlan = {
-  id: "premium",
-  name: "Plan Premium",
-  description:
-    "Acceso ilimitado a todo el catálogo de cursos de ingeniería de software, arquitecturas cloud, IA aplicada y mentorías semanales.",
-  priceInCents: 999,
-  currency: "usd",
-  interval: "month",
-  features: [
-    "+120 cursos de frontend, backend e IA",
-    "Certificados oficiales verificables en GitHub / LinkedIn",
-    "Comunidad exclusiva en Discord y code reviews en vivo",
-    "Entornos de laboratorio y sandboxes en la nube",
-  ],
-};
+import type { CheckoutInput, Course } from "@/types/checkout";
+import { PREMIUM_PLAN } from "@/data/plans";
 
 /* El checkout necesita mostrar título/instructor/precio, pero no toda la
    ficha del curso (módulos, tags, etc.) — de ahí que types/checkout.ts

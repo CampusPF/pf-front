@@ -35,6 +35,30 @@ export async function createPaymentIntent(
   }
 }
 
+/**
+ * POST /payments/:intentId/sync — le pide al back que le pregunte a STRIPE
+ * si el pago se cobró y, si es así, que active el acceso en el acto.
+ *
+ * Es el camino principal de activación al volver del checkout. El webhook
+ * sigue existiendo como respaldo (cubre al que cierra la pestaña antes de
+ * volver), pero no alcanza solo: en desarrollo Stripe no puede llegar a
+ * `localhost`, y en producción puede demorarse. Sin este llamado el usuario
+ * pagaba y el acceso nunca se activaba.
+ *
+ * Nunca tira: si falla, el polling de waitForAccessConfirmation sigue
+ * esperando al webhook como antes.
+ */
+export async function syncPayment(paymentIntentId: string): Promise<void> {
+  try {
+    await apiFetch(`/payments/${encodeURIComponent(paymentIntentId)}/sync`, {
+      method: "POST",
+      auth: true,
+    });
+  } catch (error) {
+    console.error("No se pudo sincronizar el pago:", error);
+  }
+}
+
 interface EnrollmentSummary {
   course: { id: string };
 }

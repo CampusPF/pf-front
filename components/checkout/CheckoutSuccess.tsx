@@ -4,13 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
-import { waitForAccessConfirmation } from "@/services/checkout.service";
+import {
+  syncPayment,
+  waitForAccessConfirmation,
+} from "@/services/checkout.service";
+import { formatPrice } from "@/types/checkout";
+import { PREMIUM_PLAN } from "@/data/plans";
 
 interface CheckoutSuccessProps {
   type: "course" | "subscription";
   /** UUID real del curso (viene de CheckoutPage vía successParams). Nulo si
       type es "subscription" o si algo raro pasó con la URL de retorno. */
   courseId: string | null;
+  /** `payment_intent` que Stripe agrega a la return_url. */
+  paymentIntentId: string | null;
 }
 
 type Phase = "confirming" | "confirmed" | "timeout";
@@ -19,28 +26,42 @@ type Phase = "confirming" | "confirmed" | "timeout";
    (fixed inset-0) a propósito: tapa el Navbar/Footer del layout (marketing)
    para replicar el diseño de confirmación "a foco completo".
 
-   stripe.confirmPayment() redirige acá apenas Stripe confirma el cobro,
-   pero lo que activa el curso/la suscripción es el webhook — asíncrono, en
-   paralelo. Por eso esto no asume nada por haber llegado a la URL: pollea
-   GET /course-enrollments/me o /subscriptions/me hasta confirmar el acceso
-   real (ver waitForAccessConfirmation), y recién ahí muestra el resumen. */
-export function CheckoutSuccess({ type, courseId }: CheckoutSuccessProps) {
+   stripe.confirmPayment() redirige acá apenas Stripe confirma el cobro.
+   Llegar a esta URL no prueba nada por sí solo, así que:
+
+     1. Le pide al back que sincronice el pago (POST /payments/:id/sync): el
+        back le pregunta a Stripe y, si el cobro está confirmado, activa el
+        acceso en el acto. Es lo que hace que funcione sin webhook.
+     2. Después pollea GET /course-enrollments/me o /subscriptions/me hasta
+        ver el acceso real (ver waitForAccessConfirmation). Si el paso 1
+        falló por lo que sea, esto sigue esperando al webhook como respaldo. */
+export function CheckoutSuccess({
+  type,
+  courseId,
+  paymentIntentId,
+}: CheckoutSuccessProps) {
   const [phase, setPhase] = useState<Phase>("confirming");
   const [animateIcon, setAnimateIcon] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    waitForAccessConfirmation(
-      type === "course" && courseId ? { mode: "course", courseId } : { mode: "subscription" },
-    ).then((confirmed) => {
+    (async () => {
+      if (paymentIntentId) await syncPayment(paymentIntentId);
+
+      const confirmed = await waitForAccessConfirmation(
+        type === "course" && courseId
+          ? { mode: "course", courseId }
+          : { mode: "subscription" },
+      );
+
       if (!cancelled) setPhase(confirmed ? "confirmed" : "timeout");
-    });
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [type, courseId]);
+  }, [type, courseId, paymentIntentId]);
 
   useEffect(() => {
     if (phase === "confirming") return;
@@ -143,7 +164,9 @@ export function CheckoutSuccess({ type, courseId }: CheckoutSuccessProps) {
             <div className="rounded-xl bg-white/3 px-4 py-4">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-bold text-white">
-                  {type === "course" ? "Curso comprado" : "Plan Premium · US$ 19,00 / mes"}
+                  {type === "course"
+                    ? "Curso comprado"
+                    : `${PREMIUM_PLAN.name} · ${formatPrice(PREMIUM_PLAN.priceInCents, PREMIUM_PLAN.currency)} / mes`}
                 </span>
                 <span className="shrink-0 rounded-full bg-[#6366F1] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
                   {phase === "timeout" ? "Procesando" : "Activo"}
