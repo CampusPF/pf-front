@@ -418,11 +418,11 @@ export const RegisterCard = () => {
               />
               <label htmlFor="acceptedTerms" className="text-xs text-text-muted leading-tight cursor-pointer">
                 Acepto los{' '}
-                <a href="#" className="text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer">
+                <a href="/terminos" className="text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer">
                   términos y condiciones
                 </a>{' '}
                 y la{' '}
-                <a href="#" className="text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer">
+                <a href="/privacidad" className="text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer">
                   política de privacidad
                 </a>
                 .
