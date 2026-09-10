@@ -12,11 +12,29 @@ export const MAX_PASSWORD_LENGTH = 50;
    acá evita el viaje redondo al back sólo para enterarse de esto. */
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
 
-/* Formato internacional E.164-ish: "+" seguido del código de país y el
-   número, sin espacios ni guiones. El back valida con class-validator
-   IsPhoneNumber (libphonenumber-js); esto es sólo una validación rápida en
-   el front para atajar el error más común (olvidarse el "+"). */
-const PHONE_PATTERN = /^\+[1-9]\d{7,14}$/;
+/* El teléfono se pide como número local, sin código de país ni "+": ese
+   prefijo lo agrega el form según el país elegido (ver RegisterCard). Acá
+   sólo se valida que sean dígitos y que el largo sea plausible para un
+   número real. */
+const PHONE_MIN_DIGITS = 6;
+const PHONE_MAX_DIGITS = 14;
+
+/* Rango válido de fecha de nacimiento: entre 18 y 120 años atrás. Se
+   calcula una vez al cargar el módulo. Formato "YYYY-MM-DD" para poder
+   usarlo tal cual en el min/max del <input type="date"> y comparar
+   lexicográficamente (que para ese formato equivale a comparar fechas). */
+function toYmd(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+const _now = new Date();
+export const MAX_BIRTH_DATE = toYmd(
+  new Date(_now.getFullYear() - 18, _now.getMonth(), _now.getDate()),
+);
+export const MIN_BIRTH_DATE = toYmd(
+  new Date(_now.getFullYear() - 120, _now.getMonth(), _now.getDate()),
+);
 
 export const loginSchema = yup.object({
   email: yup
@@ -35,7 +53,8 @@ export const registerSchema = yup.object({
     .trim()
     .required("Escribí tu nombre completo.")
     .min(2, "El nombre necesita al menos 2 caracteres.")
-    .max(100, "El nombre no puede superar los 100 caracteres."),
+    .max(100, "El nombre no puede superar los 100 caracteres.")
+    .matches(/^\D*$/, "El nombre no puede contener números."),
   email: yup
     .string()
     .trim()
@@ -61,27 +80,30 @@ export const registerSchema = yup.object({
   birthDate: yup
     .string()
     .trim()
-    .required("Seleccioná tu fecha de nacimiento."),
+    .required("Seleccioná tu fecha de nacimiento.")
+    .test("fecha-real", function (value) {
+      if (!value) return true; // el required() se encarga del vacío
+      if (Number.isNaN(new Date(value).getTime())) {
+        return this.createError({ message: "Ingresá una fecha válida." });
+      }
+      if (value > MAX_BIRTH_DATE) {
+        return this.createError({ message: "Tenés que ser mayor de 18 años." });
+      }
+      if (value < MIN_BIRTH_DATE) {
+        return this.createError({
+          message: "Ingresá una fecha de nacimiento real.",
+        });
+      }
+      return true;
+    }),
   phone: yup
     .string()
     .trim()
     .required("Escribí tu teléfono.")
-    .matches(
-      PHONE_PATTERN,
-      'Incluí el código de país con "+", ej. +5491122334455.',
-    ),
-  address: yup
-    .string()
-    .trim()
-    .max(200, "La dirección no puede superar los 200 caracteres."),
-  city: yup
-    .string()
-    .trim()
-    .max(100, "La ciudad no puede superar los 100 caracteres."),
-  country: yup
-    .string()
-    .trim()
-    .max(100, "El país no puede superar los 100 caracteres."),
+    .matches(/^\d*$/, "El teléfono sólo puede tener números.")
+    .min(PHONE_MIN_DIGITS, `El teléfono necesita al menos ${PHONE_MIN_DIGITS} dígitos.`)
+    .max(PHONE_MAX_DIGITS, `El teléfono no puede tener más de ${PHONE_MAX_DIGITS} dígitos.`),
+  country: yup.string().required("Elegí tu país."),
   acceptedTerms: yup
     .boolean()
     .oneOf([true], "Necesitás aceptar los términos y condiciones."),
