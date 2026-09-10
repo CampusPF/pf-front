@@ -8,6 +8,7 @@ import { AlertCircle, GraduationCap } from 'lucide-react';
 import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
 
 const initialValues: LoginFormValues = { email: '', password: '' };
@@ -150,10 +151,9 @@ export const LoginCard = () => {
                 Contraseña
               </label>
             </div>
-            <input
+            <PasswordField
               id="password"
               name="password"
-              type="password"
               autoComplete="current-password"
               value={formik.values.password}
               onChange={formik.handleChange}

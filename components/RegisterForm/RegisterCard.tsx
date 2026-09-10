@@ -8,6 +8,7 @@ import { AlertCircle, GraduationCap } from 'lucide-react';
 import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { PasswordField } from '@/components/auth/PasswordField';
 import {
   MAX_BIRTH_DATE,
   MAX_PASSWORD_LENGTH,
@@ -226,10 +227,9 @@ export const RegisterCard = () => {
             <label className="block text-xs font-medium text-text mb-1.5" htmlFor="password">
               Contraseña
             </label>
-            <input
+            <PasswordField
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               value={formik.values.password}
               onChange={formik.handleChange}
@@ -254,10 +254,9 @@ export const RegisterCard = () => {
             <label className="block text-xs font-medium text-text mb-1.5" htmlFor="confirmPassword">
               Confirmar contraseña
             </label>
-            <input
+            <PasswordField
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               autoComplete="new-password"
               value={formik.values.confirmPassword}
               onChange={formik.handleChange}
