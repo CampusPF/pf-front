@@ -16,10 +16,13 @@ import {
 import Link from 'next/link';
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import ComingSoonLink from "@/components/ui/ComingSoonLink";
 
 type Theme = "light" | "dark";
 
-const NAV_LINKS = [
+/* `comingSoon: true` muestra el link deshabilitado con el badge "Pronto"
+   (ComingSoonLink) en vez de mandar a una ruta que todavía no existe. */
+const NAV_LINKS: { label: string; href: string; comingSoon?: boolean }[] = [
   { label: "Inicio", href: "/" },
   { label: "Cursos", href: "/courses" },
   { label: "Cómo funciona", href: "/#como-funciona" },
@@ -131,12 +134,16 @@ export default function Navbar() {
         <ul className="hidden items-center gap-8 text-sm md:flex">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>
+              {link.comingSoon ? (
+                <ComingSoonLink label={link.label} className="gap-1.5" />
+              ) : (
               <Link
                 href={link.href}
                 className="text-text-secondary hover:text-text cursor-pointer transition-colors duration-150"
               >
                 {link.label}
               </Link>
+              )}
             </li>
           ))}
         </ul>
@@ -246,13 +253,17 @@ export default function Navbar() {
           <ul className="flex flex-col gap-1 text-sm">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={closeMenus}
-                  className="text-text-secondary hover:text-text block cursor-pointer rounded-lg px-2 py-2.5 transition-colors duration-150"
-                >
-                  {link.label}
-                </Link>
+                {link.comingSoon ? (
+                  <ComingSoonLink label={link.label} className="rounded-lg px-2 py-2.5" />
+                ) : (
+                  <Link
+                    href={link.href}
+                    onClick={closeMenus}
+                    className="text-text-secondary hover:text-text block cursor-pointer rounded-lg px-2 py-2.5 transition-colors duration-150"
+                  >
+                    {link.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
