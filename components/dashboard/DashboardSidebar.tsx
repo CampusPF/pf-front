@@ -10,27 +10,44 @@ import {
   LayoutDashboard,
   Moon,
   Settings,
+  ShieldCheck,
   Sparkles,
   Sun,
   Trophy,
   X,
+  type LucideIcon,
 } from "lucide-react";
 
 import { applyTheme, useTheme } from "@/lib/use-theme";
+import ComingSoonLink from "@/components/ui/ComingSoonLink";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
+import UserAvatar from "@/components/ui/UserAvatar";
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  /** La ruta todavía no existe: se muestra con <ComingSoonLink>. */
+  comingSoon?: boolean;
+}
 
 /* TODO(campus): "Mis cursos", "Tutor IA" y "Logros" todavía no existen como
-   rutas. Se van creando a medida que se arman las vistas del área logueada
-   ("Configuración" ya está). */
-const NAV_ITEMS = [
+   rutas. Cuando se armen, se les saca el `comingSoon`. */
+const NAV_ITEMS: NavItem[] = [
   { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen },
+  { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen, comingSoon: true },
   { label: "Explorar", href: "/courses", icon: Compass },
-  { label: "Tutor IA", href: "#", icon: Sparkles },
-  { label: "Logros", href: "/dashboard/logros", icon: Trophy },
+  { label: "Tutor IA", href: "/dashboard/tutor", icon: Sparkles, comingSoon: true },
+  { label: "Logros", href: "/dashboard/logros", icon: Trophy, comingSoon: true },
   { label: "Configuración", href: "/dashboard/configuracion", icon: Settings },
 ];
+
+const ROLE_LABEL = {
+  student: "Estudiante",
+  teacher: "Docente",
+  admin: "Administrador",
+} as const;
 
 function isActive(pathname: string, href: string): boolean {
   return href === "/dashboard"
@@ -50,12 +67,15 @@ export default function DashboardSidebar({
   const { user } = useAuth();
   const { data } = useDashboardData();
 
-  // Nombre e inicial: reales (GET /users/me). Plan: real (GET /subscriptions/me).
-  // El rol sigue fijo — /users/me trae role pero el tipo User del front no lo
-  // modela todavía y hoy son todos "student". TODO(back).
+  // Nombre, avatar y rol: reales (GET /users/me). Plan: real (GET /subscriptions/me).
   const name = user?.name?.trim() || "Invitado";
   const isPro = data?.plan === "PRO";
-  const roleLabel = "Estudiante";
+  const roleLabel = ROLE_LABEL[user?.role ?? "student"];
+  // El panel de administración sólo aparece para quien lo puede usar.
+  const canManage = user?.role === "admin" || user?.role === "teacher";
+  const navItems = canManage
+    ? [...NAV_ITEMS, { label: "Administración", href: "/dashboard/admin", icon: ShieldCheck }]
+    : NAV_ITEMS;
 
   return (
     <>
@@ -109,7 +129,19 @@ export default function DashboardSidebar({
         {/* Navegación */}
         <nav className="flex-1 overflow-y-auto p-3">
           <ul className="flex flex-col gap-1">
-            {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+            {navItems.map(({ label, href, icon: Icon, comingSoon }) => {
+              if (comingSoon) {
+                return (
+                  <li key={href}>
+                    <ComingSoonLink
+                      label={label}
+                      icon={Icon}
+                      className="rounded-lg px-3 py-2.5 text-sm font-medium"
+                    />
+                  </li>
+                );
+              }
+
               const active = isActive(pathname, href);
               return (
                 <li key={href}>
@@ -134,12 +166,7 @@ export default function DashboardSidebar({
 
         {/* Usuario + toggle de tema */}
         <div className="border-border flex items-center gap-3 border-t p-4">
-          <span
-            className="bg-primary-solid flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-            aria-hidden
-          >
-            {name.charAt(0).toUpperCase()}
-          </span>
+          <UserAvatar name={name} avatarUrl={user?.avatarUrl} />
           <div className="min-w-0 flex-1">
             <p className="text-text flex items-center gap-1.5 text-sm font-medium">
               <span className="truncate">{name}</span>

@@ -1,68 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
-/* TODO(campus): los filtros son sólo visuales. El estado vive acá y no toca la
-   grilla todavía; cuando exista el endpoint de catálogo esto pasa a searchParams
-   (?nivel=&categoria=…) para que el filtro sea linkeable y renderice en server. */
+import type { CategoryOption } from "@/services/courses/courses.types";
+import { LEVEL_OPTIONS } from "@/services/courses/courses.service";
 
-const LEVELS = [
-  { value: "beginner", label: "Principiante" },
-  { value: "intermediate", label: "Intermedio" },
-  { value: "advanced", label: "Avanzado" },
-];
+/* Los filtros viven en la URL (?q=&nivel=&categoria=&precio=): el filtro es
+   linkeable, sobrevive a recargar y la página los lee en el server.
 
-const CATEGORIES = [
-  { value: "web-development", label: "Desarrollo Web" },
-  { value: "ai", label: "Inteligencia Artificial" },
-  { value: "databases", label: "Bases de Datos" },
-  { value: "devops", label: "DevOps" },
-];
+   TODO(back): el filtro de duración se sacó — el listado del back no trae
+   las lecciones, así que no hay duración para filtrar. */
 
 const PRICES = [
-  { value: "all", label: "Todos" },
+  { value: "", label: "Todos" },
   { value: "free", label: "Gratis" },
   { value: "premium", label: "Premium" },
 ];
 
-const DURATIONS = [
-  { value: "all", label: "Cualquiera" },
-  { value: "short", label: "Menos de 20hs" },
-  { value: "long", label: "Más de 20hs" },
-];
-
-function toggle(list: string[], value: string) {
-  return list.includes(value)
-    ? list.filter((item) => item !== value)
-    : [...list, value];
-}
-
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-text mb-3 text-sm font-semibold">{children}</h3>
-  );
+  return <h3 className="text-text mb-3 text-sm font-semibold">{children}</h3>;
 }
 
-export default function CourseFilters() {
-  const [levels, setLevels] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [price, setPrice] = useState("all");
-  const [duration, setDuration] = useState("all");
+function readList(value: string | null): string[] {
+  return value ? value.split(",").filter(Boolean) : [];
+}
+
+export default function CourseFilters({ categories }: { categories: CategoryOption[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const levels = readList(searchParams.get("nivel"));
+  const selectedCategories = readList(searchParams.get("categoria"));
+  const price = searchParams.get("precio") ?? "";
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   // En mobile el panel arranca cerrado y se despliega con el botón "Filtrar".
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeCount =
-    levels.length +
-    categories.length +
-    (price === "all" ? 0 : 1) +
-    (duration === "all" ? 0 : 1);
+  const activeCount = levels.length + selectedCategories.length + (price ? 1 : 0);
 
-  function clearAll() {
-    setLevels([]);
-    setCategories([]);
-    setPrice("all");
-    setDuration("all");
+  function update(changes: Record<string, string | null>) {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    // Cambiar un filtro vuelve a la primera página.
+    params.delete("pagina");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
+  function toggleIn(key: string, list: string[], value: string) {
+    const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+    update({ [key]: next.join(",") || null });
   }
 
   return (
@@ -93,14 +86,32 @@ export default function CourseFilters() {
       <div
         className={`${isOpen ? "block" : "hidden"} bg-surface border-border mt-3 rounded-xl border p-5 lg:sticky lg:top-24 lg:mt-0 lg:block`}
       >
-        <p className="text-text-muted mb-5 text-sm font-semibold tracking-wider uppercase">
-          Filtrar
-        </p>
+        <form
+          role="search"
+          className="relative mb-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            update({ q: search.trim() || null });
+          }}
+        >
+          <Search
+            className="text-text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar cursos…"
+            aria-label="Buscar cursos"
+            className="bg-bg border-border text-text placeholder:text-text-muted focus:border-primary focus:ring-primary/30 w-full rounded-lg border py-2 pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
+          />
+        </form>
 
         <section className="mb-6">
           <SectionTitle>Nivel</SectionTitle>
           <div className="space-y-2.5">
-            {LEVELS.map((level) => (
+            {LEVEL_OPTIONS.map((level) => (
               <label
                 key={level.value}
                 className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-2.5 text-sm transition-colors duration-150"
@@ -108,7 +119,7 @@ export default function CourseFilters() {
                 <input
                   type="checkbox"
                   checked={levels.includes(level.value)}
-                  onChange={() => setLevels((prev) => toggle(prev, level.value))}
+                  onChange={() => toggleIn("nivel", levels, level.value)}
                   className="accent-primary size-4 cursor-pointer rounded"
                 />
                 {level.label}
@@ -117,34 +128,34 @@ export default function CourseFilters() {
           </div>
         </section>
 
-        <section className="mb-6">
-          <SectionTitle>Categoría</SectionTitle>
-          <div className="space-y-2.5">
-            {CATEGORIES.map((category) => (
-              <label
-                key={category.value}
-                className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-2.5 text-sm transition-colors duration-150"
-              >
-                <input
-                  type="checkbox"
-                  checked={categories.includes(category.value)}
-                  onChange={() =>
-                    setCategories((prev) => toggle(prev, category.value))
-                  }
-                  className="accent-primary size-4 cursor-pointer rounded"
-                />
-                {category.label}
-              </label>
-            ))}
-          </div>
-        </section>
+        {categories.length > 0 && (
+          <section className="mb-6">
+            <SectionTitle>Categoría</SectionTitle>
+            <div className="space-y-2.5">
+              {categories.map((category) => (
+                <label
+                  key={category.id}
+                  className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-2.5 text-sm transition-colors duration-150"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category.id)}
+                    onChange={() => toggleIn("categoria", selectedCategories, category.id)}
+                    className="accent-primary size-4 cursor-pointer rounded"
+                  />
+                  {category.name}
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mb-6">
           <SectionTitle>Precio</SectionTitle>
           <div className="space-y-2.5">
             {PRICES.map((option) => (
               <label
-                key={option.value}
+                key={option.value || "all"}
                 className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-2.5 text-sm transition-colors duration-150"
               >
                 <input
@@ -152,29 +163,7 @@ export default function CourseFilters() {
                   name="precio"
                   value={option.value}
                   checked={price === option.value}
-                  onChange={() => setPrice(option.value)}
-                  className="accent-primary size-4 cursor-pointer"
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section className="mb-6">
-          <SectionTitle>Duración</SectionTitle>
-          <div className="space-y-2.5">
-            {DURATIONS.map((option) => (
-              <label
-                key={option.value}
-                className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-2.5 text-sm transition-colors duration-150"
-              >
-                <input
-                  type="radio"
-                  name="duracion"
-                  value={option.value}
-                  checked={duration === option.value}
-                  onChange={() => setDuration(option.value)}
+                  onChange={() => update({ precio: option.value || null })}
                   className="accent-primary size-4 cursor-pointer"
                 />
                 {option.label}
@@ -185,7 +174,10 @@ export default function CourseFilters() {
 
         <button
           type="button"
-          onClick={clearAll}
+          onClick={() => {
+            setSearch("");
+            router.replace(pathname, { scroll: false });
+          }}
           className="text-text-secondary hover:text-text hover:bg-surface-elevated flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150"
         >
           <RotateCcw className="size-4" aria-hidden />

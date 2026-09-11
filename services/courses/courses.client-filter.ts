@@ -39,7 +39,7 @@ function matchesSearch(course: Course, search: string): boolean {
 
   const haystack = [
     course.title,
-    course.subtitle,
+    course.subtitle ?? "",
     course.description,
     course.categoryLabel,
     course.levelLabel,
@@ -57,8 +57,10 @@ export function filterCourses(
   filters: CourseFilters,
 ): Course[] {
   return courses.filter((course) => {
-    if (filters.category && course.category !== filters.category) return false;
-    if (filters.level && course.level !== filters.level) return false;
+    if (filters.categories?.length && !filters.categories.includes(course.category)) {
+      return false;
+    }
+    if (filters.levels?.length && !filters.levels.includes(course.level)) return false;
 
     // El contrato habla de `isFree`; el modelo tiene `isPremium`.
     if (filters.isFree !== undefined && course.isPremium === filters.isFree) {
