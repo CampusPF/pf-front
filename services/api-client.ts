@@ -124,8 +124,12 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { method = "GET", body, query, auth = false, signal } = options;
 
+  // Con FormData (uploads) NO se setea Content-Type: el navegador lo arma solo
+  // con el boundary del multipart. Forzarlo rompe el parseo en el back.
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (body !== undefined && !isFormData) headers["Content-Type"] = "application/json";
 
   if (auth) {
     const token = getToken();
@@ -138,7 +142,12 @@ export async function apiFetch<T>(
     response = await fetch(`${API_URL}${path}${buildQueryString(query)}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        body === undefined
+          ? undefined
+          : isFormData
+            ? (body as FormData)
+            : JSON.stringify(body),
       signal,
       // Front y back son orígenes distintos: sin esto el navegador ignora
       // cualquier Set-Cookie de la respuesta (login/register/logout) y nunca

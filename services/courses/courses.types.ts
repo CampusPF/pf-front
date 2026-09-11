@@ -1,26 +1,33 @@
-import type { CourseCategory, CourseLevel } from "@/types/course.types";
+import type { CourseLevel } from "@/types/course.types";
 
-/* El `Course` del contrato ya está definido en `@/types/course.types` y es el
-   mismo que consumen las views, así que no lo duplicamos: lo reexportamos para
-   que quien use el service tenga todo desde un solo import. */
+/* El `Course` del dominio vive en `@/types/course.types` y es el mismo que
+   consumen las views: lo reexportamos para tener todo desde un solo import. */
 export type {
   Course,
   CourseCategory,
   CourseLevel,
   Instructor,
   Lesson,
+  LessonDetail,
   Module,
 } from "@/types/course.types";
 
-/** Query params de `GET /courses` según el contrato. */
+/** Filtros del catálogo. */
 export interface CourseFilters {
-  category?: CourseCategory;
-  level?: CourseLevel;
+  /** Ids de categoría; vacío = todas. */
+  categories?: string[];
+  levels?: CourseLevel[];
   /** `true` = sólo gratis, `false` = sólo premium, `undefined` = todos. */
   isFree?: boolean;
   search?: string;
   page?: number;
   limit?: number;
+}
+
+/** Opción de categoría para filtros y selects. */
+export interface CategoryOption {
+  id: string;
+  name: string;
 }
 
 /* Defaults de paginación. Viven acá y no en la capa temporal de filtrado para

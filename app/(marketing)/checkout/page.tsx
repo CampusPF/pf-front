@@ -14,21 +14,15 @@ import { PREMIUM_PLAN } from "@/data/plans";
 
 /* El checkout necesita mostrar título/instructor/precio, pero no toda la
    ficha del curso (módulos, tags, etc.) — de ahí que types/checkout.ts
-   tenga su propio Course, más chico. El catálogo todavía no tiene una
-   imagen de portada real (sólo coverGradient, clases de Tailwind), así que
-   por ahora usamos un placeholder acá.
-
-   Defensivo con instructor/precio: el contrato dice que el back devuelve
-   el mismo shape de @/types/course.types, pero hoy `instructor` en la
-   entidad real es el User completo (no el { name, title, avatarUrl } del
-   contrato) — hasta que eso se alinee, evitamos romper el checkout por un
-   campo con otra forma. */
+   tenga su propio Course, más chico. `getCourseBySlug` ya devuelve el curso
+   adaptado (services/courses/courses.adapter.ts); si todavía no tiene
+   portada subida, se usa un placeholder. */
 function toCheckoutCourse(course: CatalogCourse): Course {
   return {
     id: course.id,
     title: course.title,
     instructor: course.instructor?.name ?? "Campus",
-    thumbnailUrl: "https://placehold.co/200x120",
+    thumbnailUrl: course.imageUrl || "https://placehold.co/200x120",
     priceInCents: course.priceInCents ?? 0,
     currency: course.currency ?? "usd",
   };

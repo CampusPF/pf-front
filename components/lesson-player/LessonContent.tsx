@@ -15,7 +15,7 @@ export default function LessonContent({
   moduleTitle: string;
   content?: Content;
 }) {
-  const hasVideo = Boolean(content?.videoId);
+  const hasVideo = Boolean(content?.videoId || content?.videoUrl);
   const hasMarkdown = Boolean(content?.markdown);
 
   return (
@@ -34,6 +34,13 @@ export default function LessonContent({
             className="h-full w-full"
             allowFullScreen
           />
+        </div>
+      )}
+
+      {/* Video que no es de YouTube (mp4, Cloudinary): reproductor nativo. */}
+      {!content?.videoId && content?.videoUrl && (
+        <div className="my-6 aspect-video overflow-hidden rounded-xl bg-black">
+          <video src={content.videoUrl} controls className="h-full w-full" />
         </div>
       )}
 

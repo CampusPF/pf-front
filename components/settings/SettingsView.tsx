@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 
+import AvatarSection from "@/components/settings/AvatarSection";
 import ProfileForm from "@/components/settings/ProfileForm";
 import PasswordSection from "@/components/settings/PasswordSection";
 import SubscriptionSection from "@/components/settings/SubscriptionSection";
@@ -72,6 +73,7 @@ export default function SettingsView() {
         </div>
       ) : (
         <div className="flex flex-col gap-6">
+          <AvatarSection profile={profile} onSaved={setProfile} />
           <ProfileForm profile={profile} onSaved={setProfile} />
           <PasswordSection profile={profile} onChanged={reloadProfile} />
           <SubscriptionSection />
