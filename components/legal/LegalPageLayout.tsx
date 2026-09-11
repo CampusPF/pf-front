@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 interface LegalPageLayoutProps {
   title: string;
@@ -9,16 +9,10 @@ interface LegalPageLayoutProps {
 
 export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayoutProps) {
   return (
+     <>
+    <Navbar />
     <div className="min-h-screen bg-bg">
       <div className="mx-auto max-w-prose px-4 py-12 md:py-16">
-        <Link
-          href="/register"
-          className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Volver al registro
-        </Link>
-
         <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-text md:text-4xl">
           {title}
         </h1>
@@ -29,5 +23,7 @@ export function LegalPageLayout({ title, lastUpdated, children }: LegalPageLayou
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }
