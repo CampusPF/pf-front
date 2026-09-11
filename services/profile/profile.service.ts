@@ -1,5 +1,6 @@
 import { apiFetch } from "@/services/api-client";
 import type { User } from "@/services/auth/auth.types";
+import { toFormData } from "@/services/uploads/uploads";
 
 /* Perfil propio del usuario logueado. Todo requiere el Bearer.
 
@@ -36,6 +37,18 @@ export function updateProfile(payload: UpdateProfilePayload) {
   return apiFetch<User>("/users/me", {
     method: "PATCH",
     body: payload,
+    auth: true,
+  });
+}
+
+/**
+ * `PATCH /users/me/avatar` — sube la foto a Cloudinary y devuelve el perfil
+ * con la `avatarUrl` nueva. Ya no se acepta una URL a mano.
+ */
+export function uploadAvatar(file: File) {
+  return apiFetch<User>("/users/me/avatar", {
+    method: "PATCH",
+    body: toFormData(file),
     auth: true,
   });
 }
