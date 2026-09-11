@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 
 const LINK_GROUPS = [
@@ -12,16 +13,16 @@ const LINK_GROUPS = [
   {
     title: "Empresa",
     links: [
-      { label: "Sobre nosotros", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Contacto", href: "#" },
+      { label: "Sobre nosotros", href: "/sobre-nosotros" },
+      { label: "Blog", href: "/blog" },
+      { label: "Contacto", href: "/contacto" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Términos", href: "#" },
-      { label: "Privacidad", href: "#" },
+      { label: "Términos", href: "/terminos" },
+      { label: "Privacidad", href: "/privacidad" },
     ],
   },
 ];
@@ -48,12 +49,21 @@ export default function Footer() {
               <ul className="mt-3 space-y-2">
                 {group.links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-text-muted hover:text-text cursor-pointer text-sm transition-colors duration-150"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith("#") ? (
+                      <a
+                        href={link.href}
+                        className="text-text-muted hover:text-text cursor-pointer text-sm transition-colors duration-150"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-text-muted hover:text-text cursor-pointer text-sm transition-colors duration-150"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
