@@ -23,6 +23,9 @@ Ordenado por lo que más destraba al front.
 | 12 | Reordenar módulos/lecciones en bloque | Hoy el orden se edita campo por campo | `SyllabusEditor` |
 | 13 | ~~El seeder (`run-seed.ts`) no pasa `ssl`~~ — resuelto en `feature/seed-ssl-supabase` | Ya conecta a Supabase/Render | — |
 | 14 | El seed carga `imageUrl` apuntando a `cdn.campuslite.com`, un dominio que **no existe** | Cada portada tira `ERR_NAME_NOT_RESOLVED` en la consola del navegador. El front ya cae al gradiente, pero el request falla igual | Conviene dejar `imageUrl` en `null` en el seed y subir las portadas desde el panel |
+| 15 | `GET /users` no lista los usuarios dados de baja y no acepta `?includeDeleted=true` | El panel de usuarios no puede ofrecer "restaurar", aunque `PATCH /users/:id/restore` exista | `UsersManager` |
+| 16 | No hay endpoint para **quitar** una imagen (dejar un curso o categoría sin portada) | Sólo se puede reemplazar por otra | Faltaría un `DELETE /courses/:id/image` |
+| 17 | El avatar y las portadas quedan en Cloudinary cuando se da de baja al usuario o al curso | Archivos huérfanos que consumen cuota | — |
 
 ## Front (`pf-front`)
 

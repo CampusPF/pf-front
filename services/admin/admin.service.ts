@@ -166,6 +166,53 @@ export function deleteLesson(id: string) {
   return apiFetch<null>(`/lessons/${encodeURIComponent(id)}`, { method: "DELETE", auth: true });
 }
 
+/* ── Usuarios ─────────────────────────────────────────────────── */
+
+export type UserRole = "student" | "teacher" | "admin";
+export type UserStatus = "active" | "inactive" | "banned" | "deleted";
+
+/** Lo que devuelve `GET /users` (vista reducida: sin datos personales). */
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  createdAt: string;
+}
+
+/**
+ * `GET /users` — sólo admin.
+ *
+ * TODO(back): el listado NO incluye a los usuarios dados de baja
+ * (`status: deleted`) y el controller no expone un `?includeDeleted=true`.
+ * Por eso, después de eliminar a alguien desaparece de la tabla y no se lo
+ * puede restaurar desde acá, aunque `PATCH /users/:id/restore` exista.
+ */
+export function listUsers() {
+  return apiFetch<AdminUser[]>("/users", { auth: true });
+}
+
+/**
+ * `PATCH /users/:id` con `{ role }` — sólo admin (el back rechaza con 403 a
+ * cualquier otro que intente cambiar un rol, incluso el propio).
+ */
+export function updateUserRole(id: string, role: UserRole) {
+  return apiFetch<AdminUser>(`/users/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: { role },
+    auth: true,
+  });
+}
+
+/** `DELETE /users/:id` — baja lógica (`status: deleted`), no borra la fila. */
+export function deleteUser(id: string) {
+  return apiFetch<AdminUser>(`/users/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    auth: true,
+  });
+}
+
 /* ── Métricas del resumen ─────────────────────────────────────── */
 
 export interface AdminStats {
