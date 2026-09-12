@@ -37,6 +37,31 @@ export function validateFile(file: File, kind: UploadKind): string | null {
   return null;
 }
 
+/**
+ * ¿El navegador puede decodificar la imagen?
+ *
+ * `validateFile` sólo mira tipo y tamaño; el back, además, los primeros
+ * bytes. Nada de eso detecta una imagen TRUNCADA: la cabecera dice "JPEG",
+ * pasa todos los filtros, y recién Cloudinary la rechaza con "Image file
+ * corrupt" — un 500 y varios segundos después. Pasa seguido con fotos que se
+ * descargaron a medias o se copiaron de un backup incompleto.
+ *
+ * `createImageBitmap` decodifica el archivo entero, así que falla con esas
+ * imágenes y se puede avisar antes de subir nada. Si el navegador no lo
+ * soporta, no bloquea: devuelve `true` y decide el back.
+ */
+export async function isDecodableImage(file: File): Promise<boolean> {
+  if (typeof createImageBitmap !== "function") return true;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    bitmap.close();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Arma el multipart con el campo "file" (y los extras que haga falta). */
 export function toFormData(file: File, extra: Record<string, string | undefined> = {}) {
   const form = new FormData();

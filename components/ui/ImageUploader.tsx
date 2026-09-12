@@ -7,6 +7,7 @@ import {
   IMAGE_ACCEPT,
   MAX_IMAGE_BYTES,
   formatBytes,
+  isDecodableImage,
   uploadErrorMessage,
   validateFile,
 } from "@/services/uploads/uploads";
@@ -72,6 +73,16 @@ export default function ImageUploader<T>({
     setIsUploading(true);
 
     try {
+      // Antes de gastar la subida: una imagen truncada pasa los filtros de
+      // tipo y tamaño, pero Cloudinary la rechaza y el usuario sólo ve un
+      // "no se pudo subir" genérico varios segundos después.
+      if (!(await isDecodableImage(file))) {
+        setError(
+          "No pudimos abrir esta imagen: puede estar dañada o incompleta. Probá con otra.",
+        );
+        return;
+      }
+
       onUploaded(await upload(file));
     } catch (caught) {
       setError(uploadErrorMessage(caught));
