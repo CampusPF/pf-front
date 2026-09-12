@@ -98,9 +98,15 @@ export default function LessonEditor({
 
   const id = (name: string) => `${baseId}-${name}`;
 
+  /* El botón de guardar vive FUERA del <form>, después del material adjunto,
+     y se asocia con el atributo `form`. No se puede simplemente mover el
+     bloque de adjuntos adentro del formulario: LessonResources tiene su
+     propio <form> para subir el PDF, y el HTML no permite anidar formularios. */
+  const formId = `${baseId}-form`;
+
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={handleSubmit} noValidate className="grid gap-4 sm:grid-cols-4">
+      <form id={formId} onSubmit={handleSubmit} noValidate className="grid gap-4 sm:grid-cols-4">
         {error && (
           <div className="sm:col-span-4">
             <ErrorBanner message={error} />
@@ -190,16 +196,22 @@ export default function LessonEditor({
           />
         </div>
 
-        <div className="flex justify-end sm:col-span-4">
-          <button type="submit" disabled={isSaving || !values.title.trim()} className={BUTTON_PRIMARY}>
-            {isSaving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-            Guardar lección
-          </button>
-        </div>
       </form>
 
       {/* Material adjunto: sólo admin puede subir/borrar (el back lo exige). */}
       <LessonResources lessonId={lessonId} manage />
+
+      <div className="border-border flex justify-end border-t pt-4">
+        <button
+          type="submit"
+          form={formId}
+          disabled={isSaving || !values.title.trim()}
+          className={BUTTON_PRIMARY}
+        >
+          {isSaving && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          Guardar lección
+        </button>
+      </div>
     </div>
   );
 }
