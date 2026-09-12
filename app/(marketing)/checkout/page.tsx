@@ -6,7 +6,12 @@ import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { CheckoutPage } from "@/components/checkout/CheckoutPage";
-import { createPaymentIntent, hasAccess } from "@/services/checkout.service";
+import { ApiError } from "@/services/api-client";
+import {
+  createPaymentIntent,
+  hasAccess,
+  type PendingAccessCheck,
+} from "@/services/checkout.service";
 import { getCourseBySlug } from "@/services/courses/courses.service";
 import type { Course as CatalogCourse } from "@/types/course.types";
 import type { CheckoutInput, Course } from "@/types/checkout";
@@ -16,13 +21,14 @@ import { PREMIUM_PLAN } from "@/data/plans";
    ficha del curso (módulos, tags, etc.) — de ahí que types/checkout.ts
    tenga su propio Course, más chico. `getCourseBySlug` ya devuelve el curso
    adaptado (services/courses/courses.adapter.ts); si todavía no tiene
-   portada subida, se usa un placeholder. */
+   portada subida, `thumbnailUrl` queda en null y el resumen muestra un
+   bloque neutro en vez de una imagen rota. */
 function toCheckoutCourse(course: CatalogCourse): Course {
   return {
     id: course.id,
     title: course.title,
     instructor: course.instructor?.name ?? "Campus",
-    thumbnailUrl: course.imageUrl || "https://placehold.co/200x120",
+    thumbnailUrl: course.imageUrl || null,
     priceInCents: course.priceInCents ?? 0,
     currency: course.currency ?? "usd",
   };
@@ -130,6 +136,46 @@ function AlreadyOwnedState({ checkout }: { checkout: CheckoutInput }) {
   );
 }
 
+/* El pago no se pudo iniciar: el back rechazó el create-intent (curso ya
+   borrado, precio en cero, Stripe sin configurar) o no hubo respuesta.
+   Muestra el motivo REAL que manda el back y ofrece reintentar — nunca
+   detalles internos como `clientSecret`, que no significan nada para quien
+   está comprando. */
+function PaymentUnavailableState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="mx-auto flex max-w-content flex-col items-center gap-3 px-4 py-20 text-center">
+      <span className="bg-danger-subtle text-danger flex size-14 items-center justify-center rounded-full">
+        <AlertCircle className="size-7" aria-hidden />
+      </span>
+      <h1 className="text-text text-xl font-semibold">
+        No pudimos iniciar el pago
+      </h1>
+      <p className="text-text-secondary max-w-sm text-sm">{message}</p>
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors duration-150"
+        >
+          Reintentar
+        </button>
+        <Link
+          href="/courses"
+          className="border-border text-text-secondary hover:bg-surface-elevated hover:text-text rounded-lg border px-4 py-2 text-sm font-medium transition-colors duration-150"
+        >
+          Volver a cursos
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 /* Punto único que crea el PaymentIntent, una vez que ya sabemos qué se
    compra (curso real resuelto, o el plan fijo). Antes de pedirlo, chequea
    si el usuario ya tiene acceso — si no, cualquiera podía volver a pagar
@@ -139,8 +185,11 @@ function PaymentCheckout({ checkout }: { checkout: CheckoutInput }) {
   const [state, setState] = useState<
     | { status: "checking" }
     | { status: "already-owned" }
-    | { status: "ready"; clientSecret: string | null }
+    | { status: "error"; message: string }
+    | { status: "ready"; clientSecret: string }
   >({ status: "checking" });
+  // Cambia al tocar "Reintentar" y vuelve a disparar el efecto.
+  const [attempt, setAttempt] = useState(0);
   // Id primitivo en vez de `checkout` (objeto nuevo en cada render del
   // padre) como dependencia: si no, cualquier re-render de arriba dispara
   // un create-intent nuevo aunque siga siendo la misma compra.
@@ -149,27 +198,47 @@ function PaymentCheckout({ checkout }: { checkout: CheckoutInput }) {
   useEffect(() => {
     let cancelled = false;
 
-    hasAccess(
-      checkout.mode === "course" ? { mode: "course", courseId: itemId } : { mode: "subscription" },
-    ).then((owned) => {
-      if (cancelled) return;
-      if (owned) {
-        setState({ status: "already-owned" });
+    (async () => {
+      const check: PendingAccessCheck =
+        checkout.mode === "course"
+          ? { mode: "course", courseId: itemId }
+          : { mode: "subscription" };
+
+      if (await hasAccess(check)) {
+        if (!cancelled) setState({ status: "already-owned" });
         return;
       }
 
-      createPaymentIntent(
-        checkout.mode === "course" ? { courseId: itemId } : { planId: itemId },
-      ).then((result) => {
-        if (!cancelled) setState({ status: "ready", clientSecret: result?.clientSecret ?? null });
-      });
-    });
+      try {
+        const { clientSecret } = await createPaymentIntent(
+          checkout.mode === "course" ? { courseId: itemId } : { planId: itemId },
+        );
+        if (!cancelled) setState({ status: "ready", clientSecret });
+      } catch (error) {
+        if (cancelled) return;
+
+        // 409 = el back ya lo tenía registrado (una compra que se activó
+        // mientras mirábamos). No es un error: es "ya es tuyo".
+        if (error instanceof ApiError && error.status === 409) {
+          setState({ status: "already-owned" });
+          return;
+        }
+
+        setState({
+          status: "error",
+          message:
+            error instanceof ApiError
+              ? error.message
+              : "No pudimos iniciar el pago. Probá de nuevo en un momento.",
+        });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- se dispara por itemId (y el modo, fijo por instancia), no por la identidad de `checkout`
-  }, [itemId]);
+  }, [itemId, attempt]);
 
   if (state.status === "checking") {
     return (
@@ -182,6 +251,18 @@ function PaymentCheckout({ checkout }: { checkout: CheckoutInput }) {
 
   if (state.status === "already-owned") {
     return <AlreadyOwnedState checkout={checkout} />;
+  }
+
+  if (state.status === "error") {
+    return (
+      <PaymentUnavailableState
+        message={state.message}
+        onRetry={() => {
+          setState({ status: "checking" });
+          setAttempt((value) => value + 1);
+        }}
+      />
+    );
   }
 
   return <CheckoutPage checkout={checkout} clientSecret={state.clientSecret} />;

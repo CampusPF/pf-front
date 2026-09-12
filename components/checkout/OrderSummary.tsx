@@ -1,6 +1,7 @@
-import { Check, Lock, RefreshCw, ShieldCheck, Tag } from "lucide-react";
+import { BookOpen, Check, Lock, RefreshCw, ShieldCheck, Tag } from "lucide-react";
 import type { CheckoutInput, Course, SubscriptionPlan } from "@/types/checkout";
 import { formatPrice } from "@/types/checkout";
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
 
 interface OrderSummaryProps {
   checkout: CheckoutInput;
@@ -40,11 +41,19 @@ function CourseSummary({ course }: { course: Course }) {
       </div>
 
       <div className="mt-4 flex gap-4">
-        <img
-          src={course.thumbnailUrl}
-          alt=""
-          className="h-16 w-24 shrink-0 rounded-lg object-cover"
-        />
+        {/* Con fallback: si el curso no tiene portada (o la URL no carga) se
+            muestra un bloque neutro en vez del ícono de imagen rota. */}
+        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-[#0F0F1A]">
+          <ImageWithFallback
+            src={course.thumbnailUrl}
+            className="h-full w-full object-cover"
+            fallback={
+              <div className="flex h-full w-full items-center justify-center">
+                <BookOpen className="size-5 text-[#6B6B7B]" aria-hidden />
+              </div>
+            }
+          />
+        </div>
         <p className="flex flex-col justify-center text-sm text-[#9A9AAB]">
           {course.instructor}
         </p>

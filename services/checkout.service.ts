@@ -13,26 +13,25 @@ export interface PaymentIntentResponse {
 }
 
 /**
- * POST /payments/create-intent — ya existe del lado del back. Igual
- * devuelve `null` (en vez de tirar) ante cualquier error: el checkout no
- * es el lugar para mostrar un error críptico de red, el placeholder de
- * CheckoutPage ("todavía no disponible") ya comunica que algo no está
- * listo — típicamente que falta NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY o que
- * el curso/plan no es válido.
+ * POST /payments/create-intent.
+ *
+ * TIRA el error (no lo traga): quién llama necesita distinguir un 409 ("ya
+ * lo tenés", que no es un error para el usuario) de un 400/500 real, y
+ * mostrar el motivo que manda el back. Antes devolvía `null` y el checkout
+ * caía en un panel que hablaba de `clientSecret` y del backend — jerga de
+ * desarrollo que un comprador no tiene por qué ver.
+ *
+ * Errores del back: 400 curso gratis o body inválido · 404 curso inexistente
+ * · 409 ya inscripto / ya suscripto · 503 Stripe sin configurar.
  */
-export async function createPaymentIntent(
+export function createPaymentIntent(
   input: CreatePaymentIntentInput,
-): Promise<PaymentIntentResponse | null> {
-  try {
-    return await apiFetch<PaymentIntentResponse>("/payments/create-intent", {
-      method: "POST",
-      body: input,
-      auth: true,
-    });
-  } catch (error) {
-    console.error("No se pudo crear el intento de pago:", error);
-    return null;
-  }
+): Promise<PaymentIntentResponse> {
+  return apiFetch<PaymentIntentResponse>("/payments/create-intent", {
+    method: "POST",
+    body: input,
+    auth: true,
+  });
 }
 
 /**

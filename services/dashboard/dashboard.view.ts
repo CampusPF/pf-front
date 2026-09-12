@@ -2,6 +2,7 @@ import {
   DASHBOARD_STATS,
   type DashboardStat,
 } from "@/data/dashboard.mock";
+import { gradientFor } from "@/services/courses/courses.adapter";
 import type {
   CourseDifficulty,
   RawEnrollment,
@@ -19,14 +20,24 @@ export interface DashboardActiveCourse {
   courseId: string;
   title: string;
   slug: string;
+  /** REAL: course.description (puede venir vacía). */
+  description: string;
   /** DERIVADO de course.difficulty — el back no manda categoría en /me. */
   categoryLabel: string;
+  /** REAL: portada de Cloudinary. `null` si el curso no tiene. */
+  imageUrl: string | null;
+  /** DERIVADO del id: gradiente de respaldo cuando no hay portada. */
+  coverGradient: string;
   /** REAL: enrollment.progressPercent. */
   progressPercent: number;
   /** REAL: contado de lesson-progress completadas de esta inscripción. */
   completedLessons: number;
   /** NO DISPONIBLE en GET /course-enrollments/me → null (no se muestra "X/Y"). */
   totalLessons: number | null;
+  /** REAL: enrollment.completedAt — lo setea el back al llegar al 100%. */
+  isCompleted: boolean;
+  /** REAL: ISO de la inscripción. */
+  enrolledAt: string;
   href: string;
 }
 
@@ -84,10 +95,15 @@ export function buildDashboardView({
     courseId: enrollment.course.id,
     title: enrollment.course.title,
     slug: enrollment.course.slug,
+    description: enrollment.course.description ?? "",
     categoryLabel: DIFFICULTY_LABEL[enrollment.course.difficulty] ?? "Curso",
+    imageUrl: enrollment.course.imageUrl ?? null,
+    coverGradient: gradientFor(enrollment.course.id),
     progressPercent: clampPercent(enrollment.progressPercent),
     completedLessons: completedByEnrollment.get(enrollment.id) ?? 0,
     totalLessons: null, // TODO(back): GET /course-enrollments/me no trae el total de lecciones.
+    isCompleted: enrollment.completedAt !== null,
+    enrolledAt: enrollment.enrolledAt,
     href: `/courses/${enrollment.course.slug}`,
   }));
 

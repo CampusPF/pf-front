@@ -21,13 +21,14 @@ Ordenado por lo que más destraba al front.
 | 10 | Campos de catálogo: `subtitle`, `tags`, rating, cantidad de alumnos, título/bio del instructor | Se ocultan para los cursos reales | `courses.adapter.ts` |
 | 11 | `GET /courses?instructorId=` | El teacher ve "sus" cursos filtrados en el cliente | `AdminCoursesList` |
 | 12 | Reordenar módulos/lecciones en bloque | Hoy el orden se edita campo por campo | `SyllabusEditor` |
-| 13 | El seeder (`run-seed.ts`) no pasa `ssl` | No conecta a bases que exigen TLS (Render) | — |
+| 13 | ~~El seeder (`run-seed.ts`) no pasa `ssl`~~ — resuelto en `feature/seed-ssl-supabase` | Ya conecta a Supabase/Render | — |
+| 14 | El seed carga `imageUrl` apuntando a `cdn.campuslite.com`, un dominio que **no existe** | Cada portada tira `ERR_NAME_NOT_RESOLVED` en la consola del navegador. El front ya cae al gradiente, pero el request falla igual | Conviene dejar `imageUrl` en `null` en el seed y subir las portadas desde el panel |
 
 ## Front (`pf-front`)
 
 | Qué | Dónde |
 |---|---|
-| Pantallas "Mis cursos", "Tutor IA" y "Logros" (hoy `comingSoon` en el sidebar) | `DashboardSidebar.tsx` |
+| Pantallas "Tutor IA" y "Logros" (hoy `comingSoon` en el sidebar) | `DashboardSidebar.tsx` |
 | Conectar el drawer del tutor IA a `/ai-tutor/conversations` (el back ya existe) | `components/ai-tutor/` |
 | Pantalla de usuarios en el admin (cambiar rol con `PATCH /users/:id`) | `components/admin/` |
 | Calcular "Lección X/Y" y próxima lección del dashboard con el temario (si el back no lo agrega) | `dashboard.view.ts` |

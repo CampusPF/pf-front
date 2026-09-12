@@ -53,13 +53,11 @@ const CHECKOUT_STRIPE_APPEARANCE: Appearance = {
 interface CheckoutPageProps {
   checkout: CheckoutInput;
   /**
-   * Viene de tu backend: POST /payments/create-intent devuelve el
-   * client_secret del PaymentIntent (compra de curso) o del primer pago
-   * de la suscripción, creado con { courseId } o { planId } — nunca un
-   * array de ítems. Mientras no lo tengan conectado, dejalo en `null` y
-   * se muestra un estado de espera en vez de romper.
+   * client_secret del PaymentIntent (POST /payments/create-intent). Si no se
+   * pudo crear, esta pantalla no se renderiza: el checkout muestra antes un
+   * estado de error con el motivo (ver app/(marketing)/checkout/page.tsx).
    */
-  clientSecret: string | null;
+  clientSecret: string;
   /**
    * Opcional: a dónde redirigir tras un pago exitoso. Si no se pasa,
    * PaymentForm arma una por defecto con window.location.origin.
@@ -134,20 +132,16 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
           </div>
 
           <div className="checkout-rise checkout-rise-2">
-            {clientSecret ? (
-              <Elements
-                stripe={getStripe()}
-                options={{ clientSecret, appearance: CHECKOUT_STRIPE_APPEARANCE }}
-              >
-                <PaymentForm
+            <Elements
+              stripe={getStripe()}
+              options={{ clientSecret, appearance: CHECKOUT_STRIPE_APPEARANCE }}
+            >
+              <PaymentForm
                 returnUrl={returnUrl}
                 successParams={successParams}
                 submitLabel={submitLabel}
               />
-              </Elements>
-            ) : (
-              <PaymentPanelPlaceholder />
-            )}
+            </Elements>
           </div>
         </div>
 
@@ -155,31 +149,6 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
 
         <div className="pb-20" />
       </div>
-    </div>
-  );
-}
-
-/**
- * Se muestra mientras no exista un clientSecret real (por ejemplo, el
- * backend todavía no expone el endpoint que crea el PaymentIntent).
- * Mantiene el marco visual de "Datos de pago" sin el formulario de Stripe.
- */
-function PaymentPanelPlaceholder() {
-  return (
-    <div className="relative overflow-hidden rounded-2xl bg-[#1C1C2E] p-6">
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-[#6366F1] to-[#22C55E]"
-      />
-      <h2 className="text-base font-semibold text-white">Datos de pago</h2>
-      <p className="mt-3 text-sm text-[#9A9AAB]">
-        El formulario de tarjeta va a aparecer acá una vez que el backend
-        entregue el{" "}
-        <code className="rounded bg-white/5 px-1.5 py-0.5 text-[#A5B4FC]">
-          clientSecret
-        </code>{" "}
-        del pago.
-      </p>
     </div>
   );
 }
