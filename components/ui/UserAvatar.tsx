@@ -1,4 +1,8 @@
-/* Avatar del usuario: la foto de Cloudinary si tiene, la inicial si no. */
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
+
+/* Avatar del usuario: la foto de Cloudinary si tiene, la inicial si no.
+   Si la URL existe pero no carga (imagen borrada, sin internet), también
+   cae a la inicial en vez de dejar el ícono de imagen rota. */
 
 export default function UserAvatar({
   name,
@@ -9,24 +13,19 @@ export default function UserAvatar({
   avatarUrl?: string | null;
   className?: string;
 }) {
-  if (avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={avatarUrl}
-        alt=""
-        aria-hidden
-        className={`shrink-0 rounded-full object-cover ${className}`}
-      />
-    );
-  }
-
   return (
-    <span
-      aria-hidden
-      className={`bg-primary-solid flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${className}`}
-    >
-      {name.charAt(0).toUpperCase() || "?"}
-    </span>
+    <ImageWithFallback
+      src={avatarUrl}
+      alt=""
+      className={`shrink-0 rounded-full object-cover ${className}`}
+      fallback={
+        <span
+          aria-hidden
+          className={`bg-primary-solid flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${className}`}
+        >
+          {name.charAt(0).toUpperCase() || "?"}
+        </span>
+      }
+    />
   );
 }

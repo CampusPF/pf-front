@@ -32,11 +32,11 @@ interface NavItem {
   comingSoon?: boolean;
 }
 
-/* TODO(campus): "Mis cursos", "Tutor IA" y "Logros" todavía no existen como
-   rutas. Cuando se armen, se les saca el `comingSoon`. */
+/* TODO(campus): "Tutor IA" y "Logros" todavía no existen como rutas. Cuando
+   se armen, se les saca el `comingSoon`. */
 const NAV_ITEMS: NavItem[] = [
   { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen, comingSoon: true },
+  { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen },
   { label: "Explorar", href: "/courses", icon: Compass },
   { label: "Tutor IA", href: "/dashboard/tutor", icon: Sparkles, comingSoon: true },
   { label: "Logros", href: "/dashboard/logros", icon: Trophy, comingSoon: true },

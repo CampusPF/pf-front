@@ -9,7 +9,8 @@ export interface Course {
   id: string;
   title: string;
   instructor: string;
-  thumbnailUrl: string;
+  /** Portada del curso. `null` si todavía no tiene: se muestra un placeholder. */
+  thumbnailUrl: string | null;
   /** Precio en la unidad menor de la moneda (ej: 1999 = $19.99) para evitar errores de floats */
   priceInCents: number;
   currency: string; // "usd", "ars", etc.

@@ -9,6 +9,7 @@ const TABS = [
   { label: "Resumen", href: "/dashboard/admin", adminOnly: true },
   { label: "Cursos", href: "/dashboard/admin/cursos", adminOnly: false },
   { label: "Categorías", href: "/dashboard/admin/categorias", adminOnly: true },
+  { label: "Usuarios", href: "/dashboard/admin/usuarios", adminOnly: true },
 ];
 
 export default function AdminNav() {
