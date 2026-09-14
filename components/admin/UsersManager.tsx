@@ -158,7 +158,9 @@ export default function UsersManager() {
       )}
 
       {visible.length > 0 && (
-        <div className="border-border overflow-x-auto rounded-xl border">
+        <div className="border-border relative overflow-x-auto rounded-xl border">
+          {/* relative: ver AdminCoursesList — sin esto los sr-only escapan del
+              scroll horizontal y ensanchan la página en mobile. */}
           <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-surface-elevated text-text-muted text-left text-xs uppercase">
               <tr>

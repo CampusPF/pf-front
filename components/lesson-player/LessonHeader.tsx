@@ -1,17 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, Settings } from "lucide-react";
 
+import AskTutorButton from "@/components/ai-tutor/AskTutorButton";
 import ProgressBar from "@/components/course/ProgressBar";
 
-/* TODO(campus): el player todavía vive bajo el root layout, que renderiza el
-   Navbar fijo (h-16, z-50). Este header también es fixed h-16 z-50 y va después
-   en el DOM, así que lo tapa por completo. La solución de fondo son route groups
-   —(marketing) con Navbar/Footer y (app) sin ellos— pero eso implica mover
-   app/page.tsx y app/layout.tsx, que quedaron fuera de este scaffolding.
-   El Footer del root layout sigue apareciendo abajo de todo por el mismo motivo.
-
-   Se queda como server component a propósito: no usa hooks ni handlers, y la
-   regla del proyecto es 'use client' sólo cuando hace falta. */
+/* Única barra del reproductor: el route group (player) no tiene Navbar ni
+   Footer. El botón del tutor vive acá (AskTutorButton) en vez del botón
+   flotante, que en el reproductor tapaba la navegación de la lección. */
 export default function LessonHeader({
   courseSlug,
   courseTitle,
@@ -47,6 +42,7 @@ export default function LessonHeader({
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
+          <AskTutorButton />
           <div className="hidden w-40 items-center gap-2 sm:flex">
             <ProgressBar
               value={progressPercent}

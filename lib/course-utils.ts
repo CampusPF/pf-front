@@ -65,6 +65,27 @@ export function getModuleMinutes(courseModule: Module): number {
   return courseModule.lessons.reduce((acc, l) => acc + l.durationMinutes, 0);
 }
 
+/**
+ * Título del módulo sin el "Módulo N:" que a veces ya trae el dato. La UI
+ * antepone "Módulo {order} ·", así que "Módulo 1: Fundamentos" se veía como
+ * "Módulo 1 · Módulo 1: Fundamentos". Si el título es sólo ese prefijo, se
+ * deja tal cual para no mostrarlo vacío.
+ */
+export function displayModuleTitle(title: string): string {
+  const stripped = title.replace(/^\s*m[oó]dulo\s*\d+\s*[:.\-–—·]?\s*/i, "");
+  return stripped || title;
+}
+
+/** "1 lección" · "3 lecciones". */
+export function lessonsLabel(count: number): string {
+  return `${count} ${count === 1 ? "lección" : "lecciones"}`;
+}
+
+/** "1 módulo" · "3 módulos". */
+export function modulesLabel(count: number): string {
+  return `${count} ${count === 1 ? "módulo" : "módulos"}`;
+}
+
 export function getLessonsCount(course: Course): number {
   return course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
 }

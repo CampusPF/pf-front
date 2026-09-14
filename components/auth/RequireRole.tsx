@@ -33,7 +33,11 @@ export default function RequireRole({
         <ShieldAlert className="text-text-muted size-10" aria-hidden />
         <h1 className="text-text text-xl font-semibold">No tenés acceso a esta sección</h1>
         <p className="text-text-secondary text-sm">
-          Es sólo para el equipo de Campus.
+          {/* Nombra el rol que hace falta: "el equipo de Campus" confundía a
+              un docente, que también es del equipo. */}
+          {roles.includes("teacher")
+            ? "Es sólo para docentes y administradores."
+            : "Es sólo para administradores."}
         </p>
         <Link href="/dashboard" className="text-primary text-sm font-medium hover:underline">
           Volver al inicio

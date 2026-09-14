@@ -19,7 +19,7 @@ export const PREMIUM_PLAN: SubscriptionPlan = {
   currency: "usd",
   interval: "month",
   features: [
-    "+120 cursos de frontend, backend e IA",
+    "Todos los cursos del catálogo, incluidos los pagos",
     "Certificados oficiales verificables en GitHub / LinkedIn",
     "Comunidad exclusiva en Discord y code reviews en vivo",
     "Entornos de laboratorio y sandboxes en la nube",

@@ -86,7 +86,10 @@ export default function AdminCoursesList() {
       )}
 
       {courses && courses.length > 0 && (
-        <div className="border-border overflow-x-auto rounded-xl border">
+        <div className="border-border relative overflow-x-auto rounded-xl border">
+          {/* relative: los sr-only de la tabla son position:absolute. Sin un
+              ancestro posicionado DENTRO del scroll, escapan del overflow-x-auto
+              y ensanchan toda la página en mobile (el viewport crecía a ~670px). */}
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-surface-elevated text-text-muted text-left text-xs uppercase">
               <tr>

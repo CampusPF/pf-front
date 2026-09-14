@@ -14,7 +14,7 @@ Ordenado por lo que más destraba al front.
 | 3 | Permisos de **teacher** en cursos, módulos y lecciones (`@Roles(ADMIN, TEACHER)` + chequear que `course.instructor.id === user.id`) | El panel ya deja entrar al teacher, pero sus escrituras vuelven 403 | Nada: ya funciona |
 | 4 | Filtros y paginación en `GET /courses` (`category`, `level`, `isFree`, `search`, `page`, `limit`) | Se filtra en el cliente con el listado completo | `CLIENT_SIDE_FILTERING = false` en `courses.service.ts` y borrar `courses.client-filter.ts` |
 | 5 | Sacar `imageUrl` de `CreateCourseDto` / `CreateCategoryDto` | Las imágenes se suben por archivo; el front ya no lo manda | Nada |
-| 6 | Inscripción automática para suscriptores Premium | Ven las lecciones pagas pero sin inscripción no registran progreso | Nada |
+| 6 | ~~Inscripción para suscriptores Premium~~ — resuelto: `POST /course-enrollments` acepta cursos pagos con suscripción activa y el front inscribe al entrar a una lección | — | — |
 | 7 | `GET /course-enrollments/me` con total de lecciones por curso y próxima lección | El dashboard oculta "Lección X/Y" y el módulo/próxima lección de "Continuá" | `dashboard.view.ts` |
 | 8 | Endpoints de racha, logros y horas estudiadas | Son mock en el dashboard | `dashboard.view.ts` (`buildStats`) |
 | 9 | Métricas agregadas de admin (ingresos, ventas por curso) | El resumen cuenta listados completos; no escala | `getAdminStats` |
@@ -42,7 +42,7 @@ Ordenado por lo que más destraba al front.
 
 | Dato | Dónde |
 |---|---|
-| Racha, logros y horas estudiadas | `data/dashboard.mock.ts` (tarjetas + topbar) |
+| Racha, logros y horas estudiadas, y el punto de notificación de la campana (hardcodeados de momento, decisión del 14/09/2026; se muestran aunque el usuario tenga 0 cursos) | `data/dashboard.mock.ts` (tarjetas + topbar), `TODO(campus)` en `dashboard.view.ts` |
 | Texto de la bio del instructor | `CourseTabs.tsx` |
 | Todo el catálogo, **sólo** si `NEXT_PUBLIC_COURSES_SOURCE=mock` | `data/*.mock.ts` |
 

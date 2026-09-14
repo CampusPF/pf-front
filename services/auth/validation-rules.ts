@@ -71,11 +71,25 @@ export function phoneRule() {
     .string()
     .trim()
     .matches(/^\d*$/, "El teléfono sólo puede tener números.")
-    .min(PHONE_MIN_DIGITS, `El teléfono necesita al menos ${PHONE_MIN_DIGITS} dígitos.`)
-    .max(
-      PHONE_MAX_DIGITS,
-      `El teléfono no puede tener más de ${PHONE_MAX_DIGITS} dígitos.`,
-    );
+    /* Largo con un test y no con .min()/.max(): esos fallan ante "" (sólo
+       ignoran undefined), y el `.default("")` del schema de perfil convierte
+       el vacío que manda Formik de nuevo en "". Con .min() un teléfono vacío
+       bloqueaba guardar el perfil aunque el campo sea opcional. El vacío lo
+       resuelve el required() de cada schema, igual que en birthDateRule. */
+    .test("largo-telefono", function (value) {
+      if (!value) return true;
+      if (value.length < PHONE_MIN_DIGITS) {
+        return this.createError({
+          message: `El teléfono necesita al menos ${PHONE_MIN_DIGITS} dígitos.`,
+        });
+      }
+      if (value.length > PHONE_MAX_DIGITS) {
+        return this.createError({
+          message: `El teléfono no puede tener más de ${PHONE_MAX_DIGITS} dígitos.`,
+        });
+      }
+      return true;
+    });
 }
 
 /** Fecha real, mayor de 18 y no absurdamente antigua. */

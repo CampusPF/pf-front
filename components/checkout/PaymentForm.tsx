@@ -85,22 +85,22 @@ export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFo
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative overflow-hidden rounded-2xl bg-[#1C1C2E] p-6"
+      className="relative overflow-hidden rounded-2xl bg-surface border border-border p-6"
     >
       <span
         aria-hidden
-        className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-[#6366F1] to-[#22C55E]"
+        className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-primary to-success"
       />
 
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-white">Datos de pago</h2>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-[#22C55E]">
+          <h2 className="text-base font-semibold text-text">Datos de pago</h2>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-success">
             <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
             Transacción cifrada y protegida por protocolos bancarios
           </p>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[11px] text-[#9A9AAB]">
+        <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
           <CreditCard className="size-3.5" aria-hidden />
           Stripe
         </span>
@@ -113,25 +113,25 @@ export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFo
       </div>
 
       {errorMessage && (
-        <div className="mt-4 rounded-xl bg-[#F87171]/10 px-4 py-3 text-sm text-[#F87171]">
+        <div className="mt-4 rounded-xl bg-danger-subtle px-4 py-3 text-sm text-danger">
           {errorMessage}
         </div>
       )}
 
-      <label className="mt-5 flex items-start gap-2.5 text-xs leading-relaxed text-[#9A9AAB]">
+      <label className="mt-5 flex items-start gap-2.5 text-xs leading-relaxed text-text-secondary">
         <input
           type="checkbox"
           checked={acceptedTerms}
           onChange={(event) => setAcceptedTerms(event.target.checked)}
-          className="mt-0.5 size-4 shrink-0 rounded border-white/20 bg-[#0F0F1A] accent-[#6366F1]"
+          className="mt-0.5 size-4 shrink-0 rounded border-border bg-surface-elevated accent-primary"
         />
         <span>
           Acepto los{" "}
-          <a href="#" className="text-[#A5B4FC] hover:underline">
+          <a href="#" className="text-primary hover:underline">
             Términos del Servicio
           </a>
           , la{" "}
-          <a href="#" className="text-[#A5B4FC] hover:underline">
+          <a href="#" className="text-primary hover:underline">
             Política de Privacidad
           </a>{" "}
           y autorizo la facturación recurrente mensual cancelable en cualquier
@@ -142,7 +142,7 @@ export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFo
       <button
         type="submit"
         disabled={!stripe || !elements || isSubmitting || !acceptedTerms}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#6366F1] px-4 py-3.5 text-sm font-semibold text-white transition duration-150 hover:scale-[1.01] hover:bg-[#4F46E5] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-solid px-4 py-3.5 text-sm font-semibold text-white transition duration-150 hover:scale-[1.01] hover:bg-primary-solid-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
       >
         {isSubmitting ? (
           <>
@@ -158,7 +158,7 @@ export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFo
         )}
       </button>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] uppercase tracking-wider text-[#6B6B7B]">
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] uppercase tracking-wider text-text-muted">
         {PAYMENT_BRANDS.map((brand) => (
           <span key={brand} className="flex items-center gap-2">
             {brand}
@@ -171,7 +171,7 @@ export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFo
         </span>
       </div>
 
-      <p className="mt-3 text-center text-[11px] text-[#8A8A99]">
+      <p className="mt-3 text-center text-[11px] text-text-muted">
         Tus datos viajan encriptados de extremo a extremo y nunca almacenamos el
         código de seguridad.
       </p>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertCircle, ArrowLeft, BarChart3, Clock, FolderCode, Star, Users } from "lucide-react";
 
-import { formatStudents } from "@/lib/course-utils";
+import { formatStudents, modulesLabel } from "@/lib/course-utils";
 import { getCourseBySlug } from "@/services/courses/courses.service";
 import type { Course } from "@/types/course.types";
 import CourseCover from "@/components/course/CourseCover";
@@ -110,7 +110,7 @@ export default async function CoursePage(props: PageProps<"/courses/[slug]">) {
                 )}
                 <span className="flex items-center gap-1.5">
                   <BarChart3 className="size-4" aria-hidden />
-                  {course.modules.length} módulos
+                  {modulesLabel(course.modules.length)}
                 </span>
                 {course.durationHours !== null && (
                   <span className="flex items-center gap-1.5">

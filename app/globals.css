@@ -210,6 +210,25 @@
   --shadow-xl:   0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 }
 
+/* ── color-scheme ────────────────────────────────────────────────────
+   Los controles nativos (checkbox, radio, select, date, scrollbars) no leen
+   los tokens: sin esto seguían en claro con el tema oscuro (checkboxes
+   blancos en los filtros del catálogo). Mismas tres reglas que los tokens:
+   claro por defecto, sistema oscuro salvo toggle claro, toggle oscuro. */
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 /* ── Base ────────────────────────────────────────────────────────── */
 body {
   background-color: var(--color-bg);

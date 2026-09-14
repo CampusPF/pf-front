@@ -7,7 +7,13 @@ import { Lock, Package } from "lucide-react";
 import ModuleAccordion from "@/components/course/ModuleAccordion";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useCourseLearning } from "@/components/course/CourseLearningProvider";
-import { formatDuration, getLessonsCount } from "@/lib/course-utils";
+import {
+  displayModuleTitle,
+  formatDuration,
+  getLessonsCount,
+  lessonsLabel,
+  modulesLabel,
+} from "@/lib/course-utils";
 
 type Tab = "content" | "description" | "instructor";
 
@@ -18,7 +24,7 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 export default function CourseTabs() {
-  const { course, progress, isAuthenticated, isLoading } = useCourseLearning();
+  const { course, progress, access, isAuthenticated, isLoading } = useCourseLearning();
   const [tab, setTab] = useState<Tab>("content");
   const modules = [...course.modules].sort((a, b) => a.order - b.order);
   const lessonsPending = course.syllabusStatus === "modules-only";
@@ -54,8 +60,8 @@ export default function CourseTabs() {
       {tab === "content" && (
         <section id="panel-content" role="tabpanel" className="mt-6">
           <p className="text-text-muted mb-4 text-sm">
-            {modules.length} módulos
-            {!lessonsPending && ` · ${getLessonsCount(course)} lecciones`}
+            {modulesLabel(modules.length)}
+            {!lessonsPending && ` · ${lessonsLabel(getLessonsCount(course))}`}
             {course.durationHours !== null && ` · ${formatDuration(course.durationHours * 60)} de contenido`}
           </p>
 
@@ -93,7 +99,7 @@ export default function CourseTabs() {
                       <Package className="size-5" aria-hidden />
                     </span>
                     <span className="text-text font-semibold">
-                      Módulo {courseModule.order} · {courseModule.title}
+                      Módulo {courseModule.order} · {displayModuleTitle(courseModule.title)}
                     </span>
                   </div>
                 ))
@@ -104,6 +110,7 @@ export default function CourseTabs() {
                     courseSlug={course.slug}
                     defaultOpen={index === 0}
                     completedLessonIds={progress?.completedLessonIds ?? []}
+                    access={access}
                   />
                 ))}
           </div>

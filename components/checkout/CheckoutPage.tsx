@@ -3,52 +3,24 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  MessagesSquare,
-  Monitor,
-  Smile,
+  Lock,
+  RotateCcw,
+  Sparkles,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
-import type { Appearance } from "@stripe/stripe-js";
 
 import { getStripe } from "@/lib/stripe";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { PaymentForm } from "@/components/checkout/PaymentForm";
+import { useStripeAppearance } from "@/hooks/useStripeAppearance";
 import { formatPrice, type CheckoutInput } from "@/types/checkout";
 
-/* Este checkout se ve siempre oscuro (no sigue el toggle light/dark del
-   sitio) a propósito — es la superficie de diseño que pidió el mockup. Por
-   eso Stripe Elements va con un Appearance dark fijo en vez de
-   useStripeAppearance(), que lee los tokens del tema activo. */
-const CHECKOUT_STRIPE_APPEARANCE: Appearance = {
-  theme: "night",
-  variables: {
-    colorPrimary: "#6366F1",
-    colorBackground: "#0F0F1A",
-    colorText: "#E7E7EA",
-    colorTextSecondary: "#9A9AAB",
-    colorDanger: "#F87171",
-    fontFamily:
-      "var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif",
-    borderRadius: "10px",
-    spacingUnit: "4px",
-  },
-  rules: {
-    ".Input": {
-      border: "1px solid #2A2A3C",
-      backgroundColor: "#0F0F1A",
-      boxShadow: "none",
-    },
-    ".Input:focus": {
-      border: "1px solid #6366F1",
-      boxShadow: "0 0 0 1px #6366F1",
-    },
-    ".Label": { color: "#9A9AAB", fontSize: "14px" },
-    ".Tab": { border: "1px solid #2A2A3C", backgroundColor: "#15151F" },
-    ".Tab--selected": { borderColor: "#6366F1", backgroundColor: "#1C1C2E" },
-  },
-};
+/* El checkout sigue el tema light/dark como el resto del sitio: todo con
+   tokens (bg-bg, bg-surface, text-text…) y Stripe Elements con
+   useStripeAppearance(), que resuelve esos mismos tokens y se actualiza
+   cuando cambia data-theme (el iframe de Stripe no ve las variables CSS). */
 
 interface CheckoutPageProps {
   checkout: CheckoutInput;
@@ -67,6 +39,7 @@ interface CheckoutPageProps {
 
 export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPageProps) {
   const isCourse = checkout.mode === "course";
+  const stripeAppearance = useStripeAppearance();
 
   const title = isCourse ? "Finalizar inscripción" : "Suscribirme";
   const subtitle = isCourse
@@ -91,21 +64,21 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
   const backLabel = isCourse ? "Volver a cursos" : "Volver a planes";
 
   return (
-    <div className="min-h-screen bg-[#0B0B14] text-[#E7E7EA]">
+    <div className="min-h-screen bg-bg text-text">
       <div className="mx-auto max-w-6xl px-6 pt-24">
         {/* Barra de confianza */}
-        <div className="flex items-center justify-between gap-4 border-b border-white/5 py-3 text-xs">
+        <div className="flex items-center justify-between gap-4 border-b border-border py-3 text-xs">
           <Link
             href={backHref}
-            className="flex items-center gap-1.5 text-[#8A8A99] transition-colors duration-150 hover:text-white"
+            className="flex items-center gap-1.5 text-text-muted transition-colors duration-150 hover:text-text"
           >
             <ArrowLeft className="size-3.5" aria-hidden />
             {backLabel}
           </Link>
-          <span className="flex items-center gap-2 font-medium text-[#22C55E]">
+          <span className="flex items-center gap-2 font-medium text-success">
             <span className="relative flex size-2" aria-hidden>
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#22C55E] opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-[#22C55E]" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-success" />
             </span>
             Pasarela encriptada TLS 1.3
           </span>
@@ -113,14 +86,14 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
 
         {/* Header */}
         <header className="pt-10">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#6366F1]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#A5B4FC]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-subtle px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary">
             <Zap className="size-3.5" aria-hidden />
             Checkout seguro
           </span>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-text sm:text-5xl">
             {title}
           </h1>
-          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-[#9A9AAB]">
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-text-secondary">
             {subtitle}
           </p>
         </header>
@@ -134,7 +107,7 @@ export function CheckoutPage({ checkout, clientSecret, returnUrl }: CheckoutPage
           <div className="checkout-rise checkout-rise-2">
             <Elements
               stripe={getStripe()}
-              options={{ clientSecret, appearance: CHECKOUT_STRIPE_APPEARANCE }}
+              options={{ clientSecret, appearance: stripeAppearance }}
             >
               <PaymentForm
                 returnUrl={returnUrl}
@@ -159,20 +132,23 @@ const CHECKOUT_STATS: {
   label: string;
   color: string;
 }[] = [
-  { icon: Monitor, value: "+45.000", label: "Estudiantes activos", color: "text-[#22C55E]" },
-  { icon: Smile, value: "98.4%", label: "Índice de satisfacción", color: "text-[#22C55E]" },
-  { icon: Zap, value: "120+", label: "Proyectos de producción", color: "text-[#F97316]" },
-  { icon: MessagesSquare, value: "< 15 min", label: "Respuesta a dudas de código", color: "text-[#6366F1]" },
+  /* Antes: "+45.000 estudiantes", "98.4% de satisfacción", "120+ proyectos",
+     "< 15 min de respuesta": cifras inventadas justo donde se pide la tarjeta.
+     Ahora, sólo lo que el checkout garantiza de verdad. */
+  { icon: Lock, value: "Pago seguro", label: "Procesado por Stripe", color: "text-success" },
+  { icon: Zap, value: "Inmediato", label: "Acceso apenas se confirma el pago", color: "text-accent" },
+  { icon: RotateCcw, value: "14 días", label: "Garantía de reembolso", color: "text-success" },
+  { icon: Sparkles, value: "Tutor IA", label: "En cada lección", color: "text-primary" },
 ];
 
 function CheckoutStats() {
   return (
-    <div className="mt-12 grid grid-cols-2 gap-4 border-t border-white/5 pt-8 lg:grid-cols-4">
+    <div className="mt-12 grid grid-cols-2 gap-4 border-t border-border pt-8 lg:grid-cols-4">
       {CHECKOUT_STATS.map(({ icon: Icon, value, label, color }) => (
-        <div key={label} className="rounded-xl bg-white/2 px-5 py-5 text-center">
+        <div key={label} className="rounded-xl bg-surface border border-border px-5 py-5 text-center">
           <Icon className={`mx-auto size-5 ${color}`} aria-hidden />
-          <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-          <p className="mt-1 text-xs text-[#8A8A99]">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-text">{value}</p>
+          <p className="mt-1 text-xs text-text-muted">{label}</p>
         </div>
       ))}
     </div>

@@ -9,16 +9,20 @@ import { toFormData } from "@/services/uploads/uploads";
    que puede tocar `role`. Mandar `email` o `role` acá devuelve 400 — el
    ValidationPipe del back corre con `forbidNonWhitelisted`. */
 
-/** Campos que `PATCH /users/me` acepta. El email NO se puede cambiar. */
+/**
+ * Campos que `PATCH /users/me` acepta. El email NO se puede cambiar.
+ * `null` borra el dato (las columnas son nullable y `@IsOptional` lo deja
+ * pasar); omitir el campo lo deja como está.
+ */
 export interface UpdateProfilePayload {
   name?: string;
   /** ISO "YYYY-MM-DD". */
-  birthDate?: string;
+  birthDate?: string | null;
   /** Formato internacional, con "+" y código de país. */
-  phone?: string;
-  address?: string;
-  city?: string;
-  country?: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
 }
 
 export interface SetPasswordPayload {

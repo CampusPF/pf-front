@@ -1,4 +1,5 @@
 import { apiFetch } from "@/services/api-client";
+import { withCatalogRevalidation } from "@/services/admin/catalog-revalidation";
 import { toCourse, toLesson } from "@/services/courses/courses.adapter";
 import type {
   RawCategory,
@@ -44,28 +45,39 @@ export function getAdminCourse(id: string) {
   return apiFetch<RawCourse>(`/courses/${encodeURIComponent(id)}`, { auth: true });
 }
 
+/* Las escrituras de cursos y categorías pasan por withCatalogRevalidation:
+   si no, la landing (revalidate = 300) mostraba el dato viejo hasta 5 min. */
+
 export function createCourse(payload: CoursePayload) {
-  return apiFetch<RawCourse>("/courses", { method: "POST", body: payload, auth: true });
+  return withCatalogRevalidation(
+    apiFetch<RawCourse>("/courses", { method: "POST", body: payload, auth: true }),
+  );
 }
 
 export function updateCourse(id: string, payload: Partial<CoursePayload>) {
-  return apiFetch<RawCourse>(`/courses/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: payload,
-    auth: true,
-  });
+  return withCatalogRevalidation(
+    apiFetch<RawCourse>(`/courses/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: payload,
+      auth: true,
+    }),
+  );
 }
 
 /** Baja lógica (`isActive = false`). */
 export function deactivateCourse(id: string) {
-  return apiFetch<null>(`/courses/${encodeURIComponent(id)}`, { method: "DELETE", auth: true });
+  return withCatalogRevalidation(
+    apiFetch<null>(`/courses/${encodeURIComponent(id)}`, { method: "DELETE", auth: true }),
+  );
 }
 
 export function restoreCourse(id: string) {
-  return apiFetch<RawCourse>(`/courses/${encodeURIComponent(id)}/restore`, {
-    method: "PATCH",
-    auth: true,
-  });
+  return withCatalogRevalidation(
+    apiFetch<RawCourse>(`/courses/${encodeURIComponent(id)}/restore`, {
+      method: "PATCH",
+      auth: true,
+    }),
+  );
 }
 
 /* ── Categorías ───────────────────────────────────────────────── */
@@ -83,26 +95,34 @@ export function listAdminCategories() {
 }
 
 export function createCategory(payload: CategoryPayload) {
-  return apiFetch<RawCategory>("/categories", { method: "POST", body: payload, auth: true });
+  return withCatalogRevalidation(
+    apiFetch<RawCategory>("/categories", { method: "POST", body: payload, auth: true }),
+  );
 }
 
 export function updateCategory(id: string, payload: Partial<CategoryPayload>) {
-  return apiFetch<RawCategory>(`/categories/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: payload,
-    auth: true,
-  });
+  return withCatalogRevalidation(
+    apiFetch<RawCategory>(`/categories/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: payload,
+      auth: true,
+    }),
+  );
 }
 
 export function deactivateCategory(id: string) {
-  return apiFetch<null>(`/categories/${encodeURIComponent(id)}`, { method: "DELETE", auth: true });
+  return withCatalogRevalidation(
+    apiFetch<null>(`/categories/${encodeURIComponent(id)}`, { method: "DELETE", auth: true }),
+  );
 }
 
 export function restoreCategory(id: string) {
-  return apiFetch<RawCategory>(`/categories/${encodeURIComponent(id)}/restore`, {
-    method: "PATCH",
-    auth: true,
-  });
+  return withCatalogRevalidation(
+    apiFetch<RawCategory>(`/categories/${encodeURIComponent(id)}/restore`, {
+      method: "PATCH",
+      auth: true,
+    }),
+  );
 }
 
 /* ── Temario: módulos y lecciones ─────────────────────────────── */

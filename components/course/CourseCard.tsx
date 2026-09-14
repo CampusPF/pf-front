@@ -18,7 +18,7 @@ export default function CourseCard({ course }: { course: Course }) {
       <CourseCover course={course} className="h-40">
         <div className="flex h-full flex-col justify-between p-4">
           <div className="flex items-start justify-between gap-2">
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
+            <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
               {course.categoryLabel}
             </span>
             {course.isPremium && (

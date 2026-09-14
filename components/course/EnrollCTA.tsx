@@ -7,12 +7,16 @@ import { AlertCircle, Check, Loader2 } from "lucide-react";
 
 import { ApiError } from "@/services/api-client";
 import { formatPrice } from "@/types/checkout";
+import { PREMIUM_PLAN } from "@/data/plans";
 import {
   getFirstLesson,
   getLessonsCount,
   getResumeLesson,
   lessonHref,
+  lessonsLabel,
+  modulesLabel,
 } from "@/lib/course-utils";
+import { hasFullCourseAccess } from "@/lib/lesson-access";
 import { enrollInFreeCourse } from "@/services/progress/course-progress.service";
 import { useCourseLearning } from "@/components/course/CourseLearningProvider";
 
@@ -23,28 +27,34 @@ const SECONDARY =
 
 /* Estados del CTA:
    - inscripto → "Continuar" (o "Empezar" si no completó nada);
-   - curso gratis sin inscripción → "Inscribirme gratis" (POST /course-enrollments);
-   - curso pago sin inscripción → comprar suelto o suscribirse;
+   - curso gratis sin inscripción → "Inscribirme gratis" (POST /course-enrollments).
+     Entrar a una lección gratis también inscribe (ver LessonPlayer);
+   - curso pago con acceso sin inscripción (admin/teacher o Premium) → "Ir al
+     curso", nunca "Comprar" algo a lo que ya tiene acceso;
+   - curso pago sin acceso → comprar suelto o suscribirse;
    - sin sesión → las acciones mandan a /login y vuelven acá.
 
-   TODO(back): un suscriptor Premium puede VER las lecciones pagas (el back le
-   da acceso), pero sin inscripción no puede registrar progreso. Falta que el
-   back cree la inscripción al entrar con suscripción activa. */
+   Un suscriptor Premium queda inscripto al entrar a la primera lección (el
+   back acepta POST /course-enrollments con suscripción activa), así que
+   después ve "Continuar" y su progreso como cualquier inscripto. */
 export default function EnrollCTA() {
   const router = useRouter();
-  const { course, progress, isLoading, isAuthenticated, refreshProgress } = useCourseLearning();
+  const { course, progress, access, isLoading, isAuthenticated, refreshProgress } =
+    useCourseLearning();
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const firstLesson = getFirstLesson(course);
   const isEnrolled = Boolean(progress?.enrollmentId);
+  const hasAccessWithoutPaying =
+    course.isPremium && !isEnrolled && hasFullCourseAccess(access);
   const resumeLesson = getResumeLesson(course, progress?.completedLessonIds ?? []);
   const hasProgress = (progress?.completedLessonIds.length ?? 0) > 0;
   const loginHref = `/login?redirect=${encodeURIComponent(`/courses/${course.slug}`)}`;
 
   const lessonsCount = getLessonsCount(course);
   const perks = [
-    lessonsCount > 0 ? `${lessonsCount} lecciones` : `${course.modules.length} módulos`,
+    lessonsCount > 0 ? lessonsLabel(lessonsCount) : modulesLabel(course.modules.length),
     "Tutor IA 24/7",
     "Material descargable",
     "Acceso de por vida",
@@ -81,6 +91,10 @@ export default function EnrollCTA() {
       <p className="text-text-muted mt-1 text-sm">
         {isEnrolled
           ? `Ya estás inscripto · ${progress?.progressPercent ?? 0}% completado`
+          : hasAccessWithoutPaying
+            ? access.isStaff
+              ? "Tenés acceso completo por tu rol."
+              : "Incluido en tu suscripción Premium."
           : course.isPremium
             ? "Pago único, acceso de por vida a este curso."
             : "Sin tarjeta de crédito. Empezás ahora."}
@@ -97,6 +111,14 @@ export default function EnrollCTA() {
           ) : (
             <p className="text-text-muted text-sm">Este curso todavía no tiene lecciones.</p>
           )
+        ) : hasAccessWithoutPaying ? (
+          firstLesson ? (
+            <Link href={lessonHref(course.slug, firstLesson.id)} className={PRIMARY}>
+              Ir al curso
+            </Link>
+          ) : (
+            <p className="text-text-muted text-sm">Este curso todavía no tiene lecciones.</p>
+          )
         ) : course.isPremium ? (
           <>
             <Link
@@ -106,7 +128,8 @@ export default function EnrollCTA() {
               Comprar este curso
             </Link>
             <Link href="/checkout?plan=premium" className={SECONDARY}>
-              O suscribirme a Premium ($19/mes, todos los cursos)
+              {/* Del plan, no escrito a mano: decía "$19/mes" y se cobra $9,99. */}
+              O suscribirme a Premium ({formatPrice(PREMIUM_PLAN.priceInCents, PREMIUM_PLAN.currency)}/mes, todos los cursos)
             </Link>
           </>
         ) : (

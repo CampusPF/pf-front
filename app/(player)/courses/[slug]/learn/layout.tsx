@@ -2,11 +2,11 @@ import { Suspense } from "react";
 
 import RequireAuth from "@/components/auth/RequireAuth";
 
-/* TODO(campus): este layout no puede ocultar el Navbar/Footer del root layout —
-   Next compone layouts, no los reemplaza. Para un player realmente inmersivo hay
-   que partir las rutas en route groups: (marketing) con Navbar/Footer y (app)
-   sin ellos. Mientras tanto, LessonHeader es `fixed h-16 z-50` y va después en el
-   DOM que el Navbar, así que lo tapa; el Footer sigue quedando abajo de todo.
+/* El reproductor vive en su propio route group, (player), y no en
+   (marketing): así no hereda el Navbar ni el Footer del sitio y queda a
+   pantalla completa, con LessonHeader como única barra. Antes colgaba de
+   (marketing) y el Footer aparecía abajo de cada lección. La URL no cambia
+   (/courses/[slug]/learn/[lessonId]): los route groups no suman segmentos.
 
    El reproductor de lecciones requiere sesión (el catálogo y el detalle de
    curso quedan públicos a propósito). Ver components/auth/RequireAuth.tsx. */

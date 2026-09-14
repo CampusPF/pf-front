@@ -13,7 +13,7 @@ import {
   ErrorBanner,
 } from "@/components/admin/admin-ui";
 import { inputClass } from "@/components/ui/input-styles";
-import { formatDuration } from "@/lib/course-utils";
+import { displayModuleTitle, formatDuration } from "@/lib/course-utils";
 import { adminErrorMessage } from "@/services/admin/admin-errors";
 import {
   createLesson,
@@ -275,7 +275,7 @@ function ModuleRow({
             >
               <Package className="text-primary size-5 shrink-0" aria-hidden />
               <span className="text-text truncate font-semibold">
-                Módulo {courseModule.order} · {courseModule.title}
+                Módulo {courseModule.order} · {displayModuleTitle(courseModule.title)}
               </span>
               <ChevronDown
                 className={`text-text-muted ml-auto size-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}

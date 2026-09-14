@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormik } from 'formik';
-import { AlertCircle, GraduationCap } from 'lucide-react';
+import { AlertCircle, GraduationCap, Loader2 } from 'lucide-react';
 
+import { wakeBackend } from '@/lib/backend-wakeup';
 import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { rememberRedirect, safeRedirect } from '@/services/auth/post-login-redirect';
 import { googleOAuthError } from '@/services/auth/oauth-error';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordField } from '@/components/auth/PasswordField';
@@ -17,6 +20,8 @@ const initialValues: LoginFormValues = { email: '', password: '' };
 
 export const LoginCard = () => {
   const router = useRouter();
+  // Mientras se espera a que el back despierte antes de ir a Google.
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const searchParams = useSearchParams();
   const { login } = useAuth();
 
@@ -28,8 +33,7 @@ export const LoginCard = () => {
 
       try {
         await login(values);
-        const redirect = searchParams.get('redirect');
-        router.push(redirect?.startsWith('/') ? redirect : '/courses');
+        router.push(safeRedirect(searchParams.get('redirect')));
       } catch (caught) {
         setStatus(
           caught instanceof ApiError
@@ -73,12 +77,22 @@ export const LoginCard = () => {
         {/* Botón de Google */}
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             // Es un 302 del back hacia Google: tiene que ser navegación, no fetch.
+            // Antes se espera a que el back esté despierto: si Render lo tiene
+            // dormido, navegar directo mostraba la pantalla de espera de Render.
+            rememberRedirect(searchParams.get('redirect'));
+            setIsConnectingGoogle(true);
+            await wakeBackend();
             window.location.href = getGoogleAuthUrl('login');
           }}
-          className="w-full py-3 px-4 bg-surface hover:bg-surface-elevated border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer"
+          disabled={isConnectingGoogle}
+          aria-busy={isConnectingGoogle}
+          className="w-full py-3 px-4 bg-surface hover:bg-surface-elevated border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer disabled:cursor-wait disabled:opacity-80"
         >
+          {isConnectingGoogle ? (
+            <Loader2 className="w-4 h-4 animate-spin text-primary" aria-hidden />
+          ) : (
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
@@ -97,7 +111,8 @@ export const LoginCard = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          Continuar con Google
+          )}
+          {isConnectingGoogle ? 'Conectando con el servidor…' : 'Continuar con Google'}
         </button>
 
         {/* Separador */}
