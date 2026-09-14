@@ -7,6 +7,7 @@ import { AlertCircle, GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { rememberRedirect, safeRedirect } from '@/services/auth/post-login-redirect';
 import { googleOAuthError } from '@/services/auth/oauth-error';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordField } from '@/components/auth/PasswordField';
@@ -28,8 +29,7 @@ export const LoginCard = () => {
 
       try {
         await login(values);
-        const redirect = searchParams.get('redirect');
-        router.push(redirect?.startsWith('/') ? redirect : '/courses');
+        router.push(safeRedirect(searchParams.get('redirect')));
       } catch (caught) {
         setStatus(
           caught instanceof ApiError
@@ -75,6 +75,7 @@ export const LoginCard = () => {
           type="button"
           onClick={() => {
             // Es un 302 del back hacia Google: tiene que ser navegación, no fetch.
+            rememberRedirect(searchParams.get('redirect'));
             window.location.href = getGoogleAuthUrl('login');
           }}
           className="w-full py-3 px-4 bg-surface hover:bg-surface-elevated border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer"

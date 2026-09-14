@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { consumeRememberedRedirect } from "@/services/auth/post-login-redirect";
 
 /* Página puente del login con Google.
 
@@ -41,7 +42,9 @@ function CallbackInner() {
       .then(() => {
         // replace (no push): saca /auth/callback?token=... del historial, así
         // el token no queda en la URL ni al apretar "atrás".
-        router.replace("/dashboard");
+        // Mismo destino que el formulario: el ?redirect= guardado antes de
+        // ir a Google, o el dashboard.
+        router.replace(consumeRememberedRedirect());
       })
       .catch((err: unknown) => {
         const message =

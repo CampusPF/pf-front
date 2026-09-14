@@ -7,6 +7,7 @@ import { AlertCircle, GraduationCap } from 'lucide-react';
 
 import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
+import { rememberRedirect, safeRedirect } from '@/services/auth/post-login-redirect';
 import { googleOAuthError } from '@/services/auth/oauth-error';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordField } from '@/components/auth/PasswordField';
@@ -61,8 +62,7 @@ export const RegisterCard = () => {
           phone: `+${country?.dialCode ?? ''}${values.phone.trim()}`,
           country: country?.name,
         });
-        const redirect = searchParams.get('redirect');
-        router.push(redirect?.startsWith('/') ? redirect : '/courses');
+        router.push(safeRedirect(searchParams.get('redirect')));
       } catch (caught) {
         setStatus(
           caught instanceof ApiError
@@ -129,6 +129,7 @@ export const RegisterCard = () => {
         <button
           type="button"
           onClick={() => {
+            rememberRedirect(searchParams.get('redirect'));
             window.location.href = getGoogleAuthUrl('register');
           }}
           className="w-full py-3 px-4 bg-surface hover:bg-surface-elevated border border-border rounded-xl font-medium text-sm text-text flex items-center justify-center gap-3 transition-colors cursor-pointer"

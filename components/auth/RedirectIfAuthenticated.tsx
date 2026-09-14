@@ -4,8 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-
-const DEFAULT_AUTHENTICATED_ROUTE = "/courses";
+import { safeRedirect } from "@/services/auth/post-login-redirect";
 
 /* Lo inverso de RequireAuth: para /login y /register. Si ya hay sesión no
    tiene sentido mostrar el formulario — igual que en RequireAuth, esto
@@ -24,8 +23,7 @@ export default function RedirectIfAuthenticated({
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
 
-    const redirect = searchParams.get("redirect");
-    router.replace(redirect?.startsWith("/") ? redirect : DEFAULT_AUTHENTICATED_ROUTE);
+    router.replace(safeRedirect(searchParams.get("redirect")));
   }, [isLoading, isAuthenticated, searchParams, router]);
 
   if (isLoading || isAuthenticated) return null;
