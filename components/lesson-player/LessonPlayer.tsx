@@ -353,11 +353,9 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
                 ) : (
                   <p className="text-text-muted text-sm">
                     {enrollError ??
-                      (!state.course.isPremium
-                        ? "Inscribite al curso para guardar tu progreso."
-                        : access.isStaff
-                          ? "Tenés acceso completo por tu rol. En los cursos pagos el progreso sólo se guarda si estás inscripto."
-                          : "Es una lección de muestra. Comprá el curso o suscribite a Premium para guardar tu progreso.")}
+                      (state.course.isPremium && !access.isStaff && !access.hasActiveSubscription
+                        ? "Es una lección de muestra. Comprá el curso o suscribite a Premium para guardar tu progreso."
+                        : "Inscribite al curso para guardar tu progreso.")}
                   </p>
                 )}
                 {saveError && (

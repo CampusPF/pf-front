@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Check, Sparkles } from "lucide-react";
 
+import PremiumCta from "@/components/landing/PremiumCta";
+
 /* Sin cantidades inventadas: "10 cursos", "20 consultas diarias" y "+50
    cursos" no existían (el catálogo real es chico y el tutor no tiene cupo). */
 const FREE_FEATURES = [
@@ -96,12 +98,7 @@ export default function PricingSection() {
           </ul>
 
           <div className="mt-auto pt-8">
-            <Link
-              href="/checkout?plan=premium"
-              className="bg-primary-solid hover:bg-primary-solid-hover block w-full cursor-pointer rounded-lg py-3 text-center font-medium text-white transition-colors duration-150"
-            >
-              Hacerme Premium
-            </Link>
+            <PremiumCta />
           </div>
         </div>
       </div>

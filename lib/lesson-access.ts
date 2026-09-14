@@ -52,11 +52,12 @@ export function canOpenLesson(lesson: Pick<Lesson, "isFree">, access: LessonAcce
 
 /**
  * Entrar a una lección inscribe al usuario si la inscripción no cuesta nada:
- * curso gratis, o cualquier curso con Premium activo. Así el curso queda
+ * curso gratis, o cualquier curso con Premium activo o siendo admin/teacher
+ * (el back acepta POST /course-enrollments en esos casos). Así el curso queda
  * "empezado" en el detalle y en el dashboard, y puede registrar progreso.
- * Un curso pago sin Premium no: la inscripción la crea el pago (402).
+ * Un curso pago para un alumno sin Premium no: la inscripción la crea el pago.
  */
 export function shouldAutoEnroll(course: Pick<Course, "isPremium">, access: LessonAccessContext): boolean {
   if (access.isEnrolled) return false;
-  return !course.isPremium || access.hasActiveSubscription;
+  return !course.isPremium || access.hasActiveSubscription || access.isStaff;
 }
