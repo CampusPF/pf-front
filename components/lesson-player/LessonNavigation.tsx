@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, ShoppingCart } from "lucide-react";
 
 import type { Lesson } from "@/types/course.types";
 import { lessonHref } from "@/lib/course-utils";
@@ -16,6 +16,7 @@ export default function LessonNavigation({
   next,
   onAdvance,
   isAdvancing = false,
+  buyHref = null,
 }: {
   courseSlug: string;
   previous: Lesson | null;
@@ -23,6 +24,12 @@ export default function LessonNavigation({
   /** Completa la lección actual y navega (ver LessonPlayer). */
   onAdvance: (href: string) => void;
   isAdvancing?: boolean;
+  /**
+   * Si la siguiente lección está bloqueada en un curso pago (se está viendo
+   * la de muestra), a dónde comprar. En vez de "Siguiente" hacia un candado,
+   * el botón ofrece directamente la compra.
+   */
+  buyHref?: string | null;
 }) {
   // Sin siguiente es la última lección del curso (no del módulo).
   const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
@@ -44,8 +51,14 @@ export default function LessonNavigation({
         </button>
       )}
 
-      {/* Link real (se puede abrir en otra pestaña), pero el click normal pasa
-          por onAdvance para completar la lección antes de salir. */}
+      {buyHref ? (
+        <Link href={buyHref} className={`${PRIMARY} cursor-pointer`}>
+          <ShoppingCart className="size-5" aria-hidden />
+          Comprar curso
+        </Link>
+      ) : (
+      /* Link real (se puede abrir en otra pestaña), pero el click normal pasa
+         por onAdvance para completar la lección antes de salir. */
       <Link
         href={forwardHref}
         onClick={(event) => {
@@ -63,6 +76,7 @@ export default function LessonNavigation({
           <ChevronRight className="size-5" aria-hidden />
         )}
       </Link>
+      )}
     </div>
   );
 }

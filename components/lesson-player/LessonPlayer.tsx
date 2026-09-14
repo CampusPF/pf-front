@@ -376,6 +376,11 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
               next={next}
               onAdvance={advance}
               isAdvancing={isAdvancing}
+              buyHref={
+                state.course.isPremium && next && !canOpenLesson(next, access)
+                  ? `/checkout?courseId=${state.course.slug}`
+                  : null
+              }
             />
           </div>
         </main>

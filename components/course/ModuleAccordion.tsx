@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Package } from "lucide-react";
 
 import type { Module } from "@/types/course.types";
-import { formatDuration, getModuleMinutes } from "@/lib/course-utils";
+import { displayModuleTitle, formatDuration, getModuleMinutes, lessonsLabel } from "@/lib/course-utils";
 import { canOpenLesson, hasFullCourseAccess, type LessonAccessContext } from "@/lib/lesson-access";
 import LessonItem from "@/components/course/LessonItem";
 
@@ -40,11 +40,13 @@ export default function ModuleAccordion({
           </span>
           <span className="min-w-0">
             <span className="text-text block font-semibold">
-              Módulo {courseModule.order} · {courseModule.title}
+              Módulo {courseModule.order} · {displayModuleTitle(courseModule.title)}
             </span>
             <span className="text-text-muted mt-0.5 block text-sm">
-              {lessons.length} lecciones ·{" "}
-              {formatDuration(getModuleMinutes(courseModule))}
+              {lessonsLabel(lessons.length)}
+              {/* Sin duración cargada (0 min) no se muestra. */}
+              {getModuleMinutes(courseModule) > 0 &&
+                ` · ${formatDuration(getModuleMinutes(courseModule))}`}
             </span>
           </span>
         </span>

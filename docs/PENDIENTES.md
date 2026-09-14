@@ -42,7 +42,7 @@ Ordenado por lo que más destraba al front.
 
 | Dato | Dónde |
 |---|---|
-| Racha, logros y horas estudiadas | `data/dashboard.mock.ts` (tarjetas + topbar) |
+| Racha, logros y horas estudiadas, y el punto de notificación de la campana (hardcodeados de momento, decisión del 14/09/2026; se muestran aunque el usuario tenga 0 cursos) | `data/dashboard.mock.ts` (tarjetas + topbar), `TODO(campus)` en `dashboard.view.ts` |
 | Texto de la bio del instructor | `CourseTabs.tsx` |
 | Todo el catálogo, **sólo** si `NEXT_PUBLIC_COURSES_SOURCE=mock` | `data/*.mock.ts` |
 

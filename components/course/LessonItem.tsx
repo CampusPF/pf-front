@@ -45,9 +45,12 @@ export default function LessonItem({
         >
           {lesson.title}
         </span>
-        <span className="text-text-muted block text-xs">
-          {formatDuration(lesson.durationMinutes)}
-        </span>
+        {/* Sin duración cargada (0 min) no se muestra. */}
+        {lesson.durationMinutes > 0 && (
+          <span className="text-text-muted block text-xs">
+            {formatDuration(lesson.durationMinutes)}
+          </span>
+        )}
       </span>
 
       {showFreeBadge && lesson.isFree && (

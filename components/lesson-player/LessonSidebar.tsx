@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CircleCheck, ListVideo, Lock, Play, X } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
-import { formatDuration, lessonHref } from "@/lib/course-utils";
+import { displayModuleTitle, formatDuration, lessonHref } from "@/lib/course-utils";
 import { canOpenLesson, type LessonAccessContext } from "@/lib/lesson-access";
 
 function SidebarContent({
@@ -32,7 +32,7 @@ function SidebarContent({
       {modules.map((courseModule) => (
         <div key={courseModule.id}>
           <p className="text-text-muted px-4 pt-5 pb-2 text-xs font-semibold tracking-wider uppercase">
-            Módulo {courseModule.order} · {courseModule.title}
+            Módulo {courseModule.order} · {displayModuleTitle(courseModule.title)}
           </p>
 
           {[...courseModule.lessons]
@@ -59,9 +59,11 @@ function SidebarContent({
 
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2">{lesson.title}</span>
-                    <span className="text-text-muted mt-0.5 block text-xs">
-                      {formatDuration(lesson.durationMinutes)}
-                    </span>
+                    {lesson.durationMinutes > 0 && (
+                      <span className="text-text-muted mt-0.5 block text-xs">
+                        {formatDuration(lesson.durationMinutes)}
+                      </span>
+                    )}
                   </span>
                 </>
               );

@@ -1,7 +1,7 @@
 import { FileText } from "lucide-react";
 
 import type { Lesson, LessonContent as Content } from "@/types/course.types";
-import { formatDuration } from "@/lib/course-utils";
+import { displayModuleTitle, formatDuration } from "@/lib/course-utils";
 import MarkdownRenderer from "@/components/lesson-player/MarkdownRenderer";
 
 export default function LessonContent({
@@ -22,8 +22,8 @@ export default function LessonContent({
     <article>
       <h1 className="text-text mb-2 text-3xl font-bold">{lesson.title}</h1>
       <p className="text-text-muted text-sm">
-        {formatDuration(lesson.durationMinutes)} · Módulo {moduleOrder}:{" "}
-        {moduleTitle}
+        {lesson.durationMinutes > 0 && `${formatDuration(lesson.durationMinutes)} · `}
+        Módulo {moduleOrder}: {displayModuleTitle(moduleTitle)}
       </p>
 
       {content?.videoId && (

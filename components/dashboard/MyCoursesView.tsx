@@ -128,7 +128,7 @@ function MyCourseCard({ course }: { course: DashboardActiveCourse }) {
     >
       <CourseCover course={course} className="h-32">
         <div className="flex h-full items-start justify-between gap-2 p-4">
-          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
+          <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
             {course.categoryLabel}
           </span>
           {course.isCompleted && (

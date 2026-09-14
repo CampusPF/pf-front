@@ -13,6 +13,8 @@ import {
   getLessonsCount,
   getResumeLesson,
   lessonHref,
+  lessonsLabel,
+  modulesLabel,
 } from "@/lib/course-utils";
 import { hasFullCourseAccess } from "@/lib/lesson-access";
 import { enrollInFreeCourse } from "@/services/progress/course-progress.service";
@@ -52,7 +54,7 @@ export default function EnrollCTA() {
 
   const lessonsCount = getLessonsCount(course);
   const perks = [
-    lessonsCount > 0 ? `${lessonsCount} lecciones` : `${course.modules.length} módulos`,
+    lessonsCount > 0 ? lessonsLabel(lessonsCount) : modulesLabel(course.modules.length),
     "Tutor IA 24/7",
     "Material descargable",
     "Acceso de por vida",
