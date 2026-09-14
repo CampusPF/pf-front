@@ -82,12 +82,14 @@ export default async function CoursesPage(props: PageProps<"/courses">) {
           </p>
         </header>
 
-        <div className="mt-6 flex flex-col gap-8 lg:flex-row">
+        {/* `group`: CourseFilters marca data-pending mientras espera el render
+            con los filtros nuevos, y la grilla se atenúa hasta que llega. */}
+        <div className="group mt-6 flex flex-col gap-8 lg:flex-row">
           <Suspense>
             <CourseFilters categories={categories} />
           </Suspense>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 transition-opacity duration-150 group-has-data-pending:opacity-50">
             {error || !result ? (
               <p
                 role="alert"

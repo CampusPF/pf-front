@@ -33,23 +33,24 @@ function normalizeText(value: string): string {
     .trim();
 }
 
+function words(value: string): string[] {
+  return normalizeText(value).split(/[^a-z0-9ñ]+/).filter(Boolean);
+}
+
+/* Busca sólo en el título, por inicio de palabra: cada palabra buscada tiene
+   que ser el comienzo de alguna palabra del título ("react ty" → "React
+   Avanzado con TypeScript", "ux" → "Fundamentos de UX/UI").
+
+   Antes miraba también descripción, instructor, categoría, nivel y tags, y
+   por substring: con dos letras ("da") matcheaba medio catálogo por palabras
+   como "fundamentos" o por la descripción, y los resultados no tenían nada
+   que ver con lo buscado. Categoría y nivel ya tienen su propio filtro. */
 function matchesSearch(course: Course, search: string): boolean {
-  const needle = normalizeText(search);
-  if (!needle) return true;
+  const terms = words(search);
+  if (terms.length === 0) return true;
 
-  const haystack = [
-    course.title,
-    course.subtitle ?? "",
-    course.description,
-    course.categoryLabel,
-    course.levelLabel,
-    course.instructor.name,
-    ...course.tags,
-  ]
-    .map(normalizeText)
-    .join(" ");
-
-  return haystack.includes(needle);
+  const titleWords = words(course.title);
+  return terms.every((term) => titleWords.some((word) => word.startsWith(term)));
 }
 
 export function filterCourses(

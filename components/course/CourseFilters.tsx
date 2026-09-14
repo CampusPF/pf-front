@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Loader2, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 import type { CategoryOption } from "@/services/courses/courses.types";
 import { LEVEL_OPTIONS } from "@/services/courses/courses.service";
 
 /* Los filtros viven en la URL (?q=&nivel=&categoria=&precio=): el filtro es
    linkeable, sobrevive a recargar y la página los lee en el server.
+
+   Cada cambio es una navegación que espera un render nuevo del server (que a
+   su vez le pide el catálogo al back). En local es instantáneo; en
+   producción, con el back lejos o frío, tarda — y sin feedback parecía que
+   el buscador "no hacía nada". Por eso, como indica la guía de Next
+   (docs/01-app/02-guides/interactive-apps.md):
+   - la navegación corre dentro de una transición, con `useOptimistic` para
+     que los checkboxes cambien en el acto y `data-pending` en el <aside>
+     para que la grilla se atenúe (group-has-data-pending en la página);
+   - la búsqueda se aplica sola mientras se escribe (debounce), sin depender
+     de Enter, y la X nativa del input también la limpia.
 
    TODO(back): el filtro de duración se sacó — el listado del back no trae
    las lecciones, así que no hay duración para filtrar. */
@@ -32,17 +43,39 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const levels = readList(searchParams.get("nivel"));
-  const selectedCategories = readList(searchParams.get("categoria"));
-  const price = searchParams.get("precio") ?? "";
+  const [optimisticQuery, setOptimisticQuery] = useOptimistic(searchParams.toString());
+  const [isPending, setIsPending] = useOptimistic(false);
+  const current = new URLSearchParams(optimisticQuery);
+
+  const levels = readList(current.get("nivel"));
+  const selectedCategories = readList(current.get("categoria"));
+  const price = current.get("precio") ?? "";
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
+
+  // El debounce llama a update() desde un timeout: la query se lee de un ref
+  // para no pisar un filtro que se tocó mientras el timer corría.
+  const queryRef = useRef(optimisticQuery);
+  useEffect(() => {
+    queryRef.current = optimisticQuery;
+  }, [optimisticQuery]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
   // En mobile el panel arranca cerrado y se despliega con el botón "Filtrar".
   const [isOpen, setIsOpen] = useState(false);
 
   const activeCount = levels.length + selectedCategories.length + (price ? 1 : 0);
 
+  function navigate(query: string) {
+    queryRef.current = query;
+    startTransition(() => {
+      setOptimisticQuery(query);
+      setIsPending(true);
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    });
+  }
+
   function update(changes: Record<string, string | null>) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(queryRef.current);
     for (const [key, value] of Object.entries(changes)) {
       if (value) params.set(key, value);
       else params.delete(key);
@@ -50,7 +83,21 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
     // Cambiar un filtro vuelve a la primera página.
     params.delete("pagina");
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    if (query !== queryRef.current) navigate(query);
+  }
+
+  function applySearch(value: string) {
+    clearTimeout(searchTimer.current);
+    update({ q: value.trim() || null });
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    clearTimeout(searchTimer.current);
+    // Vaciar (a mano o con la X nativa) aplica en el acto; escribir espera
+    // una pausa para no navegar con cada tecla.
+    if (!value.trim()) applySearch(value);
+    else searchTimer.current = setTimeout(() => applySearch(value), 400);
   }
 
   function toggleIn(key: string, list: string[], value: string) {
@@ -59,7 +106,11 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
   }
 
   return (
-    <aside className="shrink-0 lg:w-60">
+    <aside
+      className="shrink-0 lg:w-60"
+      data-pending={isPending ? "" : undefined}
+      aria-busy={isPending}
+    >
       {/* ── Trigger mobile ──────────────────────────────────────── */}
       <button
         type="button"
@@ -91,17 +142,24 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
           className="relative mb-6"
           onSubmit={(event) => {
             event.preventDefault();
-            update({ q: search.trim() || null });
+            applySearch(search);
           }}
         >
-          <Search
-            className="text-text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-            aria-hidden
-          />
+          {isPending ? (
+            <Loader2
+              className="text-text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 animate-spin"
+              aria-hidden
+            />
+          ) : (
+            <Search
+              className="text-text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+              aria-hidden
+            />
+          )}
           <input
             type="search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Buscar cursos…"
             aria-label="Buscar cursos"
             className="bg-bg border-border text-text placeholder:text-text-muted focus:border-primary focus:ring-primary/30 w-full rounded-lg border py-2 pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
@@ -175,8 +233,9 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
         <button
           type="button"
           onClick={() => {
+            clearTimeout(searchTimer.current);
             setSearch("");
-            router.replace(pathname, { scroll: false });
+            navigate("");
           }}
           className="text-text-secondary hover:text-text hover:bg-surface-elevated flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150"
         >
