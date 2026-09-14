@@ -5,6 +5,7 @@ import { ChevronDown, Package } from "lucide-react";
 
 import type { Module } from "@/types/course.types";
 import { formatDuration, getModuleMinutes } from "@/lib/course-utils";
+import { canOpenLesson, hasFullCourseAccess, type LessonAccessContext } from "@/lib/lesson-access";
 import LessonItem from "@/components/course/LessonItem";
 
 export default function ModuleAccordion({
@@ -12,11 +13,13 @@ export default function ModuleAccordion({
   courseSlug,
   defaultOpen = false,
   completedLessonIds = [],
+  access,
 }: {
   courseModule: Module;
   courseSlug: string;
   defaultOpen?: boolean;
   completedLessonIds?: readonly string[];
+  access: LessonAccessContext;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const lessons = [...courseModule.lessons].sort((a, b) => a.order - b.order);
@@ -60,6 +63,8 @@ export default function ModuleAccordion({
               lesson={lesson}
               courseSlug={courseSlug}
               isCompleted={completedLessonIds.includes(lesson.id)}
+              isLocked={!canOpenLesson(lesson, access)}
+              showFreeBadge={!hasFullCourseAccess(access)}
             />
           ))}
         </div>

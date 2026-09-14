@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { buildLessonAccess, type LessonAccessContext } from "@/lib/lesson-access";
 import { loadSyllabus } from "@/services/courses/courses.service";
 import {
   getCourseProgress,
@@ -21,6 +22,8 @@ import type { Course } from "@/types/course.types";
 interface CourseLearningValue {
   course: Course;
   progress: CourseProgress | null;
+  /** Qué lecciones puede abrir (rol, inscripción, suscripción). */
+  access: LessonAccessContext;
   /** true mientras se resuelve la sesión / el progreso. */
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -42,7 +45,7 @@ export default function CourseLearningProvider({
   initialCourse: Course;
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [course, setCourse] = useState(initialCourse);
   const [progress, setProgress] = useState<CourseProgress | null>(null);
   const [progressLoading, setProgressLoading] = useState(true);
@@ -85,6 +88,7 @@ export default function CourseLearningProvider({
       value={{
         course,
         progress,
+        access: buildLessonAccess(user, progress),
         isLoading: authLoading || progressLoading,
         isAuthenticated,
         refreshProgress,

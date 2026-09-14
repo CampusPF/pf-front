@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 import type { Lesson } from "@/types/course.types";
 import { lessonHref } from "@/lib/course-utils";
@@ -14,11 +14,19 @@ export default function LessonNavigation({
   courseSlug,
   previous,
   next,
+  onAdvance,
+  isAdvancing = false,
 }: {
   courseSlug: string;
   previous: Lesson | null;
   next: Lesson | null;
+  /** Completa la lección actual y navega (ver LessonPlayer). */
+  onAdvance: (href: string) => void;
+  isAdvancing?: boolean;
 }) {
+  // Sin siguiente es la última lección del curso (no del módulo).
+  const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
+
   return (
     <div className="border-border mt-12 flex items-center justify-between gap-4 border-t pt-6">
       {previous ? (
@@ -36,20 +44,25 @@ export default function LessonNavigation({
         </button>
       )}
 
-      {next ? (
-        <Link
-          href={lessonHref(courseSlug, next.id)}
-          className={`${PRIMARY} cursor-pointer`}
-        >
-          Siguiente
+      {/* Link real (se puede abrir en otra pestaña), pero el click normal pasa
+          por onAdvance para completar la lección antes de salir. */}
+      <Link
+        href={forwardHref}
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+          event.preventDefault();
+          if (!isAdvancing) onAdvance(forwardHref);
+        }}
+        aria-disabled={isAdvancing}
+        className={`${PRIMARY} cursor-pointer aria-disabled:cursor-wait aria-disabled:opacity-70`}
+      >
+        {next ? "Siguiente" : "Finalizar curso"}
+        {isAdvancing ? (
+          <Loader2 className="size-5 animate-spin" aria-hidden />
+        ) : (
           <ChevronRight className="size-5" aria-hidden />
-        </Link>
-      ) : (
-        <Link href={`/courses/${courseSlug}`} className={`${PRIMARY} cursor-pointer`}>
-          Finalizar módulo
-          <ChevronRight className="size-5" aria-hidden />
-        </Link>
-      )}
+        )}
+      </Link>
     </div>
   );
 }

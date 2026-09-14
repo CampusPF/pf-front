@@ -1,10 +1,15 @@
-import { apiFetch } from "@/services/api-client";
+import { ApiError, apiFetch } from "@/services/api-client";
 import { USE_MOCK_COURSES } from "@/services/courses/courses.source";
 import {
   getMyEnrollments,
   getMyLessonProgress,
 } from "@/services/dashboard/dashboard.service";
 import type { RawLessonProgress } from "@/services/dashboard/dashboard.types";
+import {
+  findActiveSubscription,
+  getMySubscriptions,
+  type Subscription,
+} from "@/services/subscriptions/subscriptions.service";
 import { MOCK_COMPLETED_LESSON_IDS, MOCK_PROGRESS_PERCENT } from "@/data/progress.mock";
 
 /* Progreso del usuario en UN curso: inscripción + lecciones completadas.
@@ -20,6 +25,8 @@ export interface CourseProgress {
   completedLessonIds: string[];
   /** lessonId → id del registro de progreso, para hacer PATCH en vez de POST. */
   recordByLesson: Record<string, string>;
+  /** Premium activo: da acceso a todas las lecciones sin inscripción. */
+  hasActiveSubscription: boolean;
 }
 
 const EMPTY: CourseProgress = {
@@ -27,6 +34,7 @@ const EMPTY: CourseProgress = {
   progressPercent: 0,
   completedLessonIds: [],
   recordByLesson: {},
+  hasActiveSubscription: false,
 };
 
 /* TODO(back): no hay `GET /course-enrollments/me?courseId=`. Pedimos todas
@@ -42,13 +50,16 @@ export async function getCourseProgress(courseId: string): Promise<CourseProgres
     };
   }
 
-  const [enrollments, progress] = await Promise.all([
+  const [enrollments, progress, subscriptions] = await Promise.all([
     getMyEnrollments(),
     getMyLessonProgress().catch(() => [] as RawLessonProgress[]),
+    getMySubscriptions().catch(() => [] as Subscription[]),
   ]);
 
+  const hasActiveSubscription = findActiveSubscription(subscriptions) !== null;
+
   const enrollment = enrollments.find((e) => e.course?.id === courseId && e.isActive);
-  if (!enrollment) return EMPTY;
+  if (!enrollment) return { ...EMPTY, hasActiveSubscription };
 
   const mine = progress.filter((record) => record.enrollment?.id === enrollment.id);
 
@@ -57,6 +68,7 @@ export async function getCourseProgress(courseId: string): Promise<CourseProgres
     progressPercent: Math.round(enrollment.progressPercent ?? 0),
     completedLessonIds: mine.filter((r) => r.completed).map((r) => r.lesson.id),
     recordByLesson: Object.fromEntries(mine.map((r) => [r.lesson.id, r.id])),
+    hasActiveSubscription,
   };
 }
 
@@ -88,8 +100,9 @@ export async function setLessonCompleted(
 }
 
 /**
- * `POST /course-enrollments` — sólo cursos GRATIS. Un curso pago responde
- * 402: esos se compran por checkout y la inscripción la crea el back.
+ * `POST /course-enrollments` — cursos gratis, o cualquiera con Premium activo.
+ * Sin Premium un curso pago responde 402: se compra por checkout y la
+ * inscripción la crea el back.
  */
 export async function enrollInFreeCourse(courseId: string): Promise<void> {
   await apiFetch("/course-enrollments", {
@@ -97,4 +110,18 @@ export async function enrollInFreeCourse(courseId: string): Promise<void> {
     body: { courseId },
     auth: true,
   });
+}
+
+/**
+ * Igual que `enrollInFreeCourse`, pero "ya estaba inscripto" (409: otra
+ * pestaña, doble click) cuenta como éxito. Es lo que usa la inscripción
+ * automática al entrar a una lección de un curso gratis.
+ */
+export async function ensureFreeEnrollment(courseId: string): Promise<void> {
+  try {
+    await enrollInFreeCourse(courseId);
+  } catch (caught) {
+    if (caught instanceof ApiError && caught.status === 409) return;
+    throw caught;
+  }
 }

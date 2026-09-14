@@ -2,20 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CircleCheck, ListVideo, Play, X } from "lucide-react";
+import { CircleCheck, ListVideo, Lock, Play, X } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
 import { formatDuration, lessonHref } from "@/lib/course-utils";
+import { canOpenLesson, type LessonAccessContext } from "@/lib/lesson-access";
 
 function SidebarContent({
   course,
   currentLessonId,
   completedLessonIds,
+  access,
+  nextLessonId,
+  onAdvance,
   onNavigate,
 }: {
   course: Course;
   currentLessonId: string;
   completedLessonIds: readonly string[];
+  access: LessonAccessContext;
+  nextLessonId: string | null;
+  onAdvance: (href: string) => void;
   onNavigate?: () => void;
 }) {
   const modules = [...course.modules].sort((a, b) => a.order - b.order);
@@ -33,22 +40,15 @@ function SidebarContent({
             .map((lesson) => {
               const isCurrent = lesson.id === currentLessonId;
               const isCompleted = completedLessonIds.includes(lesson.id);
+              const isLocked = !canOpenLesson(lesson, access);
 
-              return (
-                <Link
-                  key={lesson.id}
-                  href={lessonHref(course.slug, lesson.id)}
-                  onClick={onNavigate}
-                  aria-current={isCurrent ? "page" : undefined}
-                  className={`flex cursor-pointer items-start gap-2.5 border-l-2 px-4 py-2.5 text-sm transition-colors duration-150 ${
-                    isCurrent
-                      ? "border-primary bg-primary/10 text-primary font-medium"
-                      : "text-text-secondary hover:bg-surface-elevated hover:text-text border-transparent"
-                  }`}
-                >
+              const body = (
+                <>
                   <span className="mt-0.5 shrink-0">
                     {isCompleted ? (
                       <CircleCheck className="text-success size-4" aria-hidden />
+                    ) : isLocked ? (
+                      <Lock className="text-text-muted size-4" aria-hidden />
                     ) : (
                       <Play
                         className={`size-4 ${isCurrent ? "text-primary" : "text-text-muted"}`}
@@ -63,6 +63,45 @@ function SidebarContent({
                       {formatDuration(lesson.durationMinutes)}
                     </span>
                   </span>
+                </>
+              );
+
+              // Bloqueada y no es la actual: no se linkea. (La actual puede
+              // estar bloqueada si se llegó por URL; ahí el reproductor ya
+              // muestra el candado con las opciones de acceso.)
+              if (isLocked && !isCurrent) {
+                return (
+                  <div
+                    key={lesson.id}
+                    aria-disabled="true"
+                    className="text-text-muted flex cursor-not-allowed items-start gap-2.5 border-l-2 border-transparent px-4 py-2.5 text-sm"
+                  >
+                    {body}
+                    <span className="sr-only">(bloqueada)</span>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={lesson.id}
+                  href={lessonHref(course.slug, lesson.id)}
+                  onClick={(event) => {
+                    onNavigate?.();
+                    // Ir a la siguiente completa la actual, igual que "Siguiente".
+                    if (lesson.id !== nextLessonId) return;
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                    event.preventDefault();
+                    onAdvance(lessonHref(course.slug, lesson.id));
+                  }}
+                  aria-current={isCurrent ? "page" : undefined}
+                  className={`flex cursor-pointer items-start gap-2.5 border-l-2 px-4 py-2.5 text-sm transition-colors duration-150 ${
+                    isCurrent
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "text-text-secondary hover:bg-surface-elevated hover:text-text border-transparent"
+                  }`}
+                >
+                  {body}
                 </Link>
               );
             })}
@@ -76,10 +115,16 @@ export default function LessonSidebar({
   course,
   currentLessonId,
   completedLessonIds = [],
+  access,
+  nextLessonId,
+  onAdvance,
 }: {
   course: Course;
   currentLessonId: string;
   completedLessonIds?: readonly string[];
+  access: LessonAccessContext;
+  nextLessonId: string | null;
+  onAdvance: (href: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -91,6 +136,9 @@ export default function LessonSidebar({
           course={course}
           currentLessonId={currentLessonId}
           completedLessonIds={completedLessonIds}
+          access={access}
+          nextLessonId={nextLessonId}
+          onAdvance={onAdvance}
         />
       </aside>
 
@@ -133,6 +181,9 @@ export default function LessonSidebar({
                 course={course}
                 currentLessonId={currentLessonId}
                 completedLessonIds={completedLessonIds}
+                access={access}
+                nextLessonId={nextLessonId}
+                onAdvance={onAdvance}
                 onNavigate={() => setIsOpen(false)}
               />
             </div>

@@ -18,7 +18,7 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 export default function CourseTabs() {
-  const { course, progress, isAuthenticated, isLoading } = useCourseLearning();
+  const { course, progress, access, isAuthenticated, isLoading } = useCourseLearning();
   const [tab, setTab] = useState<Tab>("content");
   const modules = [...course.modules].sort((a, b) => a.order - b.order);
   const lessonsPending = course.syllabusStatus === "modules-only";
@@ -104,6 +104,7 @@ export default function CourseTabs() {
                     courseSlug={course.slug}
                     defaultOpen={index === 0}
                     completedLessonIds={progress?.completedLessonIds ?? []}
+                    access={access}
                   />
                 ))}
           </div>
