@@ -10,10 +10,10 @@ interface OrderSummaryProps {
 export function OrderSummary({ checkout }: OrderSummaryProps) {
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-[#1C1C2E] p-6">
+      <div className="rounded-2xl bg-surface border border-border p-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-white">Resumen de compra</h2>
-          <span className="shrink-0 rounded-full bg-[#6366F1]/15 px-3 py-1 text-[11px] font-semibold text-[#A5B4FC]">
+          <h2 className="text-base font-semibold text-text">Resumen de compra</h2>
+          <span className="shrink-0 rounded-full bg-primary-subtle px-3 py-1 text-[11px] font-semibold text-primary">
             {checkout.mode === "course" ? "Curso individual" : "Suscripción"}
           </span>
         </div>
@@ -34,8 +34,8 @@ function CourseSummary({ course }: { course: Course }) {
   return (
     <>
       <div className="mt-5 flex items-start justify-between gap-3">
-        <p className="text-lg font-bold text-white">{course.title}</p>
-        <span className="mt-1 shrink-0 rounded-full bg-[#22C55E]/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#22C55E]">
+        <p className="text-lg font-bold text-text">{course.title}</p>
+        <span className="mt-1 shrink-0 rounded-full bg-success-subtle px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success">
           Acceso de por vida
         </span>
       </div>
@@ -43,18 +43,18 @@ function CourseSummary({ course }: { course: Course }) {
       <div className="mt-4 flex gap-4">
         {/* Con fallback: si el curso no tiene portada (o la URL no carga) se
             muestra un bloque neutro en vez del ícono de imagen rota. */}
-        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-[#0F0F1A]">
+        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
           <ImageWithFallback
             src={course.thumbnailUrl}
             className="h-full w-full object-cover"
             fallback={
               <div className="flex h-full w-full items-center justify-center">
-                <BookOpen className="size-5 text-[#6B6B7B]" aria-hidden />
+                <BookOpen className="size-5 text-text-muted" aria-hidden />
               </div>
             }
           />
         </div>
-        <p className="flex flex-col justify-center text-sm text-[#9A9AAB]">
+        <p className="flex flex-col justify-center text-sm text-text-secondary">
           {course.instructor}
         </p>
       </div>
@@ -84,13 +84,13 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
   return (
     <>
       <div className="mt-5 flex items-start justify-between gap-3">
-        <p className="text-lg font-bold text-white">{plan.name}</p>
-        <span className="mt-1 shrink-0 rounded-full bg-[#22C55E]/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#22C55E]">
+        <p className="text-lg font-bold text-text">{plan.name}</p>
+        <span className="mt-1 shrink-0 rounded-full bg-success-subtle px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success">
           Acceso total
         </span>
       </div>
 
-      <p className="mt-2 text-sm leading-relaxed text-[#9A9AAB]">
+      <p className="mt-2 text-sm leading-relaxed text-text-secondary">
         {plan.description}
       </p>
 
@@ -99,10 +99,10 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
           {plan.features.map((feature) => (
             <li
               key={feature}
-              className="flex items-start gap-2.5 text-sm text-[#B4B4C0]"
+              className="flex items-start gap-2.5 text-sm text-text-secondary"
             >
               <Check
-                className="mt-0.5 size-4 shrink-0 text-[#22C55E]"
+                className="mt-0.5 size-4 shrink-0 text-success"
                 aria-hidden
               />
               {feature}
@@ -112,7 +112,7 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
       )}
 
       {plan.interval === "month" && (
-        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs text-[#9A9AAB]">
+        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-surface-elevated px-3 py-1.5 text-xs text-text-secondary">
           <RefreshCw className="size-3.5" aria-hidden />
           Renovación mensual automática
         </span>
@@ -123,12 +123,12 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
           <Divider />
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[#9A9AAB]">Subtotal regular</span>
-              <span className="text-[#8A8A99] line-through">
+              <span className="text-text-secondary">Subtotal regular</span>
+              <span className="text-text-muted line-through">
                 {formatPrice(plan.originalPriceInCents!, plan.currency)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-sm text-[#22C55E]">
+            <div className="flex items-center justify-between text-sm text-success">
               <span className="flex items-center gap-1.5">
                 <Tag className="size-3.5" aria-hidden />
                 {plan.discountLabel ?? "Descuento"}
@@ -148,7 +148,7 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
         suffix={`/${intervalLabel}`}
       />
 
-      <p className="mt-4 text-center text-xs text-[#8A8A99]">
+      <p className="mt-4 text-center text-xs text-text-muted">
         Cancelá cuando quieras con un clic sin ningún tipo de penalización.
       </p>
 
@@ -170,27 +170,27 @@ function TotalBlock({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-[#8A8A99]">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted">
         {label}
       </p>
       <p className="mt-1 flex items-baseline gap-1.5">
-        <span className="text-3xl font-bold tracking-tight text-white">
+        <span className="text-3xl font-bold tracking-tight text-text">
           {formatPrice(priceInCents, currency)}
         </span>
-        {suffix && <span className="text-sm text-[#8A8A99]">{suffix}</span>}
+        {suffix && <span className="text-sm text-text-muted">{suffix}</span>}
       </p>
-      <p className="mt-1 text-xs text-[#8A8A99]">Impuestos aplicables incluidos</p>
+      <p className="mt-1 text-xs text-text-muted">Impuestos aplicables incluidos</p>
     </div>
   );
 }
 
 function Divider() {
-  return <hr className="my-5 border-white/5" />;
+  return <hr className="my-5 border-border" />;
 }
 
 function SecureNote() {
   return (
-    <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-[#8A8A99]">
+    <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-text-muted">
       <Lock className="size-3.5" aria-hidden />
       Pago seguro cifrado de 256 bits
     </p>
@@ -199,13 +199,13 @@ function SecureNote() {
 
 function GuaranteeCard() {
   return (
-    <div className="flex gap-3 rounded-2xl bg-[#1C1C2E] p-5">
-      <ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#22C55E]" aria-hidden />
+    <div className="flex gap-3 rounded-2xl bg-surface border border-border p-5">
+      <ShieldCheck className="mt-0.5 size-5 shrink-0 text-success" aria-hidden />
       <div>
-        <p className="text-sm font-semibold text-white">
+        <p className="text-sm font-semibold text-text">
           Garantía sin riesgo de 14 días
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-[#9A9AAB]">
+        <p className="mt-1 text-xs leading-relaxed text-text-secondary">
           Si no aprendés lo que esperabas, contactanos dentro de las 2 primeras
           semanas y reembolsamos el 100% de tu dinero de inmediato.
         </p>

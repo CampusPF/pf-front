@@ -88,7 +88,7 @@ export function CheckoutSuccess({
           : "Te enviamos un email de confirmación. Tu suscripción está activa desde ahora.";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0B0B14] px-4 py-10">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-bg px-4 py-10">
       {/* Glow verde/teal sutil en el borde derecho */}
       <div
         aria-hidden
@@ -99,10 +99,10 @@ export function CheckoutSuccess({
         }}
       />
 
-      <div className="relative w-full max-w-[480px] rounded-2xl bg-[#1A1A2E] p-8 shadow-2xl shadow-black/50">
+      <div className="relative w-full max-w-[480px] rounded-2xl bg-surface border border-border p-8 shadow-2xl">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-md bg-[#22C55E]/15 text-[#22C55E]">
+          <span className="flex size-6 items-center justify-center rounded-md bg-success-subtle text-success">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -116,13 +116,13 @@ export function CheckoutSuccess({
               <path d="m9 8-4 4 4 4M15 8l4 4-4 4M13.5 6l-3 12" />
             </svg>
           </span>
-          <span className="text-[15px] font-semibold text-white">Campus.</span>
+          <span className="text-[15px] font-semibold text-text">Campus.</span>
         </div>
 
         {/* Ícono: spinner mientras confirma, check animado ya resuelto */}
         <div className="relative mx-auto mt-8 flex size-16 items-center justify-center">
           {phase === "confirming" ? (
-            <Loader2 className="size-10 animate-spin text-[#6366F1]" aria-hidden />
+            <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
           ) : (
             <div
               className={`checkout-fx relative flex size-16 items-center justify-center ${
@@ -131,9 +131,9 @@ export function CheckoutSuccess({
             >
               <span
                 aria-hidden
-                className="checkout-ring absolute inset-0 rounded-full bg-[#22C55E]"
+                className="checkout-ring absolute inset-0 rounded-full bg-success"
               />
-              <span className="checkout-icon relative flex size-16 items-center justify-center rounded-full bg-[#22C55E]">
+              <span className="checkout-icon relative flex size-16 items-center justify-center rounded-full bg-success">
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -151,28 +151,28 @@ export function CheckoutSuccess({
           )}
         </div>
 
-        <h1 className="mt-6 text-center text-2xl font-bold text-white">{heading}</h1>
-        <p className="mx-auto mt-2 max-w-sm text-center text-sm text-[#A1A1AA]">
+        <h1 className="mt-6 text-center text-2xl font-bold text-text">{heading}</h1>
+        <p className="mx-auto mt-2 max-w-sm text-center text-sm text-text-secondary">
           {description}
         </p>
 
         {phase !== "confirming" && (
           <>
-            <hr className="my-6 border-white/10" />
+            <hr className="my-6 border-border" />
 
             {/* Resumen */}
-            <div className="rounded-xl bg-white/3 px-4 py-4">
+            <div className="rounded-xl bg-surface-elevated px-4 py-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-bold text-white">
+                <span className="text-sm font-bold text-text">
                   {type === "course"
                     ? "Curso comprado"
                     : `${PREMIUM_PLAN.name} · ${formatPrice(PREMIUM_PLAN.priceInCents, PREMIUM_PLAN.currency)} / mes`}
                 </span>
-                <span className="shrink-0 rounded-full bg-[#6366F1] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                <span className="shrink-0 rounded-full bg-primary-solid px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
                   {phase === "timeout" ? "Procesando" : "Activo"}
                 </span>
               </div>
-              <p className="mt-1.5 text-xs text-[#8A8A99]">
+              <p className="mt-1.5 text-xs text-text-muted">
                 {type === "course"
                   ? "Acceso de por vida, sin vencimiento."
                   : "Se renueva automáticamente cada mes — cancelás cuando quieras."}
@@ -183,23 +183,23 @@ export function CheckoutSuccess({
             <div className="mt-6 grid grid-cols-2 gap-3">
               <Link
                 href="/dashboard"
-                className="rounded-lg bg-[#6366F1] px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150 hover:bg-[#5558E3]"
+                className="rounded-lg bg-primary-solid px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150 hover:bg-primary-solid-hover"
               >
                 Ir a mi dashboard
               </Link>
               <Link
                 href="/courses"
-                className="rounded-lg border border-white/15 px-4 py-2.5 text-center text-sm font-medium text-[#D4D4D8] transition-colors duration-150 hover:bg-white/6"
+                className="rounded-lg border border-border px-4 py-2.5 text-center text-sm font-medium text-text-secondary transition-colors duration-150 hover:bg-surface-elevated"
               >
                 Explorar cursos
               </Link>
             </div>
 
-            <p className="mt-6 text-center text-[11px] text-[#6B6B7B]">
+            <p className="mt-6 text-center text-[11px] text-text-muted">
               ¿Dudas? Escribinos a{" "}
               <a
                 href="mailto:soporte@campus.com"
-                className="text-[#8A8A99] transition-colors duration-150 hover:text-[#A1A1AA]"
+                className="text-text-muted transition-colors duration-150 hover:text-text"
               >
                 soporte@campus.com
               </a>

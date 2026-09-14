@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Check, Mic, Send } from "lucide-react";
 
 const CODE_SNIPPET = `function procesarPago(monto, callback) {
@@ -36,12 +37,12 @@ export default function HeroSection() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
+          <Link
+            href="/courses"
             className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg px-6 py-3 font-medium text-white transition-colors duration-150"
           >
             Explorar cursos
-          </button>
+          </Link>
           <a
             href="#como-funciona"
             className="text-text-secondary hover:text-text cursor-pointer px-4 py-3 font-medium transition-colors duration-150"

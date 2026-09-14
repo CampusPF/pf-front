@@ -73,15 +73,17 @@ export default function ProfileForm({
     try {
       const updated = await updateProfile({
         name: values.fullName.trim(),
-        // Los opcionales sólo viajan si tienen algo: mandar "" haría que el
-        // back guarde un string vacío en vez de dejar el campo sin completar.
-        birthDate: values.birthDate || undefined,
+        // Cada opcional se completa (o no) por separado. Vacío viaja como
+        // null y no como "": así el back deja el campo sin completar, y quien
+        // borra un dato que ya tenía guardado lo borra de verdad (con
+        // undefined el PATCH lo ignoraba y el dato viejo volvía a aparecer).
+        birthDate: values.birthDate || null,
         phone: values.phone.trim()
           ? joinPhone(values.country, values.phone)
-          : undefined,
-        country: values.country ? findCountry(values.country)?.name : undefined,
-        city: values.city.trim() || undefined,
-        address: values.address.trim() || undefined,
+          : null,
+        country: values.country ? (findCountry(values.country)?.name ?? null) : null,
+        city: values.city.trim() || null,
+        address: values.address.trim() || null,
       });
 
       setConfirmOpen(false);
@@ -187,7 +189,8 @@ export default function ProfileForm({
 
         <div>
           <label className="text-text mb-1.5 block text-xs font-medium" htmlFor="birthDate">
-            Fecha de nacimiento
+            Fecha de nacimiento{" "}
+            <span className="text-text-muted font-normal">(opcional)</span>
           </label>
           <input
             id="birthDate"
@@ -212,7 +215,7 @@ export default function ProfileForm({
 
         <div>
           <label className="text-text mb-1.5 block text-xs font-medium" htmlFor="settings-phone">
-            Teléfono
+            Teléfono <span className="text-text-muted font-normal">(opcional)</span>
           </label>
           <div
             className={`bg-surface focus-within:ring-primary flex items-stretch overflow-hidden rounded-xl border transition-all focus-within:ring-2 ${
