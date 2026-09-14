@@ -5,6 +5,7 @@ import AuthProvider from "@/components/auth/AuthProvider";
 import AiTutorProvider from "@/components/ai-tutor/AiTutorProvider";
 import AiTutorFAB from "@/components/ai-tutor/AiTutorFAB";
 import AiTutorDrawer from "@/components/ai-tutor/AiTutorDrawer";
+import BackendWakeNotice from "@/components/ui/BackendWakeNotice";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -58,6 +59,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
             <AiTutorFAB />
             <AiTutorDrawer />
+            {/* Despierta el back (Render free) al abrir la web y avisa si tarda. */}
+            <BackendWakeNotice />
           </AiTutorProvider>
         </AuthProvider>
       </body>

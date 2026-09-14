@@ -1,3 +1,4 @@
+import { markBackendAwake, trackBackendWait } from "@/lib/backend-wakeup";
 import { getToken } from "@/services/auth/token-storage";
 
 /* Cliente HTTP único del front. Todo lo que hable con el back pasa por acá:
@@ -139,21 +140,26 @@ export async function apiFetch<T>(
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}${path}${buildQueryString(query)}`, {
-      method,
-      headers,
-      body:
-        body === undefined
-          ? undefined
-          : isFormData
-            ? (body as FormData)
-            : JSON.stringify(body),
-      signal,
-      // Front y back son orígenes distintos: sin esto el navegador ignora
-      // cualquier Set-Cookie de la respuesta (login/register/logout) y nunca
-      // manda cookies existentes. El back ya tiene CORS con credentials:true.
-      credentials: "include",
-    });
+    // trackBackendWait: si el back está dormido (Render free) y esto tarda,
+    // BackendWakeNotice muestra "despertando el servidor" (lib/backend-wakeup).
+    response = await trackBackendWait(
+      fetch(`${API_URL}${path}${buildQueryString(query)}`, {
+        method,
+        headers,
+        body:
+          body === undefined
+            ? undefined
+            : isFormData
+              ? (body as FormData)
+              : JSON.stringify(body),
+        signal,
+        // Front y back son orígenes distintos: sin esto el navegador ignora
+        // cualquier Set-Cookie de la respuesta (login/register/logout) y nunca
+        // manda cookies existentes. El back ya tiene CORS con credentials:true.
+        credentials: "include",
+      }),
+    );
+    markBackendAwake();
   } catch (error) {
     // fetch sólo rechaza por red/CORS: el back apagado cae acá, no en !response.ok.
     throw new ApiError(
