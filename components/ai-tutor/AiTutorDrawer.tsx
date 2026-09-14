@@ -119,7 +119,7 @@ export default function AiTutorDrawer() {
             <Sparkles className="text-primary size-5 shrink-0" aria-hidden />
             <span className="truncate">Tutor IA</span>
             <span className="bg-primary/10 text-primary shrink-0 rounded-full px-2 py-0.5 text-xs font-medium">
-              Sonnet 3.5
+              Beta
             </span>
           </p>
 

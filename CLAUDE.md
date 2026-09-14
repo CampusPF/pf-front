@@ -37,7 +37,7 @@ Path alias: `@/*` maps to the repo root.
 The root `app/layout.tsx` is intentionally minimal (html/body + global providers). Each route group supplies its own layout:
 - **`app/(marketing)/`** — public: landing, course catalog, course detail, login/register, checkout. Shares `Navbar` + `Footer`.
 - **`app/(app)/`** — authenticated area (`/dashboard`): sidebar + topbar shell, wrapped in `RequireAuth`. `/dashboard/admin` (resumen, cursos, categorías, usuarios) adds `RequireRole(["admin","teacher"])`; teachers only see their own courses, and categorías/usuarios are admin-only. `RequireRole` is UX only — the backend's `RolesGuard` is the real check. In usuarios the admin can't change their own role or delete themselves: that would lock them out of the panel with no way back from the app.
-- **`app/(marketing)/courses/[slug]/learn/`** — the lesson player, also `RequireAuth`-gated. Note the TODO in its layout: it can't hide the marketing Navbar/Footer, so it fakes immersion with a `fixed` header.
+- **`app/(player)/courses/[slug]/learn/`** — the lesson player, also `RequireAuth`-gated. Its own route group so it gets no Navbar/Footer (full-screen, `LessonHeader` is the only bar); the URL is unchanged. The tutor opens from a header button there instead of the floating button.
 
 Route groups add no URL segment. The catalog and course detail are deliberately public; only the player and dashboard require auth.
 

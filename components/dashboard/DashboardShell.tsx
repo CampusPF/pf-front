@@ -26,7 +26,9 @@ export default function DashboardShell({
       {/* El contenido se corre el ancho del sidebar (16rem) sólo en lg+ */}
       <div className="flex min-h-screen flex-col lg:pl-64">
         <DashboardTopbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1">{children}</main>
+        {/* pb-14 en mobile: aire para que el botón flotante del tutor no tape
+            lo último de cada pantalla. */}
+        <main className="flex-1 pb-14 sm:pb-0">{children}</main>
       </div>
     </div>
   );

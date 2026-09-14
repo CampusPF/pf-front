@@ -13,7 +13,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
    sesión sólo existe de forma confiable en localStorage, que es cliente.
 
    Se usa envolviendo el layout de cada área protegida (ver
-   app/(app)/layout.tsx y app/(marketing)/courses/[slug]/learn/layout.tsx).
+   app/(app)/layout.tsx y app/(player)/courses/[slug]/learn/layout.tsx).
    Mientras isLoading es true no se sabe todavía si hay sesión — no
    redirige ni muestra nada para evitar un parpadeo/redirect en falso. */
 export default function RequireAuth({ children }: { children: React.ReactNode }) {

@@ -75,6 +75,9 @@ export default function Footer() {
           <p className="text-text-muted text-sm">
             © {new Date().getFullYear()} Campus. Todos los derechos reservados.
           </p>
+          {/* Aire en mobile: el botón flotante del tutor (bottom-4, 48px) no
+              tapa el final de la página. */}
+          <div className="h-14 sm:hidden" aria-hidden />
         </div>
       </div>
     </footer>
