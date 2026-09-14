@@ -108,8 +108,10 @@ export default function AiTutorDrawer() {
       <aside
         aria-label="Tutor IA"
         inert={!isOpen}
-        className={`bg-surface border-border fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l shadow-2xl transition-transform duration-300 sm:w-96 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
+        // La sombra sólo abierto: cerrado, el panel queda fuera de pantalla
+        // pero su shadow-2xl asomaba como una franja gris en el borde derecho.
+        className={`bg-surface border-border fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l transition-[translate,box-shadow] duration-300 sm:w-96 ${
+          isOpen ? "translate-x-0 shadow-2xl" : "translate-x-full shadow-none"
         }`}
       >
         <header className="border-border flex h-14 shrink-0 items-center justify-between gap-3 border-b px-4">

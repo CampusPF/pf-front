@@ -31,7 +31,9 @@ export default function AdminNav() {
               key={tab.href}
               href={tab.href}
               aria-current={active ? "page" : undefined}
-              className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              // px-3 en mobile: con px-4 los 4 tabs medían 8px más que una
+              // pantalla de 390px y ensanchaban toda la página.
+              className={`-mb-px border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors sm:px-4 ${
                 active ? "border-primary text-primary" : "text-text-muted hover:text-text border-transparent"
               }`}
             >

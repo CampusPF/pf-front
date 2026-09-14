@@ -7,6 +7,7 @@ import { AlertCircle, Check, Loader2 } from "lucide-react";
 
 import { ApiError } from "@/services/api-client";
 import { formatPrice } from "@/types/checkout";
+import { PREMIUM_PLAN } from "@/data/plans";
 import {
   getFirstLesson,
   getLessonsCount,
@@ -125,7 +126,8 @@ export default function EnrollCTA() {
               Comprar este curso
             </Link>
             <Link href="/checkout?plan=premium" className={SECONDARY}>
-              O suscribirme a Premium ($19/mes, todos los cursos)
+              {/* Del plan, no escrito a mano: decía "$19/mes" y se cobra $9,99. */}
+              O suscribirme a Premium ({formatPrice(PREMIUM_PLAN.priceInCents, PREMIUM_PLAN.currency)}/mes, todos los cursos)
             </Link>
           </>
         ) : (
