@@ -1,4 +1,5 @@
 import { ApiError } from "@/services/api-client";
+import { backendMessageOr } from "@/services/backend-message";
 
 /* Reglas y helpers compartidos por todos los uploads a Cloudinary (avatar,
    imagen de curso/categoría, PDFs de lección). Todos son multipart con el
@@ -83,7 +84,13 @@ export function uploadErrorMessage(error: unknown): string {
       return "Servicio de archivos no disponible. Probá de nuevo más tarde.";
     }
     if (error.status === 413) return "El archivo es demasiado pesado.";
-    return error.message;
+    if (error.status === 403) {
+      return backendMessageOr(error, "No tenés permisos para subir este archivo.");
+    }
+    // El resto (400 de tipo/tamaño/archivo dañado) ya viene con un mensaje
+    // del back pensado para mostrarse; backendMessageOr sólo lo filtra si
+    // fuera un default crudo de Nest (ver services/backend-message.ts).
+    return backendMessageOr(error, "No pudimos subir el archivo. Probá de nuevo en un momento.");
   }
   return "No pudimos subir el archivo. Probá de nuevo en un momento.";
 }

@@ -11,7 +11,7 @@ Ordenado por lo que más destraba al front.
 |---|---|---|---|
 | 1 | `GET /courses/:id` con `modules.lessons` (ordenadas, sin `content`/`videoUrl`) y **público** | Hoy sin sesión sólo se ven los módulos, y con sesión se hace un request por módulo | `loadSyllabus` deja de pedir nada solo (el adapter detecta `lessons` en la respuesta) |
 | 2 | `GET /courses/slug/:slug` | El front resuelve slug → id bajando el listado entero | `getCourseBySlug` pasa a un solo `apiFetch` |
-| 3 | Permisos de **teacher** en cursos, módulos y lecciones (`@Roles(ADMIN, TEACHER)` + chequear que `course.instructor.id === user.id`) | El panel ya deja entrar al teacher, pero sus escrituras vuelven 403 | Nada: ya funciona |
+| 3 | ~~Permisos de **teacher** en cursos, módulos y lecciones~~ — resuelto el 14/09/2026: `@Roles(ADMIN, TEACHER)` + `assertCourseOwner` (`pf-back/src/common/utils/`) en cursos, portada, módulos, lecciones y sus adjuntos. Un TEACHER escribe sobre SU curso; sobre uno ajeno, 403 con mensaje ("Este curso no es tuyo: no podés editarlo.") | — | — |
 | 4 | Filtros y paginación en `GET /courses` (`category`, `level`, `isFree`, `search`, `page`, `limit`) | Se filtra en el cliente con el listado completo | `CLIENT_SIDE_FILTERING = false` en `courses.service.ts` y borrar `courses.client-filter.ts` |
 | 5 | Sacar `imageUrl` de `CreateCourseDto` / `CreateCategoryDto` | Las imágenes se suben por archivo; el front ya no lo manda | Nada |
 | 6 | ~~Inscripción para suscriptores Premium~~ — resuelto: `POST /course-enrollments` acepta cursos pagos con suscripción activa y el front inscribe al entrar a una lección | — | — |
