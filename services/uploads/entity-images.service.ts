@@ -1,4 +1,5 @@
 import { apiFetch } from "@/services/api-client";
+import { withCatalogRevalidation } from "@/services/admin/catalog-revalidation";
 import { toFormData } from "@/services/uploads/uploads";
 
 /* Imágenes de curso y de categoría. El back guarda `imageUrl` (lo que se
@@ -21,11 +22,13 @@ export function uploadCategoryImage<T extends UploadedImageEntity>(
   categoryId: string,
   file: File,
 ) {
-  return apiFetch<T>(`/categories/${encodeURIComponent(categoryId)}/image`, {
-    method: "POST",
-    body: toFormData(file),
-    auth: true,
-  });
+  return withCatalogRevalidation(
+    apiFetch<T>(`/categories/${encodeURIComponent(categoryId)}/image`, {
+      method: "POST",
+      body: toFormData(file),
+      auth: true,
+    }),
+  );
 }
 
 /** `POST /courses/:id/image` — teacher dueño del curso o admin. */
@@ -33,9 +36,12 @@ export function uploadCourseImage<T extends UploadedImageEntity>(
   courseId: string,
   file: File,
 ) {
-  return apiFetch<T>(`/courses/${encodeURIComponent(courseId)}/image`, {
-    method: "POST",
-    body: toFormData(file),
-    auth: true,
-  });
+  // La portada se ve en la landing: revalidarla igual que un cambio de datos.
+  return withCatalogRevalidation(
+    apiFetch<T>(`/courses/${encodeURIComponent(courseId)}/image`, {
+      method: "POST",
+      body: toFormData(file),
+      auth: true,
+    }),
+  );
 }
