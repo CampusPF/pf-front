@@ -12,9 +12,11 @@ procesarPago(100, (result) => {
 
 const QUICK_ACTIONS = ["Ver más ejemplos 🔍", "Dame un quiz rápido ⚡"];
 
+/* Sin cifras ni modelos de IA inventados: antes decía "10.484 estudiantes"
+   y "Claude 3.5 & GPT-4o integrados". Sólo lo que la plataforma cumple hoy. */
 const TRUST_BADGES = [
-  "No tarjeta de crédito requerida",
-  "Claude 3.5 & GPT-4o integrados",
+  "Sin tarjeta de crédito",
+  "Cursos gratis para empezar hoy",
 ];
 
 export default function HeroSection() {
@@ -23,7 +25,7 @@ export default function HeroSection() {
       {/* ── Columna izquierda ─────────────────────────────────────── */}
       <div>
         <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-3 py-1 text-sm font-medium">
-          10.484 estudiantes aprendiendo en vivo 🟢
+          Un tutor de IA en cada lección ✨
         </span>
 
         <h1 className="text-text mt-6 text-3xl leading-tight font-bold md:text-4xl lg:text-5xl">

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import RequireAuth from "@/components/auth/RequireAuth";
@@ -6,6 +7,11 @@ import RequireAuth from "@/components/auth/RequireAuth";
    inscripción a un usuario. Vive en (marketing) para heredar el Navbar/
    Footer del resto del sitio (antes colgaba directo de app/, sin chrome).
    Ver components/auth/RequireAuth.tsx para el porqué de que sea client-side. */
+// La página es client component y no puede exportar metadata: va en el layout.
+export const metadata: Metadata = {
+  title: "Checkout — Campus",
+};
+
 export default function CheckoutLayout({
   children,
 }: {

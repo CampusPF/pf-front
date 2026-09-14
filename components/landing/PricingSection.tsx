@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { Check, Sparkles } from "lucide-react";
 
+/* Sin cantidades inventadas: "10 cursos", "20 consultas diarias" y "+50
+   cursos" no existían (el catálogo real es chico y el tutor no tiene cupo). */
 const FREE_FEATURES = [
-  "Acceso a 10 cursos introductorios",
-  "Tutor IA con 20 consultas diarias",
+  "Acceso a todos los cursos gratuitos",
+  "Tutor IA en cada lección",
   "Comunidad en Discord para soporte",
   "Proyectos guiados básicos",
 ];
 
 const PREMIUM_FEATURES = [
-  "Acceso ilimitado a los +50 cursos técnicos",
-  "Tutor IA sin restricciones 24/7 (GPT-4o & Sonnet)",
+  "Acceso a todo el catálogo, incluidos los cursos pagos",
+  "Tutor IA sin restricciones 24/7",
   "Certificados verificados con QR oficial",
   "Revisiones de código personalizadas por expertos",
   "Workshops en vivo mensuales con mentores",

@@ -1,10 +1,20 @@
-import { Award, BookOpen, Clock, Code2 } from "lucide-react";
+import { BookOpen, Clock, Code2, Sparkles } from "lucide-react";
 
+import { PREMIUM_PLAN } from "@/data/plans";
+import { formatPrice } from "@/types/checkout";
+
+/* Antes eran cifras inventadas ("+500 lecciones", "+20 casos", "100%
+   certificados verificados") que no coincidían con el catálogo real. Ahora
+   son hechos del producto; el precio sale del plan, no escrito a mano. */
 const STATS = [
-  { icon: BookOpen, value: "+500", label: "Lecciones interactivas" },
-  { icon: Code2, value: "+20", label: "Casos prácticos" },
+  { icon: BookOpen, value: "Gratis", label: "Cursos para empezar hoy" },
+  { icon: Code2, value: "Proyectos", label: "Prácticos en cada curso" },
   { icon: Clock, value: "24/7", label: "Tutor IA disponible" },
-  { icon: Award, value: "100%", label: "Certificados verificados" },
+  {
+    icon: Sparkles,
+    value: formatPrice(PREMIUM_PLAN.priceInCents, PREMIUM_PLAN.currency),
+    label: "Premium: todo el catálogo",
+  },
 ];
 
 export default function StatsBar() {

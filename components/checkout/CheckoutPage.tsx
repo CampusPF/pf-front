@@ -3,9 +3,9 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  MessagesSquare,
-  Monitor,
-  Smile,
+  Lock,
+  RotateCcw,
+  Sparkles,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -132,10 +132,13 @@ const CHECKOUT_STATS: {
   label: string;
   color: string;
 }[] = [
-  { icon: Monitor, value: "+45.000", label: "Estudiantes activos", color: "text-success" },
-  { icon: Smile, value: "98.4%", label: "Índice de satisfacción", color: "text-success" },
-  { icon: Zap, value: "120+", label: "Proyectos de producción", color: "text-accent" },
-  { icon: MessagesSquare, value: "< 15 min", label: "Respuesta a dudas de código", color: "text-primary" },
+  /* Antes: "+45.000 estudiantes", "98.4% de satisfacción", "120+ proyectos",
+     "< 15 min de respuesta": cifras inventadas justo donde se pide la tarjeta.
+     Ahora, sólo lo que el checkout garantiza de verdad. */
+  { icon: Lock, value: "Pago seguro", label: "Procesado por Stripe", color: "text-success" },
+  { icon: Zap, value: "Inmediato", label: "Acceso apenas se confirma el pago", color: "text-accent" },
+  { icon: RotateCcw, value: "14 días", label: "Garantía de reembolso", color: "text-success" },
+  { icon: Sparkles, value: "Tutor IA", label: "En cada lección", color: "text-primary" },
 ];
 
 function CheckoutStats() {
