@@ -314,6 +314,33 @@ export const RegisterCard = () => {
           </div>
 
           <div>
+            <label className="block text-xs font-medium text-text mb-1.5" htmlFor="country">
+              País
+            </label>
+            <select
+              id="country"
+              name="country"
+              autoComplete="country"
+              value={formik.values.country}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              aria-invalid={countryHasError}
+              aria-describedby={countryHasError ? 'country-error' : undefined}
+              className={inputClass(countryHasError)}
+            >
+              {COUNTRIES.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.flag} {country.name} (+{country.dialCode})
+                </option>
+              ))}
+            </select>
+            {countryHasError && (
+              <p id="country-error" role="alert" className="text-danger text-xs mt-1">
+                {formik.errors.country}
+              </p>
+            )}
+          </div>
+          <div>
             <label className="block text-xs font-medium text-text mb-1.5" htmlFor="phone">
               Teléfono
             </label>
@@ -352,33 +379,6 @@ export const RegisterCard = () => {
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-text mb-1.5" htmlFor="country">
-              País
-            </label>
-            <select
-              id="country"
-              name="country"
-              autoComplete="country"
-              value={formik.values.country}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              aria-invalid={countryHasError}
-              aria-describedby={countryHasError ? 'country-error' : undefined}
-              className={inputClass(countryHasError)}
-            >
-              {COUNTRIES.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.flag} {country.name} (+{country.dialCode})
-                </option>
-              ))}
-            </select>
-            {countryHasError && (
-              <p id="country-error" role="alert" className="text-danger text-xs mt-1">
-                {formik.errors.country}
-              </p>
-            )}
-          </div>
 
           {/* Checkbox Términos */}
           <div>
