@@ -28,5 +28,22 @@ export const TEACHERS: Teacher[] = [
     bio: "Diseñadora de producto. Enseña investigación de usuarios, diseño visual accesible y prototipado en Figma.",
     avatarClass: "bg-amber-600",
   },
-
+  {
+    name: "Sofía Méndez",
+    course: "Inglés para el trabajo en tecnología",
+    bio: "Profesora de inglés especializada en equipos de tecnología. Enseña a comunicarse con claridad en reuniones y por escrito.",
+    avatarClass: "bg-violet-600",
+  },
+  {
+    name: "Diego Castro",
+    course: "Emprender un negocio digital",
+    bio: "Emprendedor y consultor de negocios. Enseña a validar ideas, poner precio y conseguir los primeros clientes.",
+    avatarClass: "bg-emerald-600",
+  },
+  {
+    name: "Camila Torres",
+    course: "Marketing digital y redes sociales",
+    bio: "Especialista en marketing digital. Enseña estrategia de contenidos, publicidad paga y analítica.",
+    avatarClass: "bg-pink-600",
+  },
 ];
