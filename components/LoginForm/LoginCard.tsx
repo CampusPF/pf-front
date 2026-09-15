@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useFormik } from 'formik';
-import { AlertCircle, GraduationCap, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, GraduationCap, Loader2 } from 'lucide-react';
 
 import { wakeBackend } from '@/lib/backend-wakeup';
 import { ApiError } from '@/services/api-client';
@@ -126,6 +126,16 @@ export const LoginCard = () => {
 
         {/* Formulario */}
         <form className="space-y-4" onSubmit={formik.handleSubmit} noValidate>
+          {!alertMessage && searchParams.get('registered') === '1' && (
+            <p
+              role="status"
+              className="bg-success-subtle text-success border border-success/30 rounded-xl px-4 py-3 text-xs flex items-start gap-2"
+            >
+              <CheckCircle2 className="size-4 shrink-0 mt-0.5" aria-hidden />
+              <span>Tu cuenta fue creada exitosamente. Iniciá sesión para empezar.</span>
+            </p>
+          )}
+
           {alertMessage && (
             <p
               role="alert"

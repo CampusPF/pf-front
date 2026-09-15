@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { ApiError } from "@/services/api-client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import {
   cancelSubscription,
@@ -58,6 +59,8 @@ export default function SubscriptionSection() {
   }, []);
 
   const active = subscriptions ? findActiveSubscription(subscriptions) : null;
+  const { user } = useAuth();
+  const isStaff = user?.role === "admin" || user?.role === "teacher";
 
   async function handleCancel() {
     if (!active) return;
@@ -154,6 +157,18 @@ export default function SubscriptionSection() {
               >
                 Cancelar suscripción
               </button>
+            </div>
+          ) : isStaff ? (
+            /* Docentes y admins ya tienen acceso completo por su rol y no
+               pueden pasar por el checkout: no tiene sentido ofrecerles planes. */
+            <div className="mt-4">
+              <span className="bg-primary-subtle text-primary inline-flex rounded-full px-3 py-1 text-sm font-medium">
+                {user?.role === "admin" ? "Administrador" : "Docente"}
+              </span>
+              <p className="text-text-secondary mt-3 text-sm">
+                Por tu rol tenés acceso completo a todos los cursos de la
+                plataforma, sin necesidad de un plan.
+              </p>
             </div>
           ) : (
             <div className="mt-4">
