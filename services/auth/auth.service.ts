@@ -31,19 +31,26 @@ function normalizeAuthResponse(raw: RawAuthResponse): AuthResponse {
   return { accessToken, user: raw.user };
 }
 
-/** POST /auth/register — crea la cuenta y deja la sesión guardada. */
-export async function register(
-  payload: RegisterPayload,
-): Promise<AuthResponse> {
+/** POST /auth/register — crea la cuenta SIN iniciar sesión: el usuario va
+    al login después. El back igual devuelve token y setea la cookie, así que
+    no se guarda nada en localStorage y la cookie se borra con /auth/logout
+    (best-effort: si falla, la cuenta ya está creada y el login la pisa). */
+export async function register(payload: RegisterPayload): Promise<void> {
   const raw = await apiFetch<RawAuthResponse>("/auth/register", {
     method: "POST",
     body: payload,
   });
 
-  const session = normalizeAuthResponse(raw);
-  saveSession(session.accessToken, session.user);
-
-  return session;
+  const { accessToken } = normalizeAuthResponse(raw);
+  try {
+    await fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    // Ver comentario de arriba.
+  }
 }
 
 /** POST /auth/login */

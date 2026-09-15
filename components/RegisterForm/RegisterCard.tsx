@@ -67,7 +67,12 @@ export const RegisterCard = () => {
           phone: `+${country?.dialCode ?? ''}${values.phone.trim()}`,
           country: country?.name,
         });
-        router.push(safeRedirect(searchParams.get('redirect')));
+        // Sin sesión: al login con el aviso de cuenta creada. Se conserva el
+        // ?redirect= para que después del login vuelva adonde iba.
+        const params = new URLSearchParams({ registered: '1' });
+        const redirect = searchParams.get('redirect');
+        if (redirect && safeRedirect(redirect) === redirect) params.set('redirect', redirect);
+        router.push(`/login?${params.toString()}`);
       } catch (caught) {
         setStatus(
           caught instanceof ApiError

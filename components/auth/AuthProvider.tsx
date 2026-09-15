@@ -131,9 +131,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     setUser(session.user);
   }, []);
 
+  // Registrarse no inicia sesión: el usuario entra después por el login.
   const register = useCallback(async (payload: RegisterPayload) => {
-    const session = await authService.register(payload);
-    setUser(session.user);
+    await authService.register(payload);
   }, []);
 
   /* Login con Google: el back ya validó contra Google y nos redirigió con el
