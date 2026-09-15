@@ -15,6 +15,7 @@ import LessonSidebar from "@/components/lesson-player/LessonSidebar";
 import {
   findModuleOfLesson,
   getAdjacentLessons,
+  getAllLessons,
   getLessonPosition,
 } from "@/lib/course-utils";
 import { buildLessonAccess, canOpenLesson, shouldAutoEnroll } from "@/lib/lesson-access";
@@ -246,6 +247,14 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
   const { previous, next } = getAdjacentLessons(state.course, lesson.id);
   const { index, total } = getLessonPosition(state.course, lesson.id);
   const isCompleted = progress?.completedLessonIds.includes(lesson.id) ?? false;
+  /* "Finalizar curso" (última lección) sólo se habilita con todas las demás
+     completadas: la actual se completa al hacer click. Si no se sabe el
+     progreso todavía, cuenta como pendiente. */
+  const pendingBeforeFinish = next
+    ? 0
+    : getAllLessons(state.course).filter(
+        (item) => item.id !== lesson.id && !progress?.completedLessonIds.includes(item.id),
+      ).length;
 
   return (
     <>
@@ -379,6 +388,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
                   ? `/checkout?courseId=${state.course.slug}`
                   : null
               }
+              pendingBeforeFinish={pendingBeforeFinish}
             />
           </div>
         </main>

@@ -17,6 +17,7 @@ export default function LessonNavigation({
   onAdvance,
   isAdvancing = false,
   buyHref = null,
+  pendingBeforeFinish = 0,
 }: {
   courseSlug: string;
   previous: Lesson | null;
@@ -30,12 +31,17 @@ export default function LessonNavigation({
    * el botón ofrece directamente la compra.
    */
   buyHref?: string | null;
+  /** En la última lección: cuántas otras faltan completar. Con > 0,
+      "Finalizar curso" queda deshabilitado. */
+  pendingBeforeFinish?: number;
 }) {
   // Sin siguiente es la última lección del curso (no del módulo).
   const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
+  const finishBlocked = !next && pendingBeforeFinish > 0;
 
   return (
-    <div className="border-border mt-12 flex items-center justify-between gap-4 border-t pt-6">
+    <div className="border-border mt-12 border-t pt-6">
+    <div className="flex items-center justify-between gap-4">
       {previous ? (
         <Link
           href={lessonHref(courseSlug, previous.id)}
@@ -56,6 +62,16 @@ export default function LessonNavigation({
           <ShoppingCart className="size-5" aria-hidden />
           Comprar curso
         </Link>
+      ) : finishBlocked ? (
+        <button
+          type="button"
+          disabled
+          aria-describedby="finish-blocked-hint"
+          className={`${PRIMARY} cursor-not-allowed opacity-50`}
+        >
+          Finalizar curso
+          <ChevronRight className="size-5" aria-hidden />
+        </button>
       ) : (
       /* Link real (se puede abrir en otra pestaña), pero el click normal pasa
          por onAdvance para completar la lección antes de salir. */
@@ -77,6 +93,14 @@ export default function LessonNavigation({
         )}
       </Link>
       )}
+    </div>
+    {finishBlocked && (
+      <p id="finish-blocked-hint" className="text-text-muted mt-3 text-right text-sm">
+        Para finalizar el curso te{" "}
+        {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
+        por completar. Las ves en el temario del curso.
+      </p>
+    )}
     </div>
   );
 }
