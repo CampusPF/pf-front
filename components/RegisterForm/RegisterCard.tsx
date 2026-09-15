@@ -27,6 +27,7 @@ import {
   findCountry,
 } from '@/data/countries';
 import { inputClass } from '@/components/ui/input-styles';
+import { liveChange } from '@/lib/formik-live-validation';
 
 const initialValues: RegisterFormValues = {
   fullName: '',
@@ -200,7 +201,7 @@ export const RegisterCard = () => {
               type="text"
               autoComplete="name"
               value={formik.values.fullName}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={fullNameHasError}
               aria-describedby={fullNameHasError ? 'fullName-error' : undefined}
@@ -224,7 +225,7 @@ export const RegisterCard = () => {
               type="email"
               autoComplete="email"
               value={formik.values.email}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={emailHasError}
               aria-describedby={emailHasError ? 'email-error' : undefined}
@@ -247,7 +248,7 @@ export const RegisterCard = () => {
               name="password"
               autoComplete="new-password"
               value={formik.values.password}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={passwordHasError}
               aria-describedby="password-hint"
@@ -274,7 +275,7 @@ export const RegisterCard = () => {
               name="confirmPassword"
               autoComplete="new-password"
               value={formik.values.confirmPassword}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={confirmPasswordHasError}
               aria-describedby={confirmPasswordHasError ? 'confirmPassword-error' : undefined}
@@ -300,7 +301,7 @@ export const RegisterCard = () => {
               min={MIN_BIRTH_DATE}
               max={MAX_BIRTH_DATE}
               value={formik.values.birthDate}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={birthDateHasError}
               aria-describedby={birthDateHasError ? 'birthDate-error' : undefined}
@@ -322,7 +323,7 @@ export const RegisterCard = () => {
               name="country"
               autoComplete="country"
               value={formik.values.country}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={countryHasError}
               aria-describedby={countryHasError ? 'country-error' : undefined}
@@ -360,7 +361,7 @@ export const RegisterCard = () => {
                 inputMode="numeric"
                 autoComplete="tel-national"
                 value={formik.values.phone}
-                onChange={formik.handleChange}
+                onChange={liveChange(formik)}
                 onBlur={formik.handleBlur}
                 aria-invalid={phoneHasError}
                 aria-describedby="phone-hint"
@@ -388,7 +389,7 @@ export const RegisterCard = () => {
                 id="acceptedTerms"
                 name="acceptedTerms"
                 checked={formik.values.acceptedTerms}
-                onChange={formik.handleChange}
+                onChange={liveChange(formik)}
                 onBlur={formik.handleBlur}
                 aria-invalid={acceptedTermsHasError}
                 aria-describedby={acceptedTermsHasError ? 'acceptedTerms-error' : undefined}

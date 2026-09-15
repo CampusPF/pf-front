@@ -20,10 +20,11 @@ export interface DashboardStat {
 }
 
 export const DASHBOARD_STATS: DashboardStat[] = [
-  { key: "streak", value: "7 días", label: "de racha" },
-  { key: "activeCourses", value: "4", label: "cursos activos" },
-  { key: "achievements", value: "12", label: "logros" },
-  { key: "hours", value: "18h", label: "estudiadas" },
+  // En 0 hasta que existan los endpoints: no mostrar números inventados.
+  { key: "streak", value: "0 días", label: "de racha" },
+  { key: "activeCourses", value: "0", label: "cursos activos" },
+  { key: "achievements", value: "0", label: "logros" },
+  { key: "hours", value: "0h", label: "estudiadas" },
 ];
 
 /** Recomendados: reusamos cursos reales del catálogo mock para que las cards

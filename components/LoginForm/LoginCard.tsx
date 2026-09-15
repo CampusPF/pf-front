@@ -15,6 +15,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
 import { inputClass } from '@/components/ui/input-styles';
+import { liveChange } from '@/lib/formik-live-validation';
 
 const initialValues: LoginFormValues = { email: '', password: '' };
 
@@ -145,7 +146,7 @@ export const LoginCard = () => {
               type="email"
               autoComplete="email"
               value={formik.values.email}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={emailHasError}
               aria-describedby={emailHasError ? 'email-error' : undefined}
@@ -170,7 +171,7 @@ export const LoginCard = () => {
               name="password"
               autoComplete="current-password"
               value={formik.values.password}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={passwordHasError}
               aria-describedby={passwordHasError ? 'password-error' : undefined}

@@ -18,6 +18,7 @@ import {
   type PasswordFormValues,
 } from "@/services/profile/profile.schemas";
 import { setPassword } from "@/services/profile/profile.service";
+import { liveChange } from "@/lib/formik-live-validation";
 
 /* Una sola sección para dos casos, decididos por `hasPassword`:
 
@@ -156,7 +157,7 @@ export default function PasswordSection({
               name="currentPassword"
               autoComplete="current-password"
               value={formik.values.currentPassword}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={currentHasError}
               aria-describedby={currentHasError ? "currentPassword-error" : undefined}
@@ -184,7 +185,7 @@ export default function PasswordSection({
             name="password"
             autoComplete="new-password"
             value={formik.values.password}
-            onChange={formik.handleChange}
+            onChange={liveChange(formik)}
             onBlur={formik.handleBlur}
             aria-invalid={passwordHasError}
             aria-describedby="newPassword-hint"
@@ -215,7 +216,7 @@ export default function PasswordSection({
             name="confirmPassword"
             autoComplete="new-password"
             value={formik.values.confirmPassword}
-            onChange={formik.handleChange}
+            onChange={liveChange(formik)}
             onBlur={formik.handleBlur}
             aria-invalid={confirmHasError}
             aria-describedby={confirmHasError ? "confirmNewPassword-error" : undefined}

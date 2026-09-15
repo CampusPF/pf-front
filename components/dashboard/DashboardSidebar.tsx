@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   BookOpen,
   Compass,
   GraduationCap,
   LayoutDashboard,
+  Loader2,
+  LogOut,
   Moon,
   Settings,
   ShieldCheck,
@@ -64,8 +67,23 @@ export default function DashboardSidebar({
 }) {
   const pathname = usePathname();
   const theme = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { data } = useDashboardData();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  /* Primero se sale del dashboard y después se cierra la sesión: al revés,
+     RequireAuth detecta la sesión vacía antes y manda a /login?redirect=
+     en vez de a la landing. La sesión local se limpia aunque el back falle. */
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    onClose();
+    router.replace("/");
+    await logout();
+    // Respaldo: si el logout terminó antes que la navegación, RequireAuth
+    // pudo haber ganado la carrera. Una navegación completa no la pierde.
+    if (window.location.pathname !== "/") window.location.replace("/");
+  };
 
   // Nombre, avatar y rol: reales (GET /users/me). Plan: real (GET /subscriptions/me).
   const name = user?.name?.trim() || "Invitado";
@@ -193,6 +211,23 @@ export default function DashboardSidebar({
             ) : (
               <Moon className="size-4.5" aria-hidden />
             )}
+          </button>
+        </div>
+
+        {/* Cerrar sesión sin tener que volver a la landing. */}
+        <div className="border-border border-t p-3">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="text-text-secondary hover:text-danger hover:bg-surface-elevated flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoggingOut ? (
+              <Loader2 className="size-5 animate-spin" aria-hidden />
+            ) : (
+              <LogOut className="size-5" aria-hidden />
+            )}
+            {isLoggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
           </button>
         </div>
       </aside>
