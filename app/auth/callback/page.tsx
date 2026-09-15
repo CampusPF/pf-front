@@ -34,6 +34,7 @@ function CallbackInner() {
     const token = params.get("token");
 
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("No recibimos un token de sesión. Volvé a iniciar sesión.");
       return;
     }
