@@ -14,6 +14,7 @@ import { MAX_BIRTH_DATE, MIN_BIRTH_DATE } from "@/services/auth/auth.schemas";
 import type { User } from "@/services/auth/auth.types";
 import { profileSchema, type ProfileFormValues } from "@/services/profile/profile.schemas";
 import { updateProfile } from "@/services/profile/profile.service";
+import { liveChange } from "@/lib/formik-live-validation";
 
 /* Datos personales. Mismo molde que RegisterCard (Formik + Yup, inputClass,
    aria-invalid/aria-describedby, el par hint↔error), con dos diferencias:
@@ -156,7 +157,7 @@ export default function ProfileForm({
             type="text"
             autoComplete="name"
             value={formik.values.fullName}
-            onChange={formik.handleChange}
+            onChange={liveChange(formik)}
             onBlur={formik.handleBlur}
             aria-invalid={fullNameHasError}
             aria-describedby={fullNameHasError ? "fullName-error" : undefined}
@@ -200,7 +201,7 @@ export default function ProfileForm({
             min={MIN_BIRTH_DATE}
             max={MAX_BIRTH_DATE}
             value={formik.values.birthDate}
-            onChange={formik.handleChange}
+            onChange={liveChange(formik)}
             onBlur={formik.handleBlur}
             aria-invalid={birthDateHasError}
             aria-describedby={birthDateHasError ? "birthDate-error" : undefined}
@@ -233,7 +234,7 @@ export default function ProfileForm({
               inputMode="numeric"
               autoComplete="tel-national"
               value={formik.values.phone}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={phoneHasError}
               aria-describedby="settings-phone-hint"
@@ -262,7 +263,7 @@ export default function ProfileForm({
             name="country"
             autoComplete="country"
             value={formik.values.country}
-            onChange={formik.handleChange}
+            onChange={liveChange(formik)}
             onBlur={formik.handleBlur}
             className={inputClass(false)}
           >
@@ -285,7 +286,7 @@ export default function ProfileForm({
               type="text"
               autoComplete="address-level2"
               value={formik.values.city}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={cityHasError}
               aria-describedby={cityHasError ? "city-error" : undefined}
@@ -309,7 +310,7 @@ export default function ProfileForm({
               type="text"
               autoComplete="street-address"
               value={formik.values.address}
-              onChange={formik.handleChange}
+              onChange={liveChange(formik)}
               onBlur={formik.handleBlur}
               aria-invalid={addressHasError}
               aria-describedby={addressHasError ? "address-error" : undefined}

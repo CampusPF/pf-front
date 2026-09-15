@@ -57,9 +57,8 @@ export default function DashboardTopbar({
           className="text-text-secondary hover:text-text hover:bg-surface-elevated relative cursor-pointer rounded-lg p-2 transition-colors duration-150"
         >
           <Bell className="size-5" aria-hidden />
-          {/* TODO(campus): punto de "notificación nueva" fijo, no hay
-              notificaciones reales. Ver buildStats en dashboard.view.ts. */}
-          <span className="bg-danger ring-surface absolute top-1.5 right-1.5 size-2 rounded-full ring-2" />
+          {/* TODO(campus): sin punto de "notificación nueva" hasta que haya
+              notificaciones reales. */}
         </button>
 
 

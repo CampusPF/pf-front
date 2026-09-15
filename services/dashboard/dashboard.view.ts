@@ -138,12 +138,9 @@ function pickContinueLearning(
   };
 }
 
-/* TODO(campus): racha, logros y horas son valores FIJOS (data/dashboard.mock.ts)
-   y se le muestran igual a todos, incluso a quien tiene 0 cursos. Decisión
-   del 14/09/2026: quedan hardcodeados de momento. Cuando el back tenga los
-   endpoints, reemplazar acá; si se decide no esperarlos, ocultar esas
-   tarjetas (y la racha del topbar y el punto de la campana, que tampoco son
-   reales) en vez de mostrar números inventados. */
+/* TODO(campus): racha, logros y horas son valores FIJOS en 0
+   (data/dashboard.mock.ts) hasta que el back tenga los endpoints; entonces
+   reemplazar acá. */
 function buildStats(activeCoursesCount: number): DashboardStat[] {
   const mock = new Map(DASHBOARD_STATS.map((stat) => [stat.key, stat]));
 
