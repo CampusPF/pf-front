@@ -57,6 +57,8 @@ async function requestCourseList(
       level: filters.levels?.join(","),
       isFree: filters.isFree,
       search: filters.search,
+      minRating: filters.minRating,
+      sort: filters.sort,
       page: filters.page,
       limit: filters.limit,
     },

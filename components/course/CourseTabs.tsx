@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Lock, Package } from "lucide-react";
 
 import ModuleAccordion from "@/components/course/ModuleAccordion";
+import CourseReviews from "@/components/course/reviews/CourseReviews";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useCourseLearning } from "@/components/course/CourseLearningProvider";
 import {
@@ -15,12 +16,13 @@ import {
   modulesLabel,
 } from "@/lib/course-utils";
 
-type Tab = "content" | "description" | "instructor";
+type Tab = "content" | "description" | "instructor" | "reviews";
 
 const TABS: { value: Tab; label: string }[] = [
   { value: "content", label: "Contenido" },
   { value: "description", label: "Descripción" },
   { value: "instructor", label: "Instructor" },
+  { value: "reviews", label: "Reseñas" },
 ];
 
 export default function CourseTabs() {
@@ -51,6 +53,9 @@ export default function CourseTabs() {
               }`}
             >
               {item.label}
+              {item.value === "reviews" && course.reviewsCount > 0 && (
+                <span className="text-text-muted ml-1.5 text-xs tabular-nums">({course.reviewsCount})</span>
+              )}
             </button>
           );
         })}
@@ -147,6 +152,13 @@ export default function CourseTabs() {
             {course.durationHours !== null && ` Son ${course.durationHours} horas de contenido.`}{" "}
             Si te trabás, el tutor de IA está disponible dentro de cada lección.
           </p>
+        </section>
+      )}
+
+      {/* ── Reseñas ─────────────────────────────────────────────── */}
+      {tab === "reviews" && (
+        <section id="panel-reviews" role="tabpanel" className="mt-6">
+          <CourseReviews />
         </section>
       )}
 

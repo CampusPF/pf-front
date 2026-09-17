@@ -56,6 +56,11 @@ export interface RawCourse {
   instructor?: RawInstructor | null;
   /** Sólo en el detalle (`GET /courses/:id`). */
   modules?: RawModule[];
+  /** Agregados que suma el controller (CourseStatsService). `null` = sin reseñas. */
+  ratingAverage?: number | null;
+  reviewsCount?: number;
+  /** Inscripciones activas. */
+  studentsCount?: number;
 }
 
 /** `GET /lessons/:id` — content/videoUrl en null si no hay acceso. */

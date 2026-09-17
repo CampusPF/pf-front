@@ -4,9 +4,9 @@
    - el back, pasado por `courses.adapter.ts`;
    - los mocks de `data/`, si NEXT_PUBLIC_COURSES_SOURCE=mock.
 
-   Los campos que el back todavía no tiene (rating, alumnos, proyectos, tags,
-   subtítulo, título del instructor) son `null`/vacíos para los cursos reales y
-   la UI los oculta: preferimos no mostrar un dato a mostrar uno inventado. */
+   Los campos que el back todavía no tiene (proyectos, tags, subtítulo, título
+   del instructor) son `null`/vacíos para los cursos reales y la UI los oculta:
+   preferimos no mostrar un dato a mostrar uno inventado. */
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 
@@ -57,9 +57,12 @@ export interface Course {
   levelLabel: string;
   /** Suma de las lecciones si el temario está cargado; si no, `null`. */
   durationHours: number | null;
-  /** TODO(back): no existen. `null` para cursos reales. */
+  /** TODO(back): no existe. `null` para cursos reales. */
   projectsCount: number | null;
+  /** Promedio de reseñas con un decimal. `null` = todavía sin reseñas. */
   rating: number | null;
+  reviewsCount: number;
+  /** Inscripciones activas. `null` sólo si el back no lo mandó. */
   studentsCount: number | null;
   instructor: Instructor;
   /** TODO(back): no existe. Vacío para cursos reales. */

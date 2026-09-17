@@ -6,10 +6,12 @@ import { getCourses } from "@/services/courses/courses.service";
 /* Los destacados salen del mismo catálogo que /courses, así cada card linkea a
    un curso que existe.
 
-   TODO(back): no hay criterio de "destacado" (rating, inscriptos); se muestran
-   los 3 más nuevos (el back ordena por createdAt DESC). */
+   "Destacados por la comunidad" = los 3 mejor valorados (promedio ponderado
+   por cantidad de reseñas, ver sortCourses). Los cursos sin reseñas van al
+   final en su orden natural, así que con pocas reseñas la sección se completa
+   con los más nuevos. */
 export default async function FeaturedCourses() {
-  const featured = await getCourses({ limit: 3 })
+  const featured = await getCourses({ limit: 3, sort: "top-rated" })
     .then((result) => result.data)
     .catch(() => null);
 

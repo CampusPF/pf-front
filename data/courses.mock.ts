@@ -15,6 +15,7 @@ export const MOCK_COURSES: Course[] = [
     durationHours: 28,
     projectsCount: 4,
     rating: 4.9,
+    reviewsCount: 1840,
     studentsCount: 12400,
     instructor: {
       name: "Fernando García",
@@ -78,6 +79,7 @@ export const MOCK_COURSES: Course[] = [
     durationHours: 24,
     projectsCount: 3,
     rating: 4.95,
+    reviewsCount: 960,
     studentsCount: 8200,
     instructor: {
       name: "Sofía Albornoz",
@@ -128,6 +130,7 @@ export const MOCK_COURSES: Course[] = [
     durationHours: 48,
     projectsCount: 5,
     rating: 4.88,
+    reviewsCount: 410,
     studentsCount: 3100,
     instructor: {
       name: "Fernando García",
