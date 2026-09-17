@@ -18,7 +18,9 @@ Ordenado por lo que más destraba al front.
 | 7 | `GET /course-enrollments/me` con total de lecciones por curso y próxima lección | El dashboard oculta "Lección X/Y" y el módulo/próxima lección de "Continuá" | `dashboard.view.ts` |
 | 8 | Endpoint de logros; `GET /me/dashboard` único que reemplace los temporales `GET /me/streak` y `GET /me/studied-time` | Logros es mock; racha y horas ya son reales | `services/progress/progress-stats.service.ts` (único archivo a cambiar), `dashboard.view.ts` (`buildStats`) |
 | 9 | Métricas agregadas de admin (ingresos, ventas por curso) | El resumen cuenta listados completos; no escala | `getAdminStats` |
-| 10 | Campos de catálogo: `subtitle`, `tags`, rating, cantidad de alumnos, título/bio del instructor | Se ocultan para los cursos reales | `courses.adapter.ts` |
+| 10 | Campos de catálogo: `subtitle`, `tags`, título/bio del instructor (rating y alumnos ya son reales: `ratingAverage`/`reviewsCount`/`studentsCount`) | Se ocultan para los cursos reales | `courses.adapter.ts` |
+| 18 | `GET /courses` sin `?minRating=` ni `?sort=top-rated\|popular` | El filtro por valoración y el orden se hacen en el cliente (`sortCourses`, promedio bayesiano) | `courses.client-filter.ts` |
+| 19 | Moderación de comentarios de reseñas: se probó con Google Cloud Natural Language (`documents:moderateText`) pero se sacó el 2026-09-17 porque el alta de facturación de esa cuenta de Google fue rechazada (tarjetas de débito, no es un problema de código). Hoy cualquier comentario se publica sin filtro y nadie (ni el admin) puede borrar la reseña de otro | Un comentario obsceno queda visible sin forma de sacarlo desde la app | `CourseReviewsService.upsertMine` (pf-back) |
 | 11 | `GET /courses?instructorId=` | El teacher ve "sus" cursos filtrados en el cliente | `AdminCoursesList` |
 | 12 | Reordenar módulos/lecciones en bloque | Hoy el orden se edita campo por campo | `SyllabusEditor` |
 | 13 | ~~El seeder (`run-seed.ts`) no pasa `ssl`~~ — resuelto en `feature/seed-ssl-supabase` | Ya conecta a Supabase/Render | — |

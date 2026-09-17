@@ -175,7 +175,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
   );
 
   const readyLesson = state.status === "ready" ? state.lesson : null;
-  const access = buildLessonAccess(user, progress);
+  const access = buildLessonAccess(user, progress, course);
   const canView = Boolean(readyLesson?.hasAccess && canOpenLesson(readyLesson, access));
 
   /* Avanzar a la lección siguiente completa la actual: la lección 1 no queda
@@ -362,7 +362,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
                 ) : (
                   <p className="text-text-muted text-sm">
                     {enrollError ??
-                      (state.course.isPremium && !access.isStaff && !access.hasActiveSubscription
+                      (state.course.isPremium && !access.hasRoleAccess && !access.hasActiveSubscription
                         ? "Es una lección de muestra. Comprá el curso o suscribite a Premium para guardar tu progreso."
                         : "Inscribite al curso para guardar tu progreso.")}
                   </p>

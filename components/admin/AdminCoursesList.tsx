@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -26,6 +26,14 @@ import type { Course } from "@/types/course.types";
 
 /* Listado de cursos para admin (todos, activos e inactivos) o teacher (sólo
    los suyos, filtrados acá por instructor).
+
+   Qué puede hacer cada uno:
+   - teacher: crear, editar (datos, precio, temario…), eliminar y restaurar
+     SUS cursos.
+   - admin: sólo eliminar y restaurar. No crea ni edita nada; para decidir si
+     eliminar un curso lo abre en el catálogo ("Ver"), donde tiene acceso a
+     todas las lecciones. El back aplica la misma regla (403 si lo intenta).
+
    TODO(back): no hay `GET /courses?instructorId=`; filtramos en el cliente. */
 export default function AdminCoursesList() {
   const { user } = useAuth();
@@ -65,14 +73,22 @@ export default function AdminCoursesList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-text-muted text-sm">
           {courses ? `${courses.length} cursos` : " "}
+          {isAdmin && (
+            <span className="block text-xs">
+              Como administrador podés eliminar o restaurar cursos. Crearlos y editarlos le
+              corresponde a cada docente.
+            </span>
+          )}
         </p>
-        <Link href="/dashboard/admin/cursos/nuevo" className={BUTTON_PRIMARY}>
-          <Plus className="size-4" aria-hidden />
-          Nuevo curso
-        </Link>
+        {!isAdmin && (
+          <Link href="/dashboard/admin/cursos/nuevo" className={BUTTON_PRIMARY}>
+            <Plus className="size-4" aria-hidden />
+            Nuevo curso
+          </Link>
+        )}
       </div>
 
       {error && <ErrorBanner message={error} />}
@@ -127,17 +143,32 @@ export default function AdminCoursesList() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
-                        <Link href={`/dashboard/admin/cursos/${course.id}`} className={BUTTON_SECONDARY}>
-                          <Pencil className="size-3.5" aria-hidden />
-                          Editar
-                        </Link>
+                        {isAdmin ? (
+                          // Un curso inactivo no está en el catálogo público:
+                          // no hay página que abrir.
+                          active && (
+                            <Link
+                              href={`/courses/${course.slug}`}
+                              className={BUTTON_SECONDARY}
+                              aria-label={`Ver ${course.title} en el catálogo`}
+                            >
+                              <Eye className="size-3.5" aria-hidden />
+                              Ver
+                            </Link>
+                          )
+                        ) : (
+                          <Link href={`/dashboard/admin/cursos/${course.id}`} className={BUTTON_SECONDARY}>
+                            <Pencil className="size-3.5" aria-hidden />
+                            Editar
+                          </Link>
+                        )}
                         {active ? (
                           <button
                             type="button"
                             onClick={() => setToDeactivate(course)}
                             disabled={pendingId === course.id}
                             className={BUTTON_GHOST_DANGER}
-                            aria-label={`Desactivar ${course.title}`}
+                            aria-label={`Eliminar ${course.title}`}
                           >
                             <Trash2 className="size-4" aria-hidden />
                           </button>
@@ -165,9 +196,9 @@ export default function AdminCoursesList() {
       <ConfirmDialog
         open={toDeactivate !== null}
         variant="danger"
-        title="¿Desactivar el curso?"
+        title="¿Eliminar el curso?"
         description={`"${toDeactivate?.title ?? ""}" deja de aparecer en el catálogo. Los alumnos inscriptos no pierden su progreso y lo podés restaurar cuando quieras.`}
-        confirmLabel="Sí, desactivar"
+        confirmLabel="Sí, eliminar"
         isPending={pendingId !== null}
         onConfirm={() => toDeactivate && run(toDeactivate, () => deactivateCourse(toDeactivate.id))}
         onCancel={() => setToDeactivate(null)}

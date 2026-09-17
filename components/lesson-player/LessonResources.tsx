@@ -27,8 +27,9 @@ import {
    - Todos ven la lista (sólo metadata) y descargan si tienen acceso al curso.
    - La URL de descarga vence en 10 min: se pide en el click y se usa en el
      acto, nunca se guarda en estado.
-   - Con `manage` (editor de lección del panel admin) además se sube (PDF +
-     título opcional) y se borra. Sólo para admin: el back no deja a nadie más.
+   - Con `manage` (editor de lección del panel) además se sube (PDF + título
+     opcional) y se borra. Sólo el docente del curso: el back no deja a nadie
+     más, tampoco al admin.
 
    Si la lección no existe en el back (ej. modo mock) el GET da 404/400 y la
    sección directamente no se muestra. */
@@ -41,7 +42,9 @@ export default function LessonResources({
   manage?: boolean;
 }) {
   const { user } = useAuth();
-  const isAdmin = manage && user?.role === "admin";
+  // Sólo el docente (el editor de cursos es sólo para teacher y el back valida
+  // que sea SU curso). El admin no sube ni borra adjuntos.
+  const canManage = manage && user?.role === "teacher";
 
   const [resources, setResources] = useState<LessonResource[] | null>(null);
   const [hidden, setHidden] = useState(false);
@@ -119,7 +122,7 @@ export default function LessonResources({
 
   if (hidden) return null;
   // Sin adjuntos y sin poder subir: no hay nada que mostrar.
-  if (!isAdmin && resources?.length === 0) return null;
+  if (!canManage && resources?.length === 0) return null;
 
   return (
     <section aria-labelledby="resources-title" className="border-border mt-10 border-t pt-8">
@@ -161,7 +164,7 @@ export default function LessonResources({
                 )}
                 Descargar
               </button>
-              {isAdmin && (
+              {canManage && (
                 <button
                   type="button"
                   onClick={() => setToDelete(resource)}
@@ -176,11 +179,11 @@ export default function LessonResources({
         </ul>
       )}
 
-      {isAdmin && resources && resources.length === 0 && (
+      {canManage && resources && resources.length === 0 && (
         <p className="text-text-muted mt-3 text-sm">Esta lección todavía no tiene adjuntos.</p>
       )}
 
-      {isAdmin && resources && (
+      {canManage && resources && (
         <ResourceUploadForm lessonId={lessonId} onUploaded={handleUploaded} />
       )}
 

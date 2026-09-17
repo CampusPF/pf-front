@@ -10,8 +10,11 @@ export const metadata: Metadata = {
 /* Panel de administración. Hereda RequireAuth + el shell del dashboard de
    app/(app)/layout.tsx; acá sólo se agrega el gate de rol y las pestañas.
 
-   Entran admin y teacher. El teacher ve sólo "Cursos" (los suyos).
-   TODO(back): hoy el back sólo deja escribir cursos al admin. */
+   Entran admin y teacher, con permisos distintos sobre los cursos:
+   - teacher: ve sólo "Cursos" (los suyos) y los crea, edita, elimina y
+     restaura;
+   - admin: ve todas las pestañas, pero sobre los cursos sólo elimina y
+     restaura (crear/editar son páginas sólo para teacher). */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireRole roles={["admin", "teacher"]}>

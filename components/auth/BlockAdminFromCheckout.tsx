@@ -4,22 +4,25 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { isStaffRole } from "@/lib/lesson-access";
 
-/* Admin y teacher no compran: ya ven todo el catálogo y se inscriben sin
-   pagar a cualquier curso. Si llegan al checkout (link directo, "Hacerme
-   Premium" desde otra pestaña) se les explica en vez de mostrar el formulario
-   de pago. Es UX: el back responde 403 a POST /payments/create-intent para
-   esos roles.
+/* El admin no compra: ve todo el catálogo y se inscribe sin pagar a cualquier
+   curso. Si llega al checkout (link directo, "Hacerme Premium" desde otra
+   pestaña) se le explica en vez de mostrar el formulario de pago. Es UX: el
+   back responde 403 a POST /payments/create-intent para ese rol.
+
+   El docente SÍ pasa: sólo tiene gratis los cursos gratuitos y los suyos, así
+   que un curso pago de otro docente lo compra (o se suscribe a Premium) como
+   cualquier alumno. Comprar su propio curso lo frena el back con un 409, y el
+   front nunca le ofrece ese checkout (EnrollCTA le muestra "Ir al curso").
 
    Va adentro de RequireAuth, así que la sesión ya está resuelta. */
-export default function BlockStaffFromCheckout({ children }: { children: React.ReactNode }) {
+export default function BlockAdminFromCheckout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   // Sin rol todavía (llega por /users/me) no se decide nada.
   if (!user?.role) return null;
 
-  if (isStaffRole(user.role)) {
+  if (user.role === "admin") {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 pt-32 pb-20 text-center">
         <span className="bg-success-subtle text-success flex size-14 items-center justify-center rounded-full">
@@ -27,8 +30,7 @@ export default function BlockStaffFromCheckout({ children }: { children: React.R
         </span>
         <h1 className="text-text text-xl font-semibold">No necesitás comprar nada</h1>
         <p className="text-text-secondary text-sm">
-          Como {user.role === "admin" ? "administrador" : "docente"} ya tenés acceso a todos
-          los cursos, incluidos los pagos. Tu progreso se guarda igual que el de un alumno.
+          Como administrador ya tenés acceso a todos los cursos, incluidos los pagos.
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
           <Link

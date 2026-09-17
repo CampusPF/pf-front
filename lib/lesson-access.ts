@@ -7,7 +7,8 @@ import type { Course, Lesson } from "@/types/course.types";
    reproductor, así no pueden discrepar entre sí.
 
    Una lección se abre si:
-   - el usuario es admin o teacher (acceso completo);
+   - el usuario es admin (ve todo el catálogo para decidir qué eliminar);
+   - es el docente que dicta ESE curso;
    - está inscripto al curso;
    - tiene una suscripción Premium activa;
    - o la lección está marcada como gratis (`isFree`, la vista previa).
@@ -15,13 +16,18 @@ import type { Course, Lesson } from "@/types/course.types";
    gratis la inscripción es un click, y entrar a la lección gratis ya inscribe
    (ver LessonPlayer).
 
+   Un docente NO tiene pase libre en los cursos de otros: sólo tiene gratis los
+   gratuitos y los suyos; un curso pago ajeno lo compra o lo cursa con Premium,
+   como cualquier alumno.
+
    Es la misma regla que aplica el back (LessonsAccessService en pf-back), que
    es el que de verdad nulea content/videoUrl. Acá sólo sirve para dibujar
    candados y links sin preguntarle lección por lección. Si cambia una, cambia
    la otra. */
 
 export type LessonAccessContext = {
-  isStaff: boolean;
+  /** Acceso por rol a ESTE curso: admin, o el docente que lo dicta. */
+  hasRoleAccess: boolean;
   isEnrolled: boolean;
   hasActiveSubscription: boolean;
 };
@@ -30,12 +36,25 @@ export function isStaffRole(role: User["role"] | undefined): boolean {
   return role === "admin" || role === "teacher";
 }
 
+/** ¿Este usuario dicta este curso? */
+export function isCourseInstructor(
+  user: Pick<User, "id" | "role"> | null | undefined,
+  course: Pick<Course, "instructor"> | null | undefined,
+): boolean {
+  return (
+    user?.role === "teacher" &&
+    Boolean(course?.instructor.id) &&
+    course?.instructor.id === user.id
+  );
+}
+
 export function buildLessonAccess(
   user: User | null,
   progress: CourseProgress | null,
+  course: Pick<Course, "instructor"> | null,
 ): LessonAccessContext {
   return {
-    isStaff: isStaffRole(user?.role),
+    hasRoleAccess: user?.role === "admin" || isCourseInstructor(user, course),
     isEnrolled: Boolean(progress?.enrollmentId),
     hasActiveSubscription: progress?.hasActiveSubscription ?? false,
   };
@@ -43,7 +62,7 @@ export function buildLessonAccess(
 
 /** Acceso a todo el curso, sin depender de qué lecciones son gratis. */
 export function hasFullCourseAccess(access: LessonAccessContext): boolean {
-  return access.isStaff || access.isEnrolled || access.hasActiveSubscription;
+  return access.hasRoleAccess || access.isEnrolled || access.hasActiveSubscription;
 }
 
 export function canOpenLesson(lesson: Pick<Lesson, "isFree">, access: LessonAccessContext): boolean {
@@ -52,12 +71,13 @@ export function canOpenLesson(lesson: Pick<Lesson, "isFree">, access: LessonAcce
 
 /**
  * Entrar a una lección inscribe al usuario si la inscripción no cuesta nada:
- * curso gratis, o cualquier curso con Premium activo o siendo admin/teacher
- * (el back acepta POST /course-enrollments en esos casos). Así el curso queda
- * "empezado" en el detalle y en el dashboard, y puede registrar progreso.
- * Un curso pago para un alumno sin Premium no: la inscripción la crea el pago.
+ * curso gratis, o cualquier curso con Premium activo, siendo admin, o siendo
+ * el docente del curso (el back acepta POST /course-enrollments en esos
+ * casos). Así el curso queda "empezado" en el detalle y en el dashboard, y
+ * puede registrar progreso. Un curso pago para quien no tiene ninguna de esas
+ * — alumno o docente ajeno sin Premium — no: la inscripción la crea el pago.
  */
 export function shouldAutoEnroll(course: Pick<Course, "isPremium">, access: LessonAccessContext): boolean {
   if (access.isEnrolled) return false;
-  return !course.isPremium || access.hasActiveSubscription || access.isStaff;
+  return !course.isPremium || access.hasActiveSubscription || access.hasRoleAccess;
 }
