@@ -16,7 +16,7 @@ Ordenado por lo que más destraba al front.
 | 5 | Sacar `imageUrl` de `CreateCourseDto` / `CreateCategoryDto` | Las imágenes se suben por archivo; el front ya no lo manda | Nada |
 | 6 | ~~Inscripción para suscriptores Premium~~ — resuelto: `POST /course-enrollments` acepta cursos pagos con suscripción activa y el front inscribe al entrar a una lección | — | — |
 | 7 | `GET /course-enrollments/me` con total de lecciones por curso y próxima lección | El dashboard oculta "Lección X/Y" y el módulo/próxima lección de "Continuá" | `dashboard.view.ts` |
-| 8 | Endpoints de racha, logros y horas estudiadas | Son mock en el dashboard | `dashboard.view.ts` (`buildStats`) |
+| 8 | Endpoint de logros; `GET /me/dashboard` único que reemplace los temporales `GET /me/streak` y `GET /me/studied-time` | Logros es mock; racha y horas ya son reales | `services/progress/progress-stats.service.ts` (único archivo a cambiar), `dashboard.view.ts` (`buildStats`) |
 | 9 | Métricas agregadas de admin (ingresos, ventas por curso) | El resumen cuenta listados completos; no escala | `getAdminStats` |
 | 10 | Campos de catálogo: `subtitle`, `tags`, rating, cantidad de alumnos, título/bio del instructor | Se ocultan para los cursos reales | `courses.adapter.ts` |
 | 11 | `GET /courses?instructorId=` | El teacher ve "sus" cursos filtrados en el cliente | `AdminCoursesList` |
@@ -42,7 +42,7 @@ Ordenado por lo que más destraba al front.
 
 | Dato | Dónde |
 |---|---|
-| Racha, logros y horas estudiadas, y el punto de notificación de la campana (hardcodeados de momento, decisión del 14/09/2026; se muestran aunque el usuario tenga 0 cursos) | `data/dashboard.mock.ts` (tarjetas + topbar), `TODO(campus)` en `dashboard.view.ts` |
+| Logros y el punto de notificación de la campana (hardcodeados de momento, decisión del 14/09/2026; se muestran aunque el usuario tenga 0 cursos) | `data/dashboard.mock.ts`, `dashboard.view.ts` |
 | Texto de la bio del instructor | `CourseTabs.tsx` |
 | Todo el catálogo, **sólo** si `NEXT_PUBLIC_COURSES_SOURCE=mock` | `data/*.mock.ts` |
 
