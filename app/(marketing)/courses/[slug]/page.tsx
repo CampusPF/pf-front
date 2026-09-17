@@ -11,6 +11,7 @@ import CourseLearningProvider from "@/components/course/CourseLearningProvider";
 import CourseTabs from "@/components/course/CourseTabs";
 import EnrollCTA from "@/components/course/EnrollCTA";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { formatRating, reviewsLabel } from "@/components/ui/StarRating";
 
 /* Render por request (ver el comentario en /courses/page.tsx). La parte
    pública (hero, módulos) sale del server; lo que depende de la sesión
@@ -96,16 +97,23 @@ export default async function CoursePage(props: PageProps<"/courses/[slug]">) {
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-6 text-sm text-white/90">
-                {course.rating !== null && (
+                {course.rating !== null && course.reviewsCount > 0 ? (
                   <span className="flex items-center gap-1.5">
                     <Star className="size-4 fill-current" aria-hidden />
-                    <span className="font-semibold">{course.rating}</span>
+                    <span className="font-semibold">{formatRating(course.rating)}</span>
+                    <span className="text-white/80">({reviewsLabel(course.reviewsCount)})</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-white/80">
+                    <Star className="size-4" aria-hidden />
+                    Sin reseñas todavía
                   </span>
                 )}
-                {course.studentsCount !== null && (
+                {course.studentsCount !== null && course.studentsCount > 0 && (
                   <span className="flex items-center gap-1.5">
                     <Users className="size-4" aria-hidden />
-                    {formatStudents(course.studentsCount)} alumnos
+                    {formatStudents(course.studentsCount)}{" "}
+                    {course.studentsCount === 1 ? "alumno" : "alumnos"}
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">

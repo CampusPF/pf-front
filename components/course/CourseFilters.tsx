@@ -2,12 +2,13 @@
 
 import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Loader2, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Loader2, RotateCcw, Search, SlidersHorizontal, Star } from "lucide-react";
 
-import type { CategoryOption } from "@/services/courses/courses.types";
+import { MIN_RATING_OPTIONS, type CategoryOption } from "@/services/courses/courses.types";
 import { LEVEL_OPTIONS } from "@/services/courses/courses.service";
 
-/* Los filtros viven en la URL (?q=&nivel=&categoria=&precio=): el filtro es
+/* Los filtros viven en la URL (?q=&nivel=&categoria=&precio=&valoracion=; el
+   orden, ?orden=, lo maneja CourseSort arriba de la grilla): el filtro es
    linkeable, sobrevive a recargar y la página los lee en el server.
 
    Cada cambio es una navegación que espera un render nuevo del server (que a
@@ -30,6 +31,16 @@ const PRICES = [
   { value: "premium", label: "Premium" },
 ];
 
+/* ?valoracion=4 → promedio de 4 o más. Los cursos sin reseñas quedan afuera
+   de cualquier mínimo (no tienen promedio que lo cumpla). */
+const RATINGS = [
+  { value: "", label: "Todas" },
+  ...MIN_RATING_OPTIONS.map((min) => ({
+    value: String(min),
+    label: `${String(min).replace(".", ",")} o más`,
+  })),
+];
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="text-text mb-3 text-sm font-semibold">{children}</h3>;
 }
@@ -50,6 +61,7 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
   const levels = readList(current.get("nivel"));
   const selectedCategories = readList(current.get("categoria"));
   const price = current.get("precio") ?? "";
+  const minRating = current.get("valoracion") ?? "";
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
 
   // El debounce llama a update() desde un timeout: la query se lee de un ref
@@ -63,7 +75,8 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
   // En mobile el panel arranca cerrado y se despliega con el botón "Filtrar".
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeCount = levels.length + selectedCategories.length + (price ? 1 : 0);
+  const activeCount =
+    levels.length + selectedCategories.length + (price ? 1 : 0) + (minRating ? 1 : 0);
 
   function navigate(query: string) {
     queryRef.current = query;
@@ -230,12 +243,44 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
           </div>
         </section>
 
+        <section className="mb-6">
+          <SectionTitle>Valoración</SectionTitle>
+          <div className="space-y-2.5">
+            {RATINGS.map((option) => (
+              <label
+                key={option.value || "all"}
+                className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-2.5 text-sm transition-colors duration-150"
+              >
+                <input
+                  type="radio"
+                  name="valoracion"
+                  value={option.value}
+                  checked={minRating === option.value}
+                  onChange={() => update({ valoracion: option.value || null })}
+                  className="accent-primary size-4 cursor-pointer"
+                />
+                {option.value ? (
+                  <span className="flex items-center gap-1.5">
+                    <Star className="fill-warning text-warning size-3.5" aria-hidden />
+                    {option.label}
+                  </span>
+                ) : (
+                  option.label
+                )}
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Limpia filtros Y búsqueda, pero conserva el orden elegido: ordenar no
+            es filtrar, y perderlo al limpiar sorprende. */}
         <button
           type="button"
           onClick={() => {
             clearTimeout(searchTimer.current);
             setSearch("");
-            navigate("");
+            const orden = new URLSearchParams(queryRef.current).get("orden");
+            navigate(orden ? new URLSearchParams({ orden }).toString() : "");
           }}
           className="text-text-secondary hover:text-text hover:bg-surface-elevated flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150"
         >

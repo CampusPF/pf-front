@@ -60,7 +60,9 @@ export default function SubscriptionSection() {
 
   const active = subscriptions ? findActiveSubscription(subscriptions) : null;
   const { user } = useAuth();
-  const isStaff = user?.role === "admin" || user?.role === "teacher";
+  // Sólo el admin tiene todo por su rol. El docente tiene gratis lo gratuito y
+  // lo suyo: para el resto le sirve un plan, igual que a un alumno.
+  const isAdmin = user?.role === "admin";
 
   async function handleCancel() {
     if (!active) return;
@@ -158,12 +160,12 @@ export default function SubscriptionSection() {
                 Cancelar suscripción
               </button>
             </div>
-          ) : isStaff ? (
-            /* Docentes y admins ya tienen acceso completo por su rol y no
-               pueden pasar por el checkout: no tiene sentido ofrecerles planes. */
+          ) : isAdmin ? (
+            /* El admin ya tiene acceso completo por su rol y no puede pasar
+               por el checkout: no tiene sentido ofrecerle planes. */
             <div className="mt-4">
               <span className="bg-primary-subtle text-primary inline-flex rounded-full px-3 py-1 text-sm font-medium">
-                {user?.role === "admin" ? "Administrador" : "Docente"}
+                Administrador
               </span>
               <p className="text-text-secondary mt-3 text-sm">
                 Por tu rol tenés acceso completo a todos los cursos de la

@@ -3,7 +3,7 @@
 import { Bell, Flame, Menu, Search } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { DASHBOARD_STATS } from "@/data/dashboard.mock";
+import { useStreak } from "@/services/progress/use-progress-stats";
 
 export default function DashboardTopbar({
   onMenuClick,
@@ -11,8 +11,12 @@ export default function DashboardTopbar({
   onMenuClick: () => void;
 }) {
   const { user } = useAuth();
-  // TODO(back): la racha sigue mockeada — no hay endpoint de streak.
-  const streak = DASHBOARD_STATS.find((s) => s.key === "streak")?.value ?? "";
+  /* Píldora de racha: sólo con racha real > 0. Cargando, en cero o con error
+     no se muestra — el detalle (vacío / error) lo da StreakCard. */
+  const streakState = useStreak();
+  const streakDays = streakState.status === "success" ? streakState.value : 0;
+  const streak =
+    streakDays > 0 ? `${streakDays} ${streakDays === 1 ? "día" : "días"}` : "";
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? "?";
 
   return (

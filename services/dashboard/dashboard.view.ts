@@ -65,7 +65,7 @@ export interface DashboardView {
   activeCourses: DashboardActiveCourse[];
   /** REAL PARCIAL: inscripción más reciente sin terminar. */
   continueLearning: DashboardContinue | null;
-  /** MIXTO: "cursos activos" es real; racha, logros y horas siguen mockeados. */
+  /** MIXTO: "cursos activos" es real; logros sigue mockeado. */
   stats: DashboardStat[];
 }
 
@@ -138,15 +138,14 @@ function pickContinueLearning(
   };
 }
 
-/* TODO(campus): racha, logros y horas son valores FIJOS en 0
-   (data/dashboard.mock.ts) hasta que el back tenga los endpoints; entonces
-   reemplazar acá. */
+/* Racha y horas estudiadas NO pasan por acá: las cargan StreakCard y
+   StudiedTimeCard desde services/progress/ (endpoints temporales, cada tarjeta
+   con su propio estado de error). Logros sigue FIJO en 0
+   (data/dashboard.mock.ts) hasta que el back tenga el endpoint. */
 function buildStats(activeCoursesCount: number): DashboardStat[] {
   const mock = new Map(DASHBOARD_STATS.map((stat) => [stat.key, stat]));
 
   return [
-    // TODO(back): no hay endpoint de racha.
-    mock.get("streak")!,
     // REAL.
     {
       key: "activeCourses",
@@ -155,9 +154,6 @@ function buildStats(activeCoursesCount: number): DashboardStat[] {
     },
     // TODO(back): no hay endpoint de logros.
     mock.get("achievements")!,
-    // TODO(back): no hay endpoint de horas estudiadas (las lecciones no
-    // tienen duración en el modelo actual).
-    mock.get("hours")!,
   ];
 }
 

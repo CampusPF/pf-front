@@ -14,6 +14,9 @@ import {
 } from "@/components/admin/admin-ui";
 import { inputClass } from "@/components/ui/input-styles";
 import { displayModuleTitle, formatDuration } from "@/lib/course-utils";
+
+/** Duración con la que nace una lección creada desde el temario. */
+const DEFAULT_LESSON_MINUTES = 10;
 import { adminErrorMessage } from "@/services/admin/admin-errors";
 import {
   createLesson,
@@ -225,7 +228,13 @@ function ModuleRow({
     if (!newLessonTitle.trim()) return;
     setIsBusy(true);
     try {
-      const created = await createLesson({ moduleId: courseModule.id, title: newLessonTitle.trim() });
+      // Duración inicial de 10 min para que no quede en 0 (y no sume horas
+      // estudiadas) si el docente no la edita.
+      const created = await createLesson({
+        moduleId: courseModule.id,
+        title: newLessonTitle.trim(),
+        durationMinutes: DEFAULT_LESSON_MINUTES,
+      });
       setNewLessonTitle("");
       await loadLessons();
       setOpenLessonId(created.id);

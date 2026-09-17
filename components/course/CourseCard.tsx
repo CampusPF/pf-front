@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, Clock, FolderCode, Star } from "lucide-react";
+import { ArrowRight, BarChart3, Clock, FolderCode, Star, Users } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
 import { formatStudents } from "@/lib/course-utils";
+import { formatRating, reviewsLabel } from "@/components/ui/StarRating";
 import { formatPrice } from "@/types/checkout";
 import CourseCover from "@/components/course/CourseCover";
 
-/* Los datos que el back todavía no tiene (rating, alumnos, proyectos, tags)
-   llegan en null/vacío para los cursos reales y se ocultan. */
+/* Los datos que el back todavía no tiene (proyectos, tags) llegan en
+   null/vacío para los cursos reales y se ocultan. Sin reseñas se muestra el
+   nivel en lugar de un "0,0" que parecería una mala nota. */
 export default function CourseCard({ course }: { course: Course }) {
   return (
     <Link
@@ -46,13 +48,16 @@ export default function CourseCard({ course }: { course: Course }) {
       {/* ── Cuerpo ──────────────────────────────────────────────── */}
       <div className="bg-surface p-4">
         <div className="text-text-muted flex items-center justify-between gap-2 text-sm">
-          {course.rating !== null ? (
-            <span className="flex items-center gap-1.5">
+          {course.rating !== null && course.reviewsCount > 0 ? (
+            <span
+              className="flex items-center gap-1.5"
+              aria-label={`${formatRating(course.rating)} de 5, ${reviewsLabel(course.reviewsCount)}`}
+            >
               <Star className="fill-warning text-warning size-4" aria-hidden />
-              <span className="text-text font-medium">{course.rating}</span>
-              {course.studentsCount !== null && (
-                <span>({formatStudents(course.studentsCount)} alumnos)</span>
-              )}
+              <span className="text-text font-medium" aria-hidden>
+                {formatRating(course.rating)}
+              </span>
+              <span aria-hidden>({formatStudents(course.reviewsCount)})</span>
             </span>
           ) : (
             <span className="flex items-center gap-1.5">
@@ -85,7 +90,14 @@ export default function CourseCard({ course }: { course: Course }) {
                 {course.projectsCount} proyectos
               </span>
             )}
-            {course.durationHours === null && course.projectsCount === null && (
+            {course.projectsCount === null && Boolean(course.studentsCount) && (
+              <span className="flex items-center gap-1.5">
+                <Users className="size-4" aria-hidden />
+                {formatStudents(course.studentsCount ?? 0)}
+                <span className="sr-only"> alumnos</span>
+              </span>
+            )}
+            {course.durationHours === null && course.projectsCount === null && !course.studentsCount && (
               <span className="line-clamp-1">{course.description}</span>
             )}
           </p>

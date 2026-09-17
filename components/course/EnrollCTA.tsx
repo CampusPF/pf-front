@@ -19,6 +19,7 @@ import {
 import { hasFullCourseAccess } from "@/lib/lesson-access";
 import { enrollInFreeCourse } from "@/services/progress/course-progress.service";
 import { useCourseLearning } from "@/components/course/CourseLearningProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const PRIMARY =
   "bg-primary-solid hover:bg-primary-solid-hover flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60";
@@ -29,9 +30,11 @@ const SECONDARY =
    - inscripto → "Continuar" (o "Empezar" si no completó nada);
    - curso gratis sin inscripción → "Inscribirme gratis" (POST /course-enrollments).
      Entrar a una lección gratis también inscribe (ver LessonPlayer);
-   - curso pago con acceso sin inscripción (admin/teacher o Premium) → "Ir al
-     curso", nunca "Comprar" algo a lo que ya tiene acceso;
-   - curso pago sin acceso → comprar suelto o suscribirse;
+   - curso pago con acceso sin inscripción (admin, el docente que lo dicta, o
+     Premium) → "Ir al curso", nunca "Comprar" algo a lo que ya tiene acceso;
+   - curso pago sin acceso → comprar suelto o suscribirse. Incluye a un docente
+     en el curso de OTRO docente: por su rol sólo tiene gratis lo gratuito y lo
+     suyo;
    - sin sesión → las acciones mandan a /login y vuelven acá.
 
    Un suscriptor Premium queda inscripto al entrar a la primera lección (el
@@ -39,6 +42,7 @@ const SECONDARY =
    después ve "Continuar" y su progreso como cualquier inscripto. */
 export default function EnrollCTA() {
   const router = useRouter();
+  const { user } = useAuth();
   const { course, progress, access, isLoading, isAuthenticated, refreshProgress } =
     useCourseLearning();
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -92,8 +96,10 @@ export default function EnrollCTA() {
         {isEnrolled
           ? `Ya estás inscripto · ${progress?.progressPercent ?? 0}% completado`
           : hasAccessWithoutPaying
-            ? access.isStaff
-              ? "Tenés acceso completo por tu rol."
+            ? access.hasRoleAccess
+              ? user?.role === "admin"
+                ? "Tenés acceso completo por tu rol."
+                : "Es tu curso: tenés acceso completo."
               : "Incluido en tu suscripción Premium."
           : course.isPremium
             ? "Pago único, acceso de por vida a este curso."
