@@ -35,9 +35,11 @@ export default function RequireRole({
         <p className="text-text-secondary text-sm">
           {/* Nombra el rol que hace falta: "el equipo de Campus" confundía a
               un docente, que también es del equipo. */}
-          {roles.includes("teacher")
+          {roles.includes("teacher") && roles.includes("admin")
             ? "Es sólo para docentes y administradores."
-            : "Es sólo para administradores."}
+            : roles.includes("teacher")
+              ? "Es sólo para docentes: crear y editar cursos le corresponde a quien los dicta."
+              : "Es sólo para administradores."}
         </p>
         <Link href="/dashboard" className="text-primary text-sm font-medium hover:underline">
           Volver al inicio

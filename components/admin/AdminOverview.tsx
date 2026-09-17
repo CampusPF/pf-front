@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CreditCard, FolderTree, GraduationCap, Plus, Users } from "lucide-react";
+import { BookOpen, CreditCard, FolderTree, GraduationCap, Users } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, CARD, Loading } from "@/components/admin/admin-ui";
@@ -58,10 +58,11 @@ export default function AdminOverview() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Sin "Nuevo curso": el admin no crea ni edita cursos, sólo los
+          elimina o restaura desde la pestaña Cursos. */}
       <div className="flex flex-wrap gap-2">
-        <Link href="/dashboard/admin/cursos/nuevo" className={BUTTON_PRIMARY}>
-          <Plus className="size-4" aria-hidden />
-          Nuevo curso
+        <Link href="/dashboard/admin/cursos" className={BUTTON_PRIMARY}>
+          Ver cursos
         </Link>
         <Link href="/dashboard/admin/categorias" className={BUTTON_SECONDARY}>
           Gestionar categorías

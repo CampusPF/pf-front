@@ -18,11 +18,12 @@ import type {
 
    Qué es real y qué no, campo por campo:
    - REAL: id, slug, title, description, difficulty→level, imageUrl, precio,
-     moneda, isActive, categoría (nombre), instructor (nombre, avatar), módulos.
+     moneda, isActive, categoría (nombre), instructor (nombre, avatar), módulos,
+     rating (ratingAverage), reviewsCount, studentsCount.
    - DERIVADO: isPremium (precio > 0), durationHours (suma de lecciones, si
      vienen), coverGradient (fijo por id, sólo se ve si no hay imagen).
-   - NO EXISTE EN EL BACK → null/vacío y la UI lo oculta: subtitle, rating,
-     studentsCount, projectsCount, tags, instructor.title. TODO(back). */
+   - NO EXISTE EN EL BACK → null/vacío y la UI lo oculta: subtitle,
+     projectsCount, tags, instructor.title. TODO(back). */
 
 export const LEVEL_LABEL: Record<CourseLevel, string> = {
   beginner: "Principiante",
@@ -94,8 +95,9 @@ export function toCourse(raw: RawCourse): Course {
     levelLabel: LEVEL_LABEL[level],
     durationHours: totalHours(modules),
     projectsCount: null,
-    rating: null,
-    studentsCount: null,
+    rating: raw.ratingAverage ?? null,
+    reviewsCount: raw.reviewsCount ?? 0,
+    studentsCount: raw.studentsCount ?? null,
     instructor: {
       id: raw.instructor?.id,
       name: raw.instructor?.name ?? "Equipo Campus",

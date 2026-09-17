@@ -6,7 +6,14 @@ import { AlertCircle } from "lucide-react";
 import CourseFilters from "@/components/course/CourseFilters";
 import CourseGrid from "@/components/course/CourseGrid";
 import { getCategories, getCourses } from "@/services/courses/courses.service";
-import type { CategoryOption, CourseFilters as Filters, CourseLevel } from "@/services/courses/courses.types";
+import CourseSort from "@/components/course/CourseSort";
+import {
+  MIN_RATING_OPTIONS,
+  SORT_OPTIONS,
+  type CategoryOption,
+  type CourseFilters as Filters,
+  type CourseLevel,
+} from "@/services/courses/courses.types";
 
 export const metadata: Metadata = {
   title: "Cursos — Campus",
@@ -28,12 +35,17 @@ function first(value: string | string[] | undefined): string | undefined {
 function toFilters(params: Record<string, string | string[] | undefined>): Filters {
   const list = (key: string) => first(params[key])?.split(",").filter(Boolean) ?? [];
   const price = first(params.precio);
+  // Sólo valores ofrecidos: un ?valoracion=7 a mano no deja la grilla vacía.
+  const minRating = Number(first(params.valoracion));
+  const sort = SORT_OPTIONS.find((option) => option.value === first(params.orden))?.sort;
 
   return {
     search: first(params.q) || undefined,
     levels: list("nivel").filter((l): l is CourseLevel => LEVELS.includes(l as CourseLevel)),
     categories: list("categoria"),
     isFree: price === "free" ? true : price === "premium" ? false : undefined,
+    minRating: (MIN_RATING_OPTIONS as readonly number[]).includes(minRating) ? minRating : undefined,
+    sort,
     page: Number(first(params.pagina)) || 1,
   };
 }
@@ -100,9 +112,14 @@ export default async function CoursesPage(props: PageProps<"/courses">) {
               </p>
             ) : (
               <>
-                <p className="text-text-muted mb-4 text-sm">
-                  {result.meta.total} {result.meta.total === 1 ? "curso disponible" : "cursos disponibles"}
-                </p>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-text-muted text-sm">
+                    {result.meta.total} {result.meta.total === 1 ? "curso disponible" : "cursos disponibles"}
+                  </p>
+                  <Suspense>
+                    <CourseSort />
+                  </Suspense>
+                </div>
                 <CourseGrid courses={result.data} />
 
                 {result.meta.totalPages > 1 && (

@@ -71,9 +71,13 @@ export default function LessonEditor({
     setSaved(false);
   };
 
+  /* Minutos enteros positivos. Mismo criterio que el título: validación en
+     tiempo real con el borde del input y el guardar deshabilitado. */
+  const durationValid = /^\d+$/.test(values.durationMinutes.trim()) && Number(values.durationMinutes) >= 1;
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!values || !values.title.trim()) return;
+    if (!values || !values.title.trim() || !durationValid) return;
 
     setIsSaving(true);
     setError(null);
@@ -81,7 +85,7 @@ export default function LessonEditor({
       await updateLesson(lessonId, {
         title: values.title.trim(),
         order: Number(values.order) || 0,
-        durationMinutes: Number(values.durationMinutes) || 0,
+        durationMinutes: Number(values.durationMinutes),
         isFree: values.isFree,
         // Vacío = sin video. El back valida @IsUrl, así que no mandamos "".
         videoUrl: values.videoUrl.trim() || undefined,
@@ -147,16 +151,25 @@ export default function LessonEditor({
 
         <div>
           <label htmlFor={id("duration")} className={LABEL}>
-            Duración (min)
+            Duración (minutos)
           </label>
           <input
             id={id("duration")}
             type="number"
-            min={0}
+            min={1}
+            step={1}
+            inputMode="numeric"
             value={values.durationMinutes}
             onChange={(e) => set("durationMinutes", e.target.value)}
-            className={inputClass(false)}
+            aria-invalid={!durationValid}
+            aria-describedby={durationValid ? undefined : id("duration-error")}
+            className={inputClass(!durationValid)}
           />
+          {!durationValid && (
+            <p id={id("duration-error")} className="text-danger mt-1 text-xs">
+              Tiene que ser un número entero mayor a 0.
+            </p>
+          )}
         </div>
 
         <label className="text-text flex items-center gap-2 self-end pb-3 text-sm sm:col-span-2">
@@ -205,7 +218,7 @@ export default function LessonEditor({
         <button
           type="submit"
           form={formId}
-          disabled={isSaving || !values.title.trim()}
+          disabled={isSaving || !values.title.trim() || !durationValid}
           className={BUTTON_PRIMARY}
         >
           {isSaving && <Loader2 className="size-4 animate-spin" aria-hidden />}

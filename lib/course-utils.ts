@@ -90,14 +90,15 @@ export function getLessonsCount(course: Course): number {
   return course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
 }
 
-/** 8 → "8 min" · 63 → "1h 3min" · 120 → "2h" */
-export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
+/** 45 → "45 min" · 90 → "1 h 30 min" · 120 → "2 h". Uno solo para todo el
+    sitio: duración de lección, de módulo, de curso y horas estudiadas. */
+export function formatDuration(totalMinutes: number): string {
+  if (totalMinutes < 60) return `${totalMinutes} min`;
 
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
 
-  return rest === 0 ? `${hours}h` : `${hours}h ${rest}min`;
+  return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
 }
 
 /** 12400 → "12.4k" · 980 → "980" (mismo formato que usa la landing) */

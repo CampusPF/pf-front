@@ -88,7 +88,7 @@ export default function CourseLearningProvider({
       value={{
         course,
         progress,
-        access: buildLessonAccess(user, progress),
+        access: buildLessonAccess(user, progress, course),
         isLoading: authLoading || progressLoading,
         isAuthenticated,
         refreshProgress,

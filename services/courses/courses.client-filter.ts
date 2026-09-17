@@ -4,13 +4,16 @@ import {
   DEFAULT_PAGE,
   type Course,
   type CourseFilters,
+  type CourseSort,
 } from "@/services/courses/courses.types";
 
 /* ⚠️ CAPA TEMPORAL ⚠️
    ────────────────────────────────────────────────────────────────
    TODO(back): `GET /courses` ignora los query params (?category, ?level,
-   ?isFree, ?search, ?page, ?limit) y devuelve el listado completo. Mientras
-   tanto filtramos y paginamos en el cliente.
+   ?isFree, ?search, ?minRating, ?sort, ?page, ?limit) y devuelve el listado
+   completo. Mientras tanto filtramos, ordenamos y paginamos en el cliente.
+   El listado ya trae ratingAverage/reviewsCount/studentsCount por curso, así
+   que ordenar por valoración o popularidad no necesita requests extra.
 
    Está aislado en su propio archivo a propósito: cuando el back lo haga
    server-side, se pone `CLIENT_SIDE_FILTERING = false` en courses.service.ts y
@@ -70,8 +73,67 @@ export function filterCourses(
 
     if (filters.search && !matchesSearch(course, filters.search)) return false;
 
+    // Sin reseñas no hay promedio que cumpla un mínimo: quedan afuera.
+    if (filters.minRating !== undefined && (course.rating ?? 0) < filters.minRating) {
+      return false;
+    }
+
     return true;
   });
+}
+
+/* Cuántas reseñas "prestadas" del promedio general suma el ranking de mejor
+   valorados. Con 3, un curso con una sola reseña de 5★ no le gana a uno con
+   40 reseñas de 4.8: primero tiene que juntar opiniones. */
+const RATING_PRIOR_WEIGHT = 3;
+
+/**
+ * Promedio bayesiano: tira el promedio de cada curso hacia el promedio del
+ * catálogo en proporción a cuán pocas reseñas tiene.
+ *   (n · promedio + m · promedioGeneral) / (n + m)
+ */
+function weightedRating(course: Course, catalogAverage: number): number {
+  const n = course.reviewsCount;
+  if (course.rating === null || n === 0) return -1; // sin reseñas: al final
+  const m = RATING_PRIOR_WEIGHT;
+  return (n * course.rating + m * catalogAverage) / (n + m);
+}
+
+/**
+ * Ordena una copia. "recent" respeta el orden del back (createdAt DESC).
+ *
+ * `catalog` es de dónde sale el promedio general del ranking: tiene que ser el
+ * catálogo COMPLETO, no los resultados filtrados. Si no, filtrar por "4 o más"
+ * sube ese promedio y un curso con una sola reseña de 5★ pasa a ganarle a uno
+ * con muchas — el orden cambiaría según el filtro, que no tiene sentido.
+ */
+export function sortCourses(
+  courses: Course[],
+  sort: CourseSort = "recent",
+  catalog: Course[] = courses,
+): Course[] {
+  if (sort === "recent") return courses;
+
+  // Array.prototype.sort es estable: los empates conservan el orden del back
+  // (el más nuevo primero), que es el desempate que queremos.
+  if (sort === "popular") {
+    return [...courses].sort(
+      (a, b) =>
+        (b.studentsCount ?? 0) - (a.studentsCount ?? 0) || b.reviewsCount - a.reviewsCount,
+    );
+  }
+
+  const rated = catalog.filter((c) => c.rating !== null && c.reviewsCount > 0);
+  const totalReviews = rated.reduce((acc, c) => acc + c.reviewsCount, 0);
+  const catalogAverage = totalReviews
+    ? rated.reduce((acc, c) => acc + (c.rating ?? 0) * c.reviewsCount, 0) / totalReviews
+    : 0;
+
+  return [...courses].sort(
+    (a, b) =>
+      weightedRating(b, catalogAverage) - weightedRating(a, catalogAverage) ||
+      b.reviewsCount - a.reviewsCount,
+  );
 }
 
 /** Filtra + pagina en memoria y arma el `meta` que el contrato promete. */
@@ -79,7 +141,7 @@ export function applyClientFilters(
   courses: Course[],
   filters: CourseFilters = {},
 ): PaginatedResponse<Course> {
-  const filtered = filterCourses(courses, filters);
+  const filtered = sortCourses(filterCourses(courses, filters), filters.sort, courses);
 
   const total = filtered.length;
   const limit = Math.max(1, filters.limit ?? DEFAULT_LIMIT);
