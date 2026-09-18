@@ -56,3 +56,25 @@ export const registerSchema = yup.object({
 });
 
 export type RegisterFormValues = yup.InferType<typeof registerSchema>;
+
+export const forgotPasswordSchema = yup.object({
+  email: yup
+    .string()
+    .trim()
+    .required("Escribí tu email.")
+    .email("Ese email no es válido."),
+});
+
+export type ForgotPasswordFormValues = yup.InferType<typeof forgotPasswordSchema>;
+
+/* Mismas reglas que el registro (passwordRule es compartida): si acá fueran
+   distintas, el usuario elegiría una contraseña que el back va a rechazar. */
+export const resetPasswordSchema = yup.object({
+  password: passwordRule().required("Escribí una contraseña."),
+  confirmPassword: yup
+    .string()
+    .required("Confirmá tu contraseña.")
+    .oneOf([yup.ref("password")], "Las contraseñas no coinciden."),
+});
+
+export type ResetPasswordFormValues = yup.InferType<typeof resetPasswordSchema>;

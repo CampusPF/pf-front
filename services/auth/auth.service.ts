@@ -75,6 +75,37 @@ export async function logout(): Promise<void> {
   }
 }
 
+/**
+ * POST /auth/forgot-password — pide el mail con el link de recuperación.
+ *
+ * El back responde SIEMPRE lo mismo, exista o no la cuenta (para no filtrar
+ * qué emails están registrados), así que acá tampoco hay nada que
+ * distinguir: si no tira, se muestra el mensaje genérico y listo.
+ */
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+}
+
+/**
+ * POST /auth/reset-password — cierra el flujo con el token del mail.
+ *
+ * Tira ApiError 400 si el link expiró (dura 1 hora), si ya se usó o si la
+ * contraseña nueva no cumple las reglas. El mensaje del back ya viene listo
+ * para mostrar.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: { token, newPassword },
+  });
+}
+
 /* GET /auth/google — es una redirección del navegador, no un fetch: el back
    necesita responder un 302 hacia Google y Google vuelve a
    /auth/google/callback. Por eso se navega con window.location.

@@ -56,6 +56,16 @@ export const LoginCard = () => {
   const alertMessage =
     formik.status ?? googleOAuthError(searchParams.get('error'));
 
+  /* Avisos de "venís de completar otra pantalla". Los setean con un query
+     param quien redirige acá: ?registered=1 el alta de cuenta, ?reset=1 el
+     cambio de contraseña. */
+  const successMessage =
+    searchParams.get('registered') === '1'
+      ? 'Tu cuenta fue creada exitosamente. Iniciá sesión para empezar.'
+      : searchParams.get('reset') === '1'
+        ? 'Tu contraseña se actualizó. Entrá con la nueva.'
+        : null;
+
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col items-center justify-center pt-28 pb-12 px-4">
 
@@ -126,13 +136,13 @@ export const LoginCard = () => {
 
         {/* Formulario */}
         <form className="space-y-4" onSubmit={formik.handleSubmit} noValidate>
-          {!alertMessage && searchParams.get('registered') === '1' && (
+          {!alertMessage && successMessage && (
             <p
               role="status"
               className="bg-success-subtle text-success border border-success/30 rounded-xl px-4 py-3 text-xs flex items-start gap-2"
             >
               <CheckCircle2 className="size-4 shrink-0 mt-0.5" aria-hidden />
-              <span>Tu cuenta fue creada exitosamente. Iniciá sesión para empezar.</span>
+              <span>{successMessage}</span>
             </p>
           )}
 
@@ -175,6 +185,12 @@ export const LoginCard = () => {
               <label className="block text-xs font-medium text-text" htmlFor="password">
                 Contraseña
               </label>
+              <Link
+                href="/forgot-password"
+                className="text-primary text-xs font-medium underline underline-offset-2 hover:text-primary-hover cursor-pointer"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
             <PasswordField
               id="password"
