@@ -8,6 +8,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 const TABS = [
   { label: "Resumen", href: "/dashboard/admin", adminOnly: true },
   { label: "Cursos", href: "/dashboard/admin/cursos", adminOnly: false },
+  // El docente ve las ventas de SUS cursos; el admin, las de toda la
+  // plataforma. El alcance lo decide el back según el rol del token.
+  { label: "Ventas", href: "/dashboard/admin/ventas", adminOnly: false },
   { label: "Categorías", href: "/dashboard/admin/categorias", adminOnly: true },
   { label: "Usuarios", href: "/dashboard/admin/usuarios", adminOnly: true },
 ];

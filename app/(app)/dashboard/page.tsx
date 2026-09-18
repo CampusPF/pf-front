@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import ContinueLearningCard from "@/components/dashboard/ContinueLearningCard";
 import StatsRow from "@/components/dashboard/StatsRow";
+import LevelAndAchievements from "@/components/dashboard/LevelAndAchievements";
 import ActiveCoursesSection from "@/components/dashboard/ActiveCoursesSection";
 import RecommendedSection from "@/components/dashboard/RecommendedSection";
 
@@ -19,6 +20,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-8">
         <ContinueLearningCard />
         <StatsRow />
+        <LevelAndAchievements />
         <ActiveCoursesSection />
         <RecommendedSection />
       </div>
