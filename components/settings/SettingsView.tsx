@@ -7,6 +7,7 @@ import AvatarSection from "@/components/settings/AvatarSection";
 import ProfileForm from "@/components/settings/ProfileForm";
 import PasswordSection from "@/components/settings/PasswordSection";
 import SubscriptionSection from "@/components/settings/SubscriptionSection";
+import PaymentsHistorySection from "@/components/settings/PaymentsHistorySection";
 import type { User } from "@/services/auth/auth.types";
 import { getMyProfile } from "@/services/profile/profile.service";
 
@@ -77,6 +78,7 @@ export default function SettingsView() {
           <ProfileForm profile={profile} onSaved={setProfile} />
           <PasswordSection profile={profile} onChanged={reloadProfile} />
           <SubscriptionSection />
+          <PaymentsHistorySection />
         </div>
       )}
     </div>
