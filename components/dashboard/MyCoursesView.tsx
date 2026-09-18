@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowRight, BookOpen, CheckCircle2, Compass } from "lucide-react";
 
+import CertificateButton from "@/components/dashboard/CertificateButton";
 import CourseCover from "@/components/course/CourseCover";
 import ProgressBar from "@/components/course/ProgressBar";
 import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
@@ -122,56 +123,65 @@ function MyCourseCard({ course }: { course: DashboardActiveCourse }) {
   const started = course.progressPercent > 0 || course.completedLessons > 0;
 
   return (
-    <Link
-      href={course.href}
-      className="group bg-surface border-border block overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-    >
-      <CourseCover course={course} className="h-32">
-        <div className="flex h-full items-start justify-between gap-2 p-4">
-          <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
-            {course.categoryLabel}
-          </span>
-          {course.isCompleted && (
-            <span className="bg-success flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white">
-              <CheckCircle2 className="size-3.5" aria-hidden />
-              Completado
+    // `group` vive acá, no en el <Link> de adentro: así el efecto hover
+    // (levantar + sombra) cubre la tarjeta entera, incluida la fila del
+    // certificado, y el botón puede quedar FUERA del <Link> — un <button>
+    // anidado en un <a> dispara la navegación del padre al clickearlo.
+    <div className="group bg-surface border-border overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+      <Link href={course.href} className="block">
+        <CourseCover course={course} className="h-32">
+          <div className="flex h-full items-start justify-between gap-2 p-4">
+            <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+              {course.categoryLabel}
             </span>
-          )}
-        </div>
-      </CourseCover>
-
-      <div className="p-4">
-        <h2 className="text-text group-hover:text-primary font-semibold transition-colors duration-150">
-          {course.title}
-        </h2>
-        <p className="text-text-muted mt-1 line-clamp-2 text-sm">
-          {course.description || "Sin descripción."}
-        </p>
-
-        <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-text-muted text-xs">
-              {course.totalLessons != null
-                ? `Lección ${course.completedLessons}/${course.totalLessons}`
-                : `${course.completedLessons} ${
-                    course.completedLessons === 1
-                      ? "lección completada"
-                      : "lecciones completadas"
-                  }`}
-            </span>
-            <span className="text-text text-xs font-semibold tabular-nums">
-              {course.progressPercent}%
-            </span>
+            {course.isCompleted && (
+              <span className="bg-success flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white">
+                <CheckCircle2 className="size-3.5" aria-hidden />
+                Completado
+              </span>
+            )}
           </div>
-          <ProgressBar value={course.progressPercent} label={`Progreso de ${course.title}`} />
-        </div>
+        </CourseCover>
 
-        <p className="text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium">
-          {course.isCompleted ? "Repasar" : started ? "Continuar" : "Empezar"}
-          <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden />
-        </p>
-      </div>
-    </Link>
+        <div className="p-4">
+          <h2 className="text-text group-hover:text-primary font-semibold transition-colors duration-150">
+            {course.title}
+          </h2>
+          <p className="text-text-muted mt-1 line-clamp-2 text-sm">
+            {course.description || "Sin descripción."}
+          </p>
+
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-text-muted text-xs">
+                {course.totalLessons != null
+                  ? `Lección ${course.completedLessons}/${course.totalLessons}`
+                  : `${course.completedLessons} ${
+                      course.completedLessons === 1
+                        ? "lección completada"
+                        : "lecciones completadas"
+                    }`}
+              </span>
+              <span className="text-text text-xs font-semibold tabular-nums">
+                {course.progressPercent}%
+              </span>
+            </div>
+            <ProgressBar value={course.progressPercent} label={`Progreso de ${course.title}`} />
+          </div>
+
+          <p className="text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium">
+            {course.isCompleted ? "Repasar" : started ? "Continuar" : "Empezar"}
+            <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden />
+          </p>
+        </div>
+      </Link>
+
+      {course.isCompleted && (
+        <div className="px-4 pb-4">
+          <CertificateButton courseId={course.courseId} />
+        </div>
+      )}
+    </div>
   );
 }
 
