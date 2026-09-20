@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CircleCheck, ListVideo, Lock, Play, X } from "lucide-react";
+import { CircleCheck, ClipboardCheck, ListVideo, Lock, Play, X } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
-import { displayModuleTitle, formatDuration, lessonHref } from "@/lib/course-utils";
+import type { CourseCheckpoint } from "@/types/quiz.types";
+import { displayModuleTitle, formatDuration, lessonHref, quizHref } from "@/lib/course-utils";
 import { canOpenLesson, type LessonAccessContext } from "@/lib/lesson-access";
 
 function SidebarContent({
@@ -15,6 +16,7 @@ function SidebarContent({
   access,
   nextLessonId,
   onAdvance,
+  checkpoints,
   onNavigate,
 }: {
   course: Course;
@@ -23,6 +25,7 @@ function SidebarContent({
   access: LessonAccessContext;
   nextLessonId: string | null;
   onAdvance: (href: string) => void;
+  checkpoints: readonly CourseCheckpoint[];
   onNavigate?: () => void;
 }) {
   const modules = [...course.modules].sort((a, b) => a.order - b.order);
@@ -107,6 +110,30 @@ function SidebarContent({
                 </Link>
               );
             })}
+
+          {/* Checkpoint del módulo, si tiene: cierra el módulo en el temario. */}
+          {checkpoints
+            .filter((checkpoint) => checkpoint.moduleId === courseModule.id)
+            .map((checkpoint) => (
+              <Link
+                key={checkpoint.quizId}
+                href={quizHref(course.slug, checkpoint.quizId)}
+                onClick={onNavigate}
+                className="text-text-secondary hover:bg-surface-elevated hover:text-text flex cursor-pointer items-start gap-2.5 border-l-2 border-transparent px-4 py-2.5 text-sm transition-colors duration-150"
+              >
+                {checkpoint.passed ? (
+                  <CircleCheck className="text-success mt-0.5 size-4 shrink-0" aria-hidden />
+                ) : (
+                  <ClipboardCheck className="text-text-muted mt-0.5 size-4 shrink-0" aria-hidden />
+                )}
+                <span className="min-w-0 flex-1">
+                  Checkpoint del módulo {checkpoint.moduleOrder}
+                  <span className="text-text-muted mt-0.5 block text-xs">
+                    {checkpoint.passed ? "Aprobado" : "Pendiente"}
+                  </span>
+                </span>
+              </Link>
+            ))}
         </div>
       ))}
     </nav>
@@ -120,6 +147,7 @@ export default function LessonSidebar({
   access,
   nextLessonId,
   onAdvance,
+  checkpoints = [],
 }: {
   course: Course;
   currentLessonId: string;
@@ -127,6 +155,7 @@ export default function LessonSidebar({
   access: LessonAccessContext;
   nextLessonId: string | null;
   onAdvance: (href: string) => void;
+  checkpoints?: readonly CourseCheckpoint[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -141,6 +170,7 @@ export default function LessonSidebar({
           access={access}
           nextLessonId={nextLessonId}
           onAdvance={onAdvance}
+          checkpoints={checkpoints}
         />
       </aside>
 
@@ -186,6 +216,7 @@ export default function LessonSidebar({
                 access={access}
                 nextLessonId={nextLessonId}
                 onAdvance={onAdvance}
+                checkpoints={checkpoints}
                 onNavigate={() => setIsOpen(false)}
               />
             </div>

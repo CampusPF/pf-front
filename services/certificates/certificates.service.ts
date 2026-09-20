@@ -51,6 +51,31 @@ export function getMyCertificates(signal?: AbortSignal): Promise<Certificate[]> 
   return apiFetch<Certificate[]>("/certificates/me", { auth: true, signal });
 }
 
+/** Ruta pública a la que apunta el QR del PDF: la misma que se comparte. */
+export function certificateVerificationPath(code: string): string {
+  return `/certificados/verificar/${encodeURIComponent(code)}`;
+}
+
+/**
+ * URL del PDF que fuerza la descarga en vez de abrirlo en el visor.
+ *
+ * El atributo `download` de un <a> se ignora en un link a otro dominio
+ * (Cloudinary), así que se usa el flag `fl_attachment` de sus URLs de
+ * entrega. Una URL que no sea de Cloudinary se devuelve tal cual.
+ */
+export function certificateDownloadUrl(pdfUrl: string): string {
+  try {
+    const url = new URL(pdfUrl);
+    if (url.hostname !== "res.cloudinary.com") return pdfUrl;
+    if (url.pathname.includes("/fl_attachment")) return pdfUrl;
+
+    url.pathname = url.pathname.replace("/upload/", "/upload/fl_attachment/");
+    return url.toString();
+  } catch {
+    return pdfUrl;
+  }
+}
+
 /**
  * `GET /certificates/:code` — verificación pública, sin sesión.
  *

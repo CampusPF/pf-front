@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Award, Loader2 } from "lucide-react";
 
 import { ApiError } from "@/services/api-client";
@@ -18,8 +19,8 @@ import {
 
    Vive DENTRO de la card pero FUERA del <Link> que navega al curso (ver
    MyCoursesView) — un <button> anidado en un <a> igual dispara la
-   navegación del padre si no se llama preventDefault(), así que cada
-   handler lo hace explícitamente por las dudas de que algún día se mueva
+   navegación del padre si no se llama preventDefault(), así que el handler
+   de emitir lo hace explícitamente por las dudas de que algún día se mueva
    adentro. */
 
 type State =
@@ -74,24 +75,16 @@ export default function CertificateButton({ courseId }: { courseId: string }) {
     }
   }
 
-  function handleOpen(event: React.MouseEvent, pdfUrl: string) {
-    event.preventDefault();
-    event.stopPropagation();
-    window.open(pdfUrl, "_blank", "noopener,noreferrer");
-  }
-
   if (state.status === "loading") return null;
 
+  // Lleva a la pantalla del certificado (vista previa, descarga y link de
+  // verificación), no directo al PDF.
   if (state.status === "ready") {
     return (
-      <button
-        type="button"
-        onClick={(event) => handleOpen(event, state.certificate.pdfUrl)}
-        className={BUTTON_CLASS}
-      >
+      <Link href={`/dashboard/certificados/${encodeURIComponent(state.certificate.code)}`} className={BUTTON_CLASS}>
         <Award className="size-3.5" aria-hidden />
         Ver certificado
-      </button>
+      </Link>
     );
   }
 

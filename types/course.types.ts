@@ -55,8 +55,14 @@ export interface Course {
   categoryLabel: string;
   level: CourseLevel;
   levelLabel: string;
-  /** Suma de las lecciones si el temario está cargado; si no, `null`. */
+  /** Suma de las lecciones (del temario, o del total que manda el listado); `null` si no hay minutos cargados. */
   durationHours: number | null;
+  /**
+   * Cantidad de lecciones que informa el back. El listado no trae el temario,
+   * así que sin esto la tarjeta no sabría cuántas son. `null`/ausente = no
+   * informado: se cuentan desde `modules` (ver `getLessonsCount`).
+   */
+  lessonsCount?: number | null;
   /** TODO(back): no existe. `null` para cursos reales. */
   projectsCount: number | null;
   /** Promedio de reseñas con un decimal. `null` = todavía sin reseñas. */
