@@ -5,6 +5,7 @@ import { AlertCircle, BookOpen, Receipt, Sparkles } from "lucide-react";
 
 import {
   getMyPayments,
+  splitStaleAttempts,
   type MyPayment,
   type PaymentStatus,
 } from "@/services/payments/payments.service";
@@ -47,6 +48,7 @@ function isSubscription(payment: MyPayment): boolean {
 export default function PaymentsHistorySection() {
   const [payments, setPayments] = useState<MyPayment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showStale, setShowStale] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,6 +69,12 @@ export default function PaymentsHistorySection() {
   }, []);
 
   const isLoading = payments === null && !error;
+  // Un pendiente por cada visita al checkout ensucia el historial: por defecto
+  // sólo se muestran los que importan (ver splitStaleAttempts).
+  const { visible, hidden } = payments
+    ? splitStaleAttempts(payments)
+    : { visible: [], hidden: [] };
+  const shown = showStale ? payments ?? [] : visible;
 
   return (
     <section
@@ -102,21 +110,25 @@ export default function PaymentsHistorySection() {
           </p>
         </div>
       ) : (
+        <>
         <div className="border-border relative mt-4 overflow-x-auto rounded-xl border">
           <table className="w-full min-w-[480px] text-sm">
             <thead className="bg-surface-elevated text-text-muted text-left text-xs uppercase">
               <tr>
+                <th className="px-4 py-3 font-semibold">Fecha</th>
                 <th className="px-4 py-3 font-semibold">Concepto</th>
                 <th className="px-4 py-3 font-semibold">Monto</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
-                <th className="px-4 py-3 font-semibold">Fecha</th>
               </tr>
             </thead>
             <tbody className="divide-border bg-surface divide-y">
-              {payments!.map((payment) => {
+              {shown.map((payment) => {
                 const subscription = isSubscription(payment);
                 return (
                   <tr key={payment.id}>
+                    <td className="text-text-secondary px-4 py-3 whitespace-nowrap">
+                      {formatDate(payment.date)}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span
@@ -146,15 +158,26 @@ export default function PaymentsHistorySection() {
                         {STATUS_LABEL[payment.status] ?? payment.status}
                       </span>
                     </td>
-                    <td className="text-text-secondary px-4 py-3 whitespace-nowrap">
-                      {formatDate(payment.date)}
-                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
+
+        {hidden.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowStale((value) => !value)}
+            aria-expanded={showStale}
+            className="text-primary mt-3 cursor-pointer text-xs font-medium hover:underline"
+          >
+            {showStale
+              ? "Ocultar intentos sin completar"
+              : `Mostrar ${hidden.length} ${hidden.length === 1 ? "intento" : "intentos"} de pago sin completar`}
+          </button>
+        )}
+        </>
       )}
     </section>
   );

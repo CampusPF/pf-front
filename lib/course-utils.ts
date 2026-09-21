@@ -112,3 +112,7 @@ export function formatStudents(count: number): string {
 export function lessonHref(courseSlug: string, lessonId: string): string {
   return `/courses/${courseSlug}/learn/${lessonId}`;
 }
+
+export function quizHref(courseSlug: string, quizId: string): string {
+  return `/courses/${courseSlug}/learn/quiz/${quizId}`;
+}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertCircle, ArrowLeft, BarChart3, Clock, FolderCode, Star, Users } from "lucide-react";
 
-import { formatStudents, modulesLabel } from "@/lib/course-utils";
+import { formatDuration, formatStudents, modulesLabel } from "@/lib/course-utils";
 import { getCourseBySlug } from "@/services/courses/courses.service";
 import type { Course } from "@/types/course.types";
 import CourseCover from "@/components/course/CourseCover";
@@ -123,7 +123,7 @@ export default async function CoursePage(props: PageProps<"/courses/[slug]">) {
                 {course.durationHours !== null && (
                   <span className="flex items-center gap-1.5">
                     <Clock className="size-4" aria-hidden />
-                    {course.durationHours} horas
+                    {formatDuration(course.durationHours * 60)}
                   </span>
                 )}
                 {course.projectsCount !== null && (

@@ -26,7 +26,9 @@ import {
   setLessonCompleted,
   type CourseProgress,
 } from "@/services/progress/course-progress.service";
+import { getCourseCheckpoints } from "@/services/quizzes/quizzes.service";
 import type { Course, LessonDetail } from "@/types/course.types";
+import type { CourseCheckpoint } from "@/types/quiz.types";
 
 /* Reproductor de lecciones con datos reales:
    - curso por slug (público) + temario (con sesión, ver loadSyllabus);
@@ -73,6 +75,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
 
   // El curso + temario se cachean entre lecciones: sólo cambia la lección.
   const [course, setCourse] = useState<Course | null>(null);
+  const [checkpoints, setCheckpoints] = useState<CourseCheckpoint[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,13 +87,17 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
           if (!cancelled) setState({ status: "not-found" });
           return;
         }
-        const [full, fetchedProgress] = await Promise.all([
+        const [full, fetchedProgress, fetchedCheckpoints] = await Promise.all([
           loadSyllabus(base),
           getCourseProgress(base.id).catch(() => null),
+          // Un fallo acá no debe trabar la lección: sin checkpoints simplemente
+          // no se bloquea "Finalizar curso" (el back es quien valida de verdad).
+          getCourseCheckpoints(base).catch(() => []),
         ]);
         if (cancelled) return;
         setCourse(full);
         setProgress(fetchedProgress);
+        setCheckpoints(fetchedCheckpoints);
       } catch (caught) {
         if (!cancelled) {
           setState({
@@ -276,6 +283,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
           access={access}
           nextLessonId={next?.id ?? null}
           onAdvance={advance}
+          checkpoints={checkpoints}
         />
 
         <main className="min-w-0 flex-1">
@@ -389,6 +397,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
                   : null
               }
               pendingBeforeFinish={pendingBeforeFinish}
+              pendingCheckpoints={checkpoints.filter((checkpoint) => !checkpoint.passed)}
             />
           </div>
         </main>

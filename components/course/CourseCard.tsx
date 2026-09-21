@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, Clock, FolderCode, Star, Users } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
-import { formatStudents } from "@/lib/course-utils";
+import { formatDuration, formatStudents, getLessonsCount, lessonsLabel } from "@/lib/course-utils";
 import { formatRating, reviewsLabel } from "@/components/ui/StarRating";
 import { formatPrice } from "@/types/checkout";
 import CourseCover from "@/components/course/CourseCover";
@@ -11,6 +11,11 @@ import CourseCover from "@/components/course/CourseCover";
    null/vacío para los cursos reales y se ocultan. Sin reseñas se muestra el
    nivel en lugar de un "0,0" que parecería una mala nota. */
 export default function CourseCard({ course }: { course: Course }) {
+  // El listado del back no trae el temario pero sí la cantidad de lecciones;
+  // con el temario cargado (mocks, detalle) se cuenta desde `modules`.
+  const lessonsCount = course.lessonsCount ?? getLessonsCount(course);
+  const hasSize = course.durationHours !== null || lessonsCount > 0;
+
   return (
     <Link
       href={`/courses/${course.slug}`}
@@ -78,10 +83,15 @@ export default function CourseCard({ course }: { course: Course }) {
 
         <div className="border-border mt-4 flex items-center justify-between gap-2 border-t pt-3">
           <p className="text-text-muted flex items-center gap-3 text-sm">
-            {course.durationHours !== null && (
+            {hasSize && (
               <span className="flex items-center gap-1.5">
                 <Clock className="size-4" aria-hidden />
-                {course.durationHours}hs
+                {[
+                  course.durationHours !== null ? formatDuration(course.durationHours * 60) : null,
+                  lessonsCount > 0 ? lessonsLabel(lessonsCount) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             )}
             {course.projectsCount !== null && (
@@ -97,7 +107,7 @@ export default function CourseCard({ course }: { course: Course }) {
                 <span className="sr-only"> alumnos</span>
               </span>
             )}
-            {course.durationHours === null && course.projectsCount === null && !course.studentsCount && (
+            {!hasSize && course.projectsCount === null && !course.studentsCount && (
               <span className="line-clamp-1">{course.description}</span>
             )}
           </p>

@@ -1,8 +1,10 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Loader2, ShoppingCart } from "lucide-react";
 
 import type { Lesson } from "@/types/course.types";
-import { lessonHref } from "@/lib/course-utils";
+import type { CourseCheckpoint } from "@/types/quiz.types";
+import { lessonHref, quizHref } from "@/lib/course-utils";
 
 const SECONDARY =
   "border-border text-text-secondary hover:bg-surface-elevated hover:text-text flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-150";
@@ -18,6 +20,7 @@ export default function LessonNavigation({
   isAdvancing = false,
   buyHref = null,
   pendingBeforeFinish = 0,
+  pendingCheckpoints = [],
 }: {
   courseSlug: string;
   previous: Lesson | null;
@@ -34,10 +37,13 @@ export default function LessonNavigation({
   /** En la última lección: cuántas otras faltan completar. Con > 0,
       "Finalizar curso" queda deshabilitado. */
   pendingBeforeFinish?: number;
+  /** En la última lección: checkpoints sin aprobar. También bloquean "Finalizar curso". */
+  pendingCheckpoints?: CourseCheckpoint[];
 }) {
   // Sin siguiente es la última lección del curso (no del módulo).
   const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
-  const finishBlocked = !next && pendingBeforeFinish > 0;
+  const checkpointsToPass = [...pendingCheckpoints].sort((a, b) => a.moduleOrder - b.moduleOrder);
+  const finishBlocked = !next && (pendingBeforeFinish > 0 || checkpointsToPass.length > 0);
 
   return (
     <div className="border-border mt-12 border-t pt-6">
@@ -94,12 +100,35 @@ export default function LessonNavigation({
       </Link>
       )}
     </div>
+    {/* Un botón gris sin explicación es una mala pantalla: cada motivo del
+        bloqueo se dice en voz alta, y los checkpoints llevan directo al quiz. */}
     {finishBlocked && (
-      <p id="finish-blocked-hint" className="text-text-muted mt-3 text-right text-sm">
-        Para finalizar el curso te{" "}
-        {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
-        por completar. Las ves en el temario del curso.
-      </p>
+      <div id="finish-blocked-hint" className="text-text-muted mt-3 space-y-1 text-right text-sm">
+        {pendingBeforeFinish > 0 && (
+          <p>
+            Para finalizar el curso te{" "}
+            {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
+            por completar. Las ves en el temario del curso.
+          </p>
+        )}
+        {checkpointsToPass.length > 0 && (
+          <p>
+            Aprobá{" "}
+            {checkpointsToPass.map((checkpoint, position) => (
+              <Fragment key={checkpoint.quizId}>
+                {position > 0 && (position === checkpointsToPass.length - 1 ? " y " : ", ")}
+                <Link
+                  href={quizHref(courseSlug, checkpoint.quizId)}
+                  className="text-primary font-medium hover:underline"
+                >
+                  el checkpoint del módulo {checkpoint.moduleOrder}
+                </Link>
+              </Fragment>
+            ))}{" "}
+            para finalizar.
+          </p>
+        )}
+      </div>
     )}
     </div>
   );
