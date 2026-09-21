@@ -5,6 +5,7 @@ import { ChevronDown, Loader2, Package, Pencil, Plus, Trash2 } from "lucide-reac
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import LessonEditor from "@/components/admin/LessonEditor";
+import QuizEditor from "@/components/admin/QuizEditor";
 import {
   BUTTON_GHOST_DANGER,
   BUTTON_PRIMARY,
@@ -26,13 +27,18 @@ import {
   listModuleLessons,
   updateModule,
 } from "@/services/admin/admin.service";
+import { listCourseQuizzes } from "@/services/quizzes/quizzes.service";
 import type { RawModule } from "@/services/courses/courses.raw";
 import type { Lesson } from "@/types/course.types";
+import type { TeacherQuiz } from "@/types/quiz.types";
 
-/* Temario de un curso: módulos → lecciones → (contenido + PDFs adjuntos).
+/* Temario de un curso: módulos → lecciones → (contenido + PDFs adjuntos), y
+   el checkpoint de cada módulo.
 
    Los módulos vienen en `GET /courses/:id`; las lecciones de cada módulo se
-   piden al abrirlo (`GET /lessons?moduleId=`).
+   piden al abrirlo (`GET /lessons?moduleId=`). Los quizzes, en cambio, se
+   traen TODOS juntos para el curso: son pocos (uno por módulo como mucho) y
+   así abrir un módulo no dispara un pedido más.
    TODO(back): no hay endpoint para reordenar en bloque; el orden se edita
    campo por campo. */
 
@@ -56,8 +62,27 @@ export default function SyllabusEditor({
   const [isDeleting, setIsDeleting] = useState(false);
   // Contador para que un módulo recargue sus lecciones tras borrar una.
   const [lessonsVersion, setLessonsVersion] = useState(0);
+  const [quizzes, setQuizzes] = useState<TeacherQuiz[]>([]);
 
   const sorted = [...modules].filter((m) => m.isActive !== false).sort((a, b) => a.order - b.order);
+
+  /* Un fallo cargando los quizzes no puede romper el temario: si el back
+     todavía no tiene el módulo de quizzes arriba, la lista queda vacía y el
+     resto del editor sigue funcionando igual. */
+  const loadQuizzes = useCallback(async () => {
+    try {
+      setQuizzes(await listCourseQuizzes(courseId));
+    } catch {
+      setQuizzes([]);
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadQuizzes();
+  }, [loadQuizzes]);
+
+  const finalQuiz = quizzes.find((quiz) => quiz.moduleId === null) ?? null;
 
   async function handleAddModule(event: React.FormEvent) {
     event.preventDefault();
@@ -122,6 +147,9 @@ export default function SyllabusEditor({
             key={courseModule.id}
             courseModule={courseModule}
             lessonsVersion={lessonsVersion}
+            courseId={courseId}
+            quiz={quizzes.find((quiz) => quiz.moduleId === courseModule.id) ?? null}
+            onQuizChanged={loadQuizzes}
             onRenamed={onChanged}
             onError={setError}
             onDeleteModule={() =>
@@ -157,6 +185,23 @@ export default function SyllabusEditor({
         </button>
       </form>
 
+      {/* Checkpoint de fin de curso: no cuelga de ningún módulo, así que va
+          suelto al final del temario. Es opcional. */}
+      <div className="border-border mt-6 border-t pt-5">
+        <h3 className="text-text text-sm font-semibold">Checkpoint final del curso</h3>
+        <p className="text-text-muted mt-1 mb-3 text-sm">
+          Opcional, y se rinde además de los de cada módulo. Mientras quede alguno sin
+          aprobar, el alumno no puede finalizar el curso ni emitir su certificado.
+        </p>
+        <QuizEditor
+          courseId={courseId}
+          moduleId={null}
+          defaultTitle="Examen final"
+          quiz={finalQuiz}
+          onChanged={loadQuizzes}
+        />
+      </div>
+
       <ConfirmDialog
         open={pendingDelete !== null}
         variant="danger"
@@ -174,6 +219,9 @@ export default function SyllabusEditor({
 function ModuleRow({
   courseModule,
   lessonsVersion,
+  courseId,
+  quiz,
+  onQuizChanged,
   onRenamed,
   onError,
   onDeleteModule,
@@ -181,6 +229,10 @@ function ModuleRow({
 }: {
   courseModule: RawModule;
   lessonsVersion: number;
+  courseId: string;
+  /** El checkpoint de este módulo, o null si todavía no tiene. */
+  quiz: TeacherQuiz | null;
+  onQuizChanged: () => Promise<void> | void;
   onRenamed: () => Promise<void> | void;
   onError: (message: string) => void;
   onDeleteModule: () => void;
@@ -378,6 +430,17 @@ function ModuleRow({
               Lección
             </button>
           </form>
+
+          {/* El checkpoint cierra el módulo, igual que en el temario del alumno. */}
+          <div className="border-border mt-2 border-t pt-3">
+            <QuizEditor
+              courseId={courseId}
+              moduleId={courseModule.id}
+              defaultTitle={`Checkpoint del módulo ${courseModule.order}`}
+              quiz={quiz}
+              onChanged={onQuizChanged}
+            />
+          </div>
         </div>
       )}
     </div>

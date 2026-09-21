@@ -37,12 +37,14 @@ export default function LessonNavigation({
   /** En la última lección: cuántas otras faltan completar. Con > 0,
       "Finalizar curso" queda deshabilitado. */
   pendingBeforeFinish?: number;
-  /** En la última lección: checkpoints sin aprobar. También bloquean "Finalizar curso". */
-  pendingCheckpoints?: CourseCheckpoint[];
+  /** En la última lección: checkpoints sin aprobar. También bloquean "Finalizar
+      curso". Llegan ya ordenados como el temario (ver `sortCheckpoints` en
+      LessonPlayer), así que acá se respeta el orden tal cual viene. */
+  pendingCheckpoints?: readonly CourseCheckpoint[];
 }) {
   // Sin siguiente es la última lección del curso (no del módulo).
   const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
-  const checkpointsToPass = [...pendingCheckpoints].sort((a, b) => a.moduleOrder - b.moduleOrder);
+  const checkpointsToPass = pendingCheckpoints;
   const finishBlocked = !next && (pendingBeforeFinish > 0 || checkpointsToPass.length > 0);
 
   return (
@@ -121,7 +123,7 @@ export default function LessonNavigation({
                   href={quizHref(courseSlug, checkpoint.quizId)}
                   className="text-primary font-medium hover:underline"
                 >
-                  el checkpoint del módulo {checkpoint.moduleOrder}
+                  {checkpoint.title}
                 </Link>
               </Fragment>
             ))}{" "}

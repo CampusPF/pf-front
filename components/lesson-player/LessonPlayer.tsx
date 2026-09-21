@@ -50,6 +50,27 @@ type State =
   | { status: "not-found" }
   | { status: "ready"; course: Course; lesson: LessonDetail };
 
+/**
+ * Ordena los checkpoints como aparecen en el temario: por el orden del módulo
+ * al que pertenecen, y el de fin de curso (moduleId null) siempre último.
+ *
+ * Se hace acá, una vez, y no en cada componente que los muestra: el orden del
+ * módulo vive en el curso, que sólo este componente tiene entero.
+ */
+function sortCheckpoints(
+  checkpoints: readonly CourseCheckpoint[],
+  course: Course,
+): CourseCheckpoint[] {
+  const orderOf = new Map(course.modules.map((m) => [m.id, m.order]));
+  // Un checkpoint de fin de curso (o de un módulo que ya no está) va al final.
+  const rank = (checkpoint: CourseCheckpoint) =>
+    checkpoint.moduleId === null
+      ? Number.MAX_SAFE_INTEGER
+      : (orderOf.get(checkpoint.moduleId) ?? Number.MAX_SAFE_INTEGER);
+
+  return [...checkpoints].sort((a, b) => rank(a) - rank(b));
+}
+
 export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonId: string }) {
   const { user } = useAuth();
   const [state, setState] = useState<State>({ status: "loading" });
@@ -92,12 +113,12 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
           getCourseProgress(base.id).catch(() => null),
           // Un fallo acá no debe trabar la lección: sin checkpoints simplemente
           // no se bloquea "Finalizar curso" (el back es quien valida de verdad).
-          getCourseCheckpoints(base).catch(() => []),
+          getCourseCheckpoints(base.id).catch(() => []),
         ]);
         if (cancelled) return;
         setCourse(full);
         setProgress(fetchedProgress);
-        setCheckpoints(fetchedCheckpoints);
+        setCheckpoints(sortCheckpoints(fetchedCheckpoints, full));
       } catch (caught) {
         if (!cancelled) {
           setState({
