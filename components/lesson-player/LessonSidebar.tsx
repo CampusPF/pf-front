@@ -115,28 +115,60 @@ function SidebarContent({
           {checkpoints
             .filter((checkpoint) => checkpoint.moduleId === courseModule.id)
             .map((checkpoint) => (
-              <Link
+              <CheckpointLink
                 key={checkpoint.quizId}
-                href={quizHref(course.slug, checkpoint.quizId)}
-                onClick={onNavigate}
-                className="text-text-secondary hover:bg-surface-elevated hover:text-text flex cursor-pointer items-start gap-2.5 border-l-2 border-transparent px-4 py-2.5 text-sm transition-colors duration-150"
-              >
-                {checkpoint.passed ? (
-                  <CircleCheck className="text-success mt-0.5 size-4 shrink-0" aria-hidden />
-                ) : (
-                  <ClipboardCheck className="text-text-muted mt-0.5 size-4 shrink-0" aria-hidden />
-                )}
-                <span className="min-w-0 flex-1">
-                  Checkpoint del módulo {checkpoint.moduleOrder}
-                  <span className="text-text-muted mt-0.5 block text-xs">
-                    {checkpoint.passed ? "Aprobado" : "Pendiente"}
-                  </span>
-                </span>
-              </Link>
+                checkpoint={checkpoint}
+                courseSlug={course.slug}
+                onNavigate={onNavigate}
+              />
             ))}
         </div>
       ))}
+
+      {/* Checkpoint de fin de curso (moduleId null): no cuelga de ningún
+          módulo, así que cierra el temario entero. */}
+      {checkpoints
+        .filter((checkpoint) => checkpoint.moduleId === null)
+        .map((checkpoint) => (
+          <div key={checkpoint.quizId} className="border-border border-b py-1">
+            <CheckpointLink
+              checkpoint={checkpoint}
+              courseSlug={course.slug}
+              onNavigate={onNavigate}
+            />
+          </div>
+        ))}
     </nav>
+  );
+}
+
+function CheckpointLink({
+  checkpoint,
+  courseSlug,
+  onNavigate,
+}: {
+  checkpoint: CourseCheckpoint;
+  courseSlug: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      href={quizHref(courseSlug, checkpoint.quizId)}
+      onClick={onNavigate}
+      className="text-text-secondary hover:bg-surface-elevated hover:text-text flex cursor-pointer items-start gap-2.5 border-l-2 border-transparent px-4 py-2.5 text-sm transition-colors duration-150"
+    >
+      {checkpoint.passed ? (
+        <CircleCheck className="text-success mt-0.5 size-4 shrink-0" aria-hidden />
+      ) : (
+        <ClipboardCheck className="text-text-muted mt-0.5 size-4 shrink-0" aria-hidden />
+      )}
+      <span className="min-w-0 flex-1">
+        {checkpoint.title}
+        <span className="text-text-muted mt-0.5 block text-xs">
+          {checkpoint.passed ? "Aprobado" : "Pendiente"}
+        </span>
+      </span>
+    </Link>
   );
 }
 

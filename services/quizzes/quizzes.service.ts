@@ -1,137 +1,172 @@
-import { MOCK_CORRECT_OPTIONS, MOCK_QUIZZES } from "@/data/quiz.mock";
-import type { Course } from "@/types/course.types";
+import { ApiError, apiFetch } from "@/services/api-client";
 import type {
   CourseCheckpoint,
+  CreateQuizPayload,
+  QuestionPayload,
   Quiz,
   QuizAnswer,
   QuizAttemptResult,
+  TeacherQuiz,
+  UpdateQuizPayload,
 } from "@/types/quiz.types";
 
-/* Checkpoints (quiz por módulo).
+/* Checkpoints (quiz de multiple choice por módulo).
 
-   TODO(back): los endpoints todavía no existen. Mientras tanto la pantalla se
-   arma contra mocks (data/quiz.mock.ts), y este archivo es el ÚNICO lugar que
-   se toca cuando el back esté listo: cada función pasa de leer el mock a un
-   `apiFetch` (ver services/certificates/certificates.service.ts como modelo).
+   Todo pasa por el back: la corrección de un intento NUNCA se hace acá — el
+   front no conoce las respuestas correctas del alumno (ver types/quiz.types).
 
-   NEXT_PUBLIC_QUIZ_SOURCE=mock enciende los mocks. Sin la variable (lo normal
-   y lo que tiene que estar en producción) no hay checkpoints: la lista sale
-   vacía, "Finalizar curso" no se bloquea y la pantalla del quiz avisa que no
-   está disponible. Nunca se muestran checkpoints inventados a un usuario real. */
-const USE_MOCK_QUIZZES = process.env.NEXT_PUBLIC_QUIZ_SOURCE === "mock";
+   Las funciones de la primera mitad son del alumno; las de la segunda, del
+   docente dueño del curso (el back valida titularidad y responde 403 si no). */
 
-/* Los mocks no tienen back que recuerde qué aprobaste: se guarda en
-   sessionStorage para que aprobar un checkpoint destrabe "Finalizar curso"
-   aunque se recargue la pestaña. */
-const PASSED_KEY = "campus.mock-quiz-passed";
-
-function readPassed(): string[] {
-  try {
-    const raw = window.sessionStorage.getItem(PASSED_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function rememberPassed(quizId: string) {
-  try {
-    const passed = new Set(readPassed());
-    passed.add(quizId);
-    window.sessionStorage.setItem(PASSED_KEY, JSON.stringify([...passed]));
-  } catch {
-    /* Sin storage (modo privado): el mock simplemente no recuerda. */
-  }
-}
-
-/** Latencia de mentira, para ver el estado "enviando" con el botón deshabilitado. */
-function fakeLatency(ms = 700): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** El checkpoint a resolver, o `null` si no existe / no está disponible. */
-export async function getQuiz(quizId: string): Promise<Quiz | null> {
-  if (!USE_MOCK_QUIZZES) return null;
-
-  await fakeLatency(250);
-  return MOCK_QUIZZES.find((quiz) => quiz.id === quizId) ?? null;
-}
+/* ── Alumno ───────────────────────────────────────────────────── */
 
 /**
- * Checkpoints de un curso (uno por módulo que tenga) y si ya están aprobados.
+ * `GET /quizzes/:quizId` — el checkpoint a resolver.
  *
- * En modo mock el checkpoint de prueba se engancha al módulo con el mismo
- * número (el 2) de CUALQUIER curso, para poder ver el bloqueo de "Finalizar
- * curso" y el sidebar con los cursos reales del back. Un curso sin ese módulo
- * no tiene checkpoint. El back real devolverá los suyos por curso.
+ * Devuelve `null` en vez de tirar si el quiz no existe o el alumno no tiene
+ * acceso: la pantalla muestra "todavía no está disponible", que es más útil
+ * que un cartel de error para algo que simplemente puede no estar cargado.
+ * Un problema de red sí se propaga.
  */
-export async function getCourseCheckpoints(
-  course: Pick<Course, "modules">,
-): Promise<CourseCheckpoint[]> {
-  if (!USE_MOCK_QUIZZES) return [];
-
-  const passed = readPassed();
-  return MOCK_QUIZZES.flatMap((quiz) => {
-    const target = course.modules.find((courseModule) => courseModule.order === quiz.moduleOrder);
-    if (!target) return [];
-
-    return [
-      {
-        quizId: quiz.id,
-        moduleId: target.id,
-        moduleOrder: quiz.moduleOrder,
-        passed: passed.includes(quiz.id),
-      },
-    ];
-  });
+export async function getQuiz(quizId: string, signal?: AbortSignal): Promise<Quiz | null> {
+  try {
+    return await apiFetch<Quiz>(`/quizzes/${encodeURIComponent(quizId)}`, {
+      auth: true,
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**
- * Manda TODAS las respuestas juntas, en una sola llamada, y devuelve el
- * intento corregido. Quien llama es responsable de deshabilitar el botón
- * mientras espera: sin eso, un doble click manda dos intentos.
+ * `GET /courses/:courseId/quizzes` — los checkpoints del curso y si YO los
+ * aprobé.
+ *
+ * Es lo que usa el reproductor para marcar el temario y para bloquear
+ * "Finalizar curso". Un curso sin checkpoints devuelve `[]`.
  */
-export async function submitQuizAttempt(
+export function getCourseCheckpoints(
+  courseId: string,
+  signal?: AbortSignal,
+): Promise<CourseCheckpoint[]> {
+  return apiFetch<CourseCheckpoint[]>(
+    `/courses/${encodeURIComponent(courseId)}/quizzes`,
+    { auth: true, signal },
+  );
+}
+
+/**
+ * `POST /quizzes/:quizId/attempts` — manda TODAS las respuestas juntas, en una
+ * sola llamada, y devuelve el intento ya corregido por el back.
+ *
+ * Quien llama es responsable de deshabilitar el botón mientras espera: sin
+ * eso, un doble click manda dos intentos (QuizView lo corta con un ref).
+ */
+export function submitQuizAttempt(
   quizId: string,
   answers: QuizAnswer[],
 ): Promise<QuizAttemptResult> {
-  if (!USE_MOCK_QUIZZES) {
-    throw new Error("Los checkpoints todavía no están disponibles.");
-  }
+  return apiFetch<QuizAttemptResult>(
+    `/quizzes/${encodeURIComponent(quizId)}/attempts`,
+    { method: "POST", body: { answers }, auth: true },
+  );
+}
 
-  await fakeLatency();
+/* ── Docente ──────────────────────────────────────────────────── */
 
-  const quiz = MOCK_QUIZZES.find((item) => item.id === quizId);
-  if (!quiz) throw new Error("No encontramos este checkpoint.");
+/**
+ * `GET /courses/:courseId/quizzes/manage` — los quizzes del curso CON las
+ * respuestas correctas, para editarlos.
+ *
+ * Es una ruta distinta de `getCourseCheckpoints` a propósito: son dos
+ * permisos y dos formas distintas. Mezclarlas en un endpoint que cambia de
+ * shape según el rol es exactamente como se filtra un `isCorrect`.
+ */
+export function listCourseQuizzes(
+  courseId: string,
+  signal?: AbortSignal,
+): Promise<TeacherQuiz[]> {
+  return apiFetch<TeacherQuiz[]>(
+    `/courses/${encodeURIComponent(courseId)}/quizzes/manage`,
+    { auth: true, signal },
+  );
+}
 
-  const details = quiz.questions.map((question) => {
-    const selected = question.options.find(
-      (option) => option.id === answers.find((a) => a.questionId === question.id)?.optionId,
-    );
-    const correctOption = question.options.find(
-      (option) => option.id === MOCK_CORRECT_OPTIONS[question.id],
-    );
-
-    return {
-      questionId: question.id,
-      questionText: question.text,
-      correct: selected?.id === correctOption?.id,
-      selectedOptionText: selected?.text ?? "Sin responder",
-      correctOptionText: correctOption?.text,
-    };
+/** `POST /quizzes` — crea el quiz vacío de un módulo (o el de fin de curso). */
+export function createQuiz(payload: CreateQuizPayload): Promise<TeacherQuiz> {
+  return apiFetch<TeacherQuiz>("/quizzes", {
+    method: "POST",
+    body: payload,
+    auth: true,
   });
+}
 
-  const correctCount = details.filter((detail) => detail.correct).length;
-  const score = Math.round((correctCount / quiz.questions.length) * 100);
-  const passed = score >= quiz.passingScore;
-  if (passed) rememberPassed(quizId);
+/** `PATCH /quizzes/:id` — título y nota mínima. */
+export function updateQuiz(
+  quizId: string,
+  payload: UpdateQuizPayload,
+): Promise<TeacherQuiz> {
+  return apiFetch<TeacherQuiz>(`/quizzes/${encodeURIComponent(quizId)}`, {
+    method: "PATCH",
+    body: payload,
+    auth: true,
+  });
+}
 
-  return {
-    score,
-    passed,
-    passingScore: quiz.passingScore,
-    correctCount,
-    totalQuestions: quiz.questions.length,
-    details,
-  };
+/** `DELETE /quizzes/:id` — se lleva puestas sus preguntas (cascada en el back). */
+export function deleteQuiz(quizId: string): Promise<void> {
+  return apiFetch<void>(`/quizzes/${encodeURIComponent(quizId)}`, {
+    method: "DELETE",
+    auth: true,
+  });
+}
+
+/**
+ * `POST /quizzes/:quizId/questions` — agrega una pregunta con sus opciones.
+ *
+ * Devuelve el quiz entero ya actualizado, así el editor no tiene que pedirlo
+ * de nuevo ni parchear su estado a mano.
+ *
+ * El back valida que haya al menos 2 opciones y exactamente una correcta; la
+ * UI valida lo mismo antes de mandar, para no gastar un round-trip en un
+ * error evitable.
+ */
+export function createQuestion(
+  quizId: string,
+  payload: QuestionPayload,
+): Promise<TeacherQuiz> {
+  return apiFetch<TeacherQuiz>(
+    `/quizzes/${encodeURIComponent(quizId)}/questions`,
+    { method: "POST", body: payload, auth: true },
+  );
+}
+
+/**
+ * `PATCH /questions/:id` — reemplaza el enunciado y TODAS las opciones.
+ *
+ * Reemplazar en bloque y no editar opción por opción: una pregunta de
+ * multiple choice es una unidad (mover la correcta de la B a la C son dos
+ * escrituras que no pueden quedar a medias).
+ */
+export function updateQuestion(
+  questionId: string,
+  payload: QuestionPayload,
+): Promise<TeacherQuiz> {
+  return apiFetch<TeacherQuiz>(`/questions/${encodeURIComponent(questionId)}`, {
+    method: "PATCH",
+    body: payload,
+    auth: true,
+  });
+}
+
+/** `DELETE /questions/:id` */
+export function deleteQuestion(questionId: string): Promise<void> {
+  return apiFetch<void>(`/questions/${encodeURIComponent(questionId)}`, {
+    method: "DELETE",
+    auth: true,
+  });
 }

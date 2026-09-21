@@ -45,24 +45,23 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
   const submittingRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
-    getQuiz(quizId)
+    getQuiz(quizId, controller.signal)
       .then((quiz) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setLoad(quiz ? { status: "ready", quiz } : { status: "unavailable" });
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
+        // Abortar el fetch rechaza la promesa: no es un error para mostrar.
+        if (controller.signal.aborted) return;
         setLoad({
           status: "error",
           message: error instanceof Error ? error.message : "No pudimos cargar el checkpoint.",
         });
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [quizId]);
 
   const courseHref = `/courses/${slug}`;

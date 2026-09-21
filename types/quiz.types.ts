@@ -1,9 +1,17 @@
-/* Modelo de los checkpoints (quiz por módulo).
+/* Modelo de los checkpoints (quiz de multiple choice por módulo).
 
-   TODO(back): la forma está armada contra el documento de tareas, todavía sin
-   Swagger. Cuando el endpoint exista, lo único que puede cambiar son los
-   nombres de campo, y se absorbe en services/quizzes/ (mismo criterio que
-   services/courses/courses.adapter.ts): los componentes no se enteran. */
+   Las formas de acá son EL contrato con pf-back (src/quizzes). Hay dos vistas
+   distintas del mismo dato:
+
+   - la del alumno (`Quiz`, `QuizAttemptResult`): nunca trae cuál opción es la
+     correcta — la corrección la hace el back;
+   - la del docente (`TeacherQuiz`): sí la trae, porque necesita verla para
+     editarla.
+
+   Que sean tipos separados no es ceremonia: es lo que hace que un componente
+   del alumno no pueda leer `isCorrect` ni por accidente. */
+
+/* ── Vista del alumno ─────────────────────────────────────────── */
 
 export interface QuizOption {
   id: string;
@@ -20,9 +28,8 @@ export interface QuizQuestion {
 export interface Quiz {
   id: string;
   courseId: string;
-  moduleId: string;
-  moduleOrder: number;
-  /** "Checkpoint del módulo 2" */
+  /** null = checkpoint de fin de curso, no de un módulo puntual. */
+  moduleId: string | null;
   title: string;
   /** Porcentaje mínimo para aprobar (70 = 70%). */
   passingScore: number;
@@ -32,8 +39,10 @@ export interface Quiz {
 /** Un checkpoint de un curso y si el alumno ya lo aprobó. */
 export interface CourseCheckpoint {
   quizId: string;
-  moduleId: string;
-  moduleOrder: number;
+  /** null = checkpoint de fin de curso. */
+  moduleId: string | null;
+  /** Título del quiz: es lo que se muestra en el temario y en el bloqueo. */
+  title: string;
   passed: boolean;
 }
 
@@ -61,4 +70,52 @@ export interface QuizAttemptResult {
   correctCount: number;
   totalQuestions: number;
   details: QuizAttemptDetail[];
+}
+
+/* ── Vista del docente ────────────────────────────────────────── */
+
+/** Igual que `QuizOption`, pero con la respuesta: sólo para el dueño del curso. */
+export interface TeacherOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface TeacherQuestion {
+  id: string;
+  text: string;
+  order: number;
+  options: TeacherOption[];
+}
+
+export interface TeacherQuiz {
+  id: string;
+  courseId: string;
+  moduleId: string | null;
+  title: string;
+  passingScore: number;
+  questions: TeacherQuestion[];
+}
+
+/** Alta de un quiz: nace vacío y después se le agregan preguntas. */
+export interface CreateQuizPayload {
+  courseId: string;
+  /** null u omitido = checkpoint de fin de curso. */
+  moduleId?: string | null;
+  title: string;
+  passingScore?: number;
+}
+
+export type UpdateQuizPayload = Partial<Pick<TeacherQuiz, "title" | "passingScore">>;
+
+/** Una opción al crear o editar una pregunta. Sin `id`: se reemplazan todas. */
+export interface QuestionOptionPayload {
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuestionPayload {
+  text: string;
+  order?: number;
+  options: QuestionOptionPayload[];
 }
