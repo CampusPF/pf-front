@@ -11,12 +11,16 @@ export default function QuizResult({
   result,
   courseHref,
   onRetry,
+  attemptsLeft,
 }: {
   result: QuizAttemptResult;
   courseHref: string;
   onRetry: () => void;
+  /** Intentos que quedan DESPUÉS de éste. En 0 no se ofrece reintentar. */
+  attemptsLeft: number;
 }) {
   const wrong = result.details.filter((detail) => !detail.correct);
+  const canRetry = !result.passed && attemptsLeft > 0;
 
   return (
     <div
@@ -45,8 +49,22 @@ export default function QuizResult({
         <p className="text-text-secondary mt-2 text-sm">
           {result.passed
             ? `Acertaste ${result.correctCount} de ${result.totalQuestions}.`
-            : `Acertaste ${result.correctCount} de ${result.totalQuestions}. Repasá lo que falló y probá de nuevo cuando quieras.`}
+            : canRetry
+              ? `Acertaste ${result.correctCount} de ${result.totalQuestions}. Repasá lo que falló y probá de nuevo.`
+              : `Acertaste ${result.correctCount} de ${result.totalQuestions}.`}
         </p>
+
+        {/* Sin intentos y sin aprobar no hay salida dentro de la app: el curso
+            queda trabado hasta que intervenga el docente. Decirlo derecho. */}
+        {!result.passed && attemptsLeft === 0 && (
+          <p
+            role="alert"
+            className="bg-warning-subtle text-warning border-warning/30 mx-auto mt-4 max-w-sm rounded-xl border px-4 py-3 text-sm"
+          >
+            Usaste todos tus intentos en este checkpoint. Escribile al docente del curso para
+            que te habilite otro.
+          </p>
+        )}
       </div>
 
       <div className="border-border mt-8 border-t pt-6">
@@ -92,7 +110,7 @@ export default function QuizResult({
         >
           Volver al curso
         </Link>
-        {!result.passed && (
+        {canRetry && (
           <button
             type="button"
             onClick={onRetry}
@@ -100,6 +118,9 @@ export default function QuizResult({
           >
             <RotateCcw className="size-4" aria-hidden />
             Volver a intentar
+            <span className="opacity-80">
+              ({attemptsLeft} {attemptsLeft === 1 ? "intento" : "intentos"})
+            </span>
           </button>
         )}
       </div>

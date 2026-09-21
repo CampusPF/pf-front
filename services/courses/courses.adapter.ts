@@ -144,5 +144,12 @@ export function toLessonDetail(raw: RawLessonView): LessonDetail {
       }
     : null;
 
-  return { ...toLesson(raw), hasAccess: raw.hasAccess, content };
+  return {
+    ...toLesson(raw),
+    hasAccess: raw.hasAccess,
+    // El back sumó este flag después: un `false` por defecto deja el
+    // comportamiento anterior (nada bloqueado) si todavía no lo manda.
+    isLockedByProgression: raw.isLockedByProgression ?? false,
+    content,
+  };
 }

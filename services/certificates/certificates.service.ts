@@ -22,12 +22,40 @@ export interface Certificate {
   };
 }
 
+/**
+ * Duración del curso para el certificado, a partir de sus minutos REALES:
+ * 45 → "45 min", 94 → "1 h y 34 min", 154 → "2 hs y 34 min", 120 → "2 hs".
+ *
+ * No reusa `formatDuration` de lib/course-utils (que escribe "2 h 34 min")
+ * porque ese formato lo comparten el temario y las cards del catálogo, donde
+ * conviene que sea corto. Acá tiene que leerse como una frase, y además
+ * coincidir palabra por palabra con lo que imprime el PDF
+ * (formatCourseDuration en pf-back), que muestra este mismo dato.
+ */
+export function formatCertificateDuration(minutes: number): string {
+  const total = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+
+  // "1 hs" quedaría mal, así que la unidad va en singular cuando es una sola.
+  const hoursLabel = `${hours} ${hours === 1 ? "h" : "hs"}`;
+
+  if (hours === 0) return `${rest} min`;
+  if (rest === 0) return hoursLabel;
+  return `${hoursLabel} y ${rest} min`;
+}
+
 /** Lo que devuelve GET /certificates/:code — sólo datos públicos. */
 export interface CertificateVerification {
   valido: boolean;
   nombreAlumno?: string;
   curso?: string;
-  horas?: number;
+  /**
+   * MINUTOS de contenido, sin redondear. Antes el back mandaba horas ya
+   * redondeadas hacia arriba y dos cursos distintos (83 min y 115 min) decían
+   * los dos "2 horas". El formato lo decide la UI, con `formatDuration`.
+   */
+  minutos?: number;
   fechaEmision?: string;
 }
 

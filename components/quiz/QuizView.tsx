@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, ChevronLeft, ChevronRight, ClipboardCheck, Loader2, Send } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, Loader2, Lock, Send } from "lucide-react";
 
 import QuizResult from "@/components/quiz/QuizResult";
+import { ApiError } from "@/services/api-client";
 import { getQuiz, submitQuizAttempt } from "@/services/quizzes/quizzes.service";
 import type { Quiz, QuizAttemptResult } from "@/types/quiz.types";
 
@@ -19,6 +20,8 @@ import type { Quiz, QuizAttemptResult } from "@/types/quiz.types";
 type LoadState =
   | { status: "loading" }
   | { status: "unavailable" }
+  /** 403 de la progresión: se sabe POR QUÉ no puede rendirlo todavía. */
+  | { status: "locked"; message: string }
   | { status: "error"; message: string }
   | { status: "ready"; quiz: Quiz };
 
@@ -55,6 +58,12 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
       .catch((error: unknown) => {
         // Abortar el fetch rechaza la promesa: no es un error para mostrar.
         if (controller.signal.aborted) return;
+        /* El 403 no es una falla: es la progresión explicando qué le falta.
+           Se muestra como candado, con el mensaje del back tal cual. */
+        if (error instanceof ApiError && error.status === 403) {
+          setLoad({ status: "locked", message: error.message });
+          return;
+        }
         setLoad({
           status: "error",
           message: error instanceof Error ? error.message : "No pudimos cargar el checkpoint.",
@@ -73,6 +82,19 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
           <div className="flex items-center justify-center gap-2 py-24">
             <Loader2 className="text-primary size-5 animate-spin" aria-hidden />
             <span className="text-text-muted text-sm">Cargando checkpoint…</span>
+          </div>
+        ) : load.status === "locked" ? (
+          <div className="flex flex-col items-center gap-3 py-24 text-center">
+            <span className="bg-warning-subtle text-warning flex size-14 items-center justify-center rounded-full">
+              <Lock className="size-7" aria-hidden />
+            </span>
+            <h1 className="text-text text-xl font-semibold">Todavía no podés rendirlo</h1>
+            {/* El mensaje lo escribe el back: es el que conoce la regla exacta
+                (lecciones pendientes, módulo anterior, intentos agotados). */}
+            <p className="text-text-secondary max-w-sm text-sm">{load.message}</p>
+            <Link href={courseHref} className="text-primary text-sm font-medium hover:underline">
+              Volver al curso
+            </Link>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-24 text-center">
@@ -145,9 +167,48 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
             Respondés una pregunta por pantalla y enviás todo al final. Podés volver atrás y cambiar
             una respuesta antes de enviar.
           </p>
-          <button type="button" onClick={start} className={`${PRIMARY} mt-8 px-6`}>
-            Empezar
-          </button>
+
+          {/* Tres desenlaces posibles, y sólo uno ofrece "Empezar". Aprobado es
+              estado final: no se vuelve a rendir aunque sobren intentos. */}
+          {quiz.passed ? (
+            <>
+              <p className="bg-success-subtle text-success border-success/30 mx-auto mt-6 flex max-w-sm items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium">
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                Ya aprobaste este checkpoint
+              </p>
+              <Link href={courseHref} className={`${PRIMARY} mt-8 px-6`}>
+                Volver al curso
+              </Link>
+            </>
+          ) : quiz.canAttempt ? (
+            <>
+              <p
+                className={`mx-auto mt-4 max-w-sm text-sm font-medium ${
+                  quiz.attemptsLeft === 1 ? "text-warning" : "text-text-secondary"
+                }`}
+              >
+                {quiz.attemptsLeft === 1
+                  ? `Te queda 1 intento de ${quiz.maxAttempts}. Si no aprobás, vas a tener que hablar con el docente.`
+                  : `Tenés ${quiz.attemptsLeft} intentos de ${quiz.maxAttempts}.`}
+              </p>
+              <button type="button" onClick={start} className={`${PRIMARY} mt-8 px-6`}>
+                Empezar
+              </button>
+            </>
+          ) : (
+            <>
+              <p
+                role="alert"
+                className="bg-warning-subtle text-warning border-warning/30 mx-auto mt-6 max-w-sm rounded-xl border px-4 py-3 text-sm"
+              >
+                Usaste tus {quiz.maxAttempts} intentos y no aprobaste. Escribile al docente del
+                curso para que te habilite otro.
+              </p>
+              <Link href={courseHref} className={`${SECONDARY} mt-8 px-6`}>
+                Volver al curso
+              </Link>
+            </>
+          )}
         </div>
       )}
 
@@ -263,7 +324,15 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
       )}
 
       {phase.step === "result" && (
-        <QuizResult result={phase.result} courseHref={courseHref} onRetry={start} />
+        <QuizResult
+          result={phase.result}
+          courseHref={courseHref}
+          onRetry={start}
+          /* El intento recién enviado ya se descontó en el back, pero `quiz`
+             es el que se cargó al entrar: se resta a mano para no volver a
+             pedirlo sólo por este número. */
+          attemptsLeft={phase.result.attemptsLeft}
+        />
       )}
     </Shell>
   );

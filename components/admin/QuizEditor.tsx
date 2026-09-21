@@ -82,7 +82,8 @@ export default function QuizEditor({
     if (!pendingDelete) return;
 
     if (pendingDelete.kind === "question") {
-      await run(() => deleteQuestion(pendingDelete.id));
+      if (!quiz) return;
+      await run(() => deleteQuestion(quiz.id, pendingDelete.id));
     } else if (quiz) {
       // El diálogo del quiz sólo se abre con uno cargado; comprobarlo igual
       // evita que este handler quede atado a ese invariante.
@@ -161,7 +162,7 @@ export default function QuizEditor({
               isBusy={isBusy}
               onCancel={() => setEditingId(null)}
               onSubmit={async (payload) => {
-                const ok = await run(() => updateQuestion(question.id, payload));
+                const ok = await run(() => updateQuestion(quiz.id, question.id, payload));
                 if (ok) setEditingId(null);
                 return ok;
               }}

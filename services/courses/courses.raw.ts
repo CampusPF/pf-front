@@ -70,6 +70,8 @@ export interface RawCourse {
 /** `GET /lessons/:id` — content/videoUrl en null si no hay acceso. */
 export interface RawLessonView extends RawLesson {
   hasAccess: boolean;
+  /** El módulo todavía no se desbloqueó en la progresión secuencial del curso. */
+  isLockedByProgression?: boolean;
   content: string | null;
   videoUrl: string | null;
   module?: { id: string; title: string; order: number } | null;

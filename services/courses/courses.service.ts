@@ -152,7 +152,13 @@ export async function getLesson(course: Course, lessonId: string): Promise<Lesso
   if (USE_MOCK_COURSES) {
     const lesson = findLesson(course, lessonId);
     if (!lesson) return null;
-    return { ...lesson, hasAccess: true, content: LESSON_CONTENT[lesson.id] ?? null };
+    // Los mocks no tienen progresión: nada queda bloqueado por ella.
+    return {
+      ...lesson,
+      hasAccess: true,
+      isLockedByProgression: false,
+      content: LESSON_CONTENT[lesson.id] ?? null,
+    };
   }
 
   const raw = await apiFetch<RawLessonView>(`/lessons/${encodeURIComponent(lessonId)}`, {

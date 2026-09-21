@@ -23,10 +23,12 @@ import type {
 /**
  * `GET /quizzes/:quizId` — el checkpoint a resolver.
  *
- * Devuelve `null` en vez de tirar si el quiz no existe o el alumno no tiene
- * acceso: la pantalla muestra "todavía no está disponible", que es más útil
- * que un cartel de error para algo que simplemente puede no estar cargado.
- * Un problema de red sí se propaga.
+ * Devuelve `null` si el quiz no existe o no está cargado (404): la pantalla
+ * muestra "todavía no está disponible", más útil que un cartel de error.
+ *
+ * El 403 SÍ se propaga: es la progresión diciendo por qué no se puede rendir
+ * todavía ("te faltan 2 lecciones", "agotaste los intentos"). Tragarlo como
+ * un `null` perdía justo el motivo, que es lo único accionable.
  */
 export async function getQuiz(quizId: string, signal?: AbortSignal): Promise<Quiz | null> {
   try {
@@ -35,9 +37,7 @@ export async function getQuiz(quizId: string, signal?: AbortSignal): Promise<Qui
       signal,
     });
   } catch (error) {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
-      return null;
-    }
+    if (error instanceof ApiError && error.status === 404) return null;
     throw error;
   }
 }
@@ -146,27 +146,31 @@ export function createQuestion(
 }
 
 /**
- * `PATCH /questions/:id` — reemplaza el enunciado y TODAS las opciones.
+ * `PATCH /quizzes/:quizId/questions/:questionId` — reemplaza el enunciado y
+ * TODAS las opciones.
  *
  * Reemplazar en bloque y no editar opción por opción: una pregunta de
  * multiple choice es una unidad (mover la correcta de la B a la C son dos
  * escrituras que no pueden quedar a medias).
+ *
+ * La ruta va anidada bajo el quiz y no suelta en `/questions/:id`: así el
+ * back comprueba de paso que la pregunta sea de ESE checkpoint.
  */
 export function updateQuestion(
+  quizId: string,
   questionId: string,
   payload: QuestionPayload,
 ): Promise<TeacherQuiz> {
-  return apiFetch<TeacherQuiz>(`/questions/${encodeURIComponent(questionId)}`, {
-    method: "PATCH",
-    body: payload,
-    auth: true,
-  });
+  return apiFetch<TeacherQuiz>(
+    `/quizzes/${encodeURIComponent(quizId)}/questions/${encodeURIComponent(questionId)}`,
+    { method: "PATCH", body: payload, auth: true },
+  );
 }
 
-/** `DELETE /questions/:id` */
-export function deleteQuestion(questionId: string): Promise<void> {
-  return apiFetch<void>(`/questions/${encodeURIComponent(questionId)}`, {
-    method: "DELETE",
-    auth: true,
-  });
+/** `DELETE /quizzes/:quizId/questions/:questionId` */
+export function deleteQuestion(quizId: string, questionId: string): Promise<void> {
+  return apiFetch<void>(
+    `/quizzes/${encodeURIComponent(quizId)}/questions/${encodeURIComponent(questionId)}`,
+    { method: "DELETE", auth: true },
+  );
 }

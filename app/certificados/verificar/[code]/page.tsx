@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { ApiError } from "@/services/api-client";
 import {
+  formatCertificateDuration,
   verifyCertificate,
   type CertificateVerification,
 } from "@/services/certificates/certificates.service";
@@ -106,10 +107,10 @@ function ValidCertificate({
         <Row
           label="Duración"
           value={
-            // Un curso sin minutos cargados llega con 0: "0 horas de contenido"
+            // Un curso sin minutos cargados llega con 0: "0 min de contenido"
             // en un certificado queda raro, así que la fila se oculta.
-            data.horas != null && data.horas > 0
-              ? `${data.horas} ${data.horas === 1 ? "hora" : "horas"} de contenido`
+            data.minutos != null && data.minutos > 0
+              ? `${formatCertificateDuration(data.minutos)} de contenido`
               : undefined
           }
           icon={Clock}
