@@ -61,11 +61,17 @@ export interface RawCourse {
   reviewsCount?: number;
   /** Inscripciones activas. */
   studentsCount?: number;
+  /** Lecciones vivas del curso. El listado no trae el temario: viene contado. */
+  lessonsCount?: number;
+  /** Suma de la duración de las lecciones vivas, en minutos (0 = sin cargar). */
+  totalDurationMinutes?: number;
 }
 
 /** `GET /lessons/:id` — content/videoUrl en null si no hay acceso. */
 export interface RawLessonView extends RawLesson {
   hasAccess: boolean;
+  /** El módulo todavía no se desbloqueó en la progresión secuencial del curso. */
+  isLockedByProgression?: boolean;
   content: string | null;
   videoUrl: string | null;
   module?: { id: string; title: string; order: number } | null;

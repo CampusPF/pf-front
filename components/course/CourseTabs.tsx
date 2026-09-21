@@ -149,7 +149,7 @@ export default function CourseTabs() {
           <h3 className="text-text mt-8 font-semibold">Para quién es</h3>
           <p className="text-text-secondary mt-3 leading-relaxed">
             Nivel {course.levelLabel.toLowerCase()}.
-            {course.durationHours !== null && ` Son ${course.durationHours} horas de contenido.`}{" "}
+            {course.durationHours !== null && ` Son ${formatDuration(course.durationHours * 60)} de contenido.`}{" "}
             Si te trabás, el tutor de IA está disponible dentro de cada lección.
           </p>
         </section>

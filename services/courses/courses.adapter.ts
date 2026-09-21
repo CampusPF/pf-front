@@ -67,12 +67,17 @@ export function toModule(raw: RawModule, lessons?: RawLesson[]): Module {
   };
 }
 
+/** Minutos → horas redondeadas (mínimo 1). `null` si no hay duración cargada. */
+export function minutesToHours(minutes: number): number | null {
+  return minutes > 0 ? Math.max(1, Math.round(minutes / 60)) : null;
+}
+
 export function totalHours(modules: Module[]): number | null {
   const minutes = modules.reduce(
     (acc, m) => acc + m.lessons.reduce((sum, l) => sum + l.durationMinutes, 0),
     0,
   );
-  return minutes > 0 ? Math.max(1, Math.round(minutes / 60)) : null;
+  return minutesToHours(minutes);
 }
 
 export function toCourse(raw: RawCourse): Course {
@@ -93,7 +98,10 @@ export function toCourse(raw: RawCourse): Course {
     categoryLabel: raw.category?.name ?? "General",
     level,
     levelLabel: LEVEL_LABEL[level],
-    durationHours: totalHours(modules),
+    // Con el temario cargado se suma de ahí; el listado no lo trae, pero sí
+    // el total ya calculado por el back (`totalDurationMinutes`).
+    durationHours: totalHours(modules) ?? minutesToHours(raw.totalDurationMinutes ?? 0),
+    lessonsCount: raw.lessonsCount ?? null,
     projectsCount: null,
     rating: raw.ratingAverage ?? null,
     reviewsCount: raw.reviewsCount ?? 0,
@@ -136,5 +144,12 @@ export function toLessonDetail(raw: RawLessonView): LessonDetail {
       }
     : null;
 
-  return { ...toLesson(raw), hasAccess: raw.hasAccess, content };
+  return {
+    ...toLesson(raw),
+    hasAccess: raw.hasAccess,
+    // El back sumó este flag después: un `false` por defecto deja el
+    // comportamiento anterior (nada bloqueado) si todavía no lo manda.
+    isLockedByProgression: raw.isLockedByProgression ?? false,
+    content,
+  };
 }

@@ -55,6 +55,50 @@ export function getTeacherPayments(signal?: AbortSignal): Promise<TeacherPayment
   return apiFetch<TeacherPayment[]>("/teacher/payments", { auth: true, signal });
 }
 
+/**
+ * Separa los intentos de pago sobrantes de los que vale la pena mostrar.
+ *
+ * El back crea un pago "pending" cada vez que se abre el checkout, aunque
+ * después no se complete (recargar la página, volver atrás…). Sin esto, una
+ * sola compra deja una fila "Pendiente" por cada visita. Se ocultan los
+ * pendientes de un concepto que:
+ *  - ya tiene un pago exitoso (esos intentos quedaron obsoletos), o
+ *  - tiene otro pendiente más nuevo (sólo importa el último).
+ * Los pagos exitosos y los rechazados nunca se ocultan.
+ *
+ * TODO(back): que reutilice el pago pendiente del mismo curso en vez de crear
+ * uno por visita; con eso esta función deja de hacer falta.
+ */
+export function splitStaleAttempts<T extends Pick<MyPayment, "id" | "concept" | "status" | "date">>(
+  payments: T[],
+): { visible: T[]; hidden: T[] } {
+  const paidConcepts = new Set(
+    payments.filter((payment) => payment.status === "succeeded").map((payment) => payment.concept),
+  );
+
+  // Del más nuevo al más viejo (no se asume el orden que mande el back).
+  const newestFirst = [...payments].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+  const pendingSeen = new Set<string>();
+  const staleIds = new Set<string>();
+
+  for (const payment of newestFirst) {
+    if (payment.status !== "pending") continue;
+
+    if (paidConcepts.has(payment.concept) || pendingSeen.has(payment.concept)) {
+      staleIds.add(payment.id);
+    } else {
+      pendingSeen.add(payment.concept);
+    }
+  }
+
+  return {
+    visible: payments.filter((payment) => !staleIds.has(payment.id)),
+    hidden: payments.filter((payment) => staleIds.has(payment.id)),
+  };
+}
+
 /** Suma de una lista de pagos, para el total de la pantalla de ventas. */
 export function sumAmounts(payments: { amount: number }[]): number {
   return payments.reduce((total, payment) => total + payment.amount, 0);

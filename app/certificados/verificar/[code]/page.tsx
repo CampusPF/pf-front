@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import { ApiError } from "@/services/api-client";
 import {
+  formatCertificateDuration,
   verifyCertificate,
   type CertificateVerification,
 } from "@/services/certificates/certificates.service";
@@ -60,8 +61,8 @@ export default async function VerificarCertificadoPage({
   return (
     <>
       <Navbar />
-      <main className="bg-bg flex min-h-[80vh] items-center justify-center px-4 py-20">
-        <div className="bg-surface border-border w-full max-w-md rounded-2xl border p-8 text-center shadow-sm">
+      <main className="bg-bg flex min-h-[80vh] items-center justify-center px-4 py-8 sm:py-20">
+        <div className="bg-surface border-border w-full max-w-md rounded-2xl border p-6 text-center shadow-sm sm:p-8">
           {result.status === "network-error" ? (
             <NetworkErrorState />
           ) : result.data.valido ? (
@@ -106,8 +107,10 @@ function ValidCertificate({
         <Row
           label="Duración"
           value={
-            data.horas != null
-              ? `${data.horas} ${data.horas === 1 ? "hora" : "horas"} de contenido`
+            // Un curso sin minutos cargados llega con 0: "0 min de contenido"
+            // en un certificado queda raro, así que la fila se oculta.
+            data.minutos != null && data.minutos > 0
+              ? `${formatCertificateDuration(data.minutos)} de contenido`
               : undefined
           }
           icon={Clock}
@@ -127,7 +130,7 @@ function ValidCertificate({
         />
       </dl>
 
-      <p className="text-text-muted mt-6 font-mono text-xs">Código: {code}</p>
+      <p className="text-text-muted mt-6 font-mono text-xs break-all">Código: {code}</p>
     </>
   );
 }
@@ -141,7 +144,7 @@ function InvalidCertificate({ code }: { code: string }) {
       <h1 className="text-text mt-4 text-xl font-bold">Código no válido</h1>
       <p className="text-text-muted mt-1 text-sm">
         No encontramos ningún certificado con el código{" "}
-        <span className="font-mono">{code}</span>. Revisá que esté completo y
+        <span className="font-mono break-all">{code}</span>. Revisá que esté completo y
         sin espacios.
       </p>
     </>
@@ -176,11 +179,11 @@ function Row({
 
   return (
     <div className="flex items-start justify-between gap-4">
-      <dt className="text-text-muted flex items-center gap-1.5 text-sm">
+      <dt className="text-text-muted flex shrink-0 items-center gap-1.5 text-sm">
         {Icon && <Icon className="size-3.5" aria-hidden />}
         {label}
       </dt>
-      <dd className="text-text text-right text-sm font-medium">{value}</dd>
+      <dd className="text-text min-w-0 text-right text-sm font-medium wrap-break-word">{value}</dd>
     </div>
   );
 }

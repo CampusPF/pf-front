@@ -1,8 +1,10 @@
+import { Fragment } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Loader2, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardCheck, Loader2, ShoppingCart } from "lucide-react";
 
 import type { Lesson } from "@/types/course.types";
-import { lessonHref } from "@/lib/course-utils";
+import type { CourseCheckpoint } from "@/types/quiz.types";
+import { lessonHref, quizHref } from "@/lib/course-utils";
 
 const SECONDARY =
   "border-border text-text-secondary hover:bg-surface-elevated hover:text-text flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-150";
@@ -18,6 +20,9 @@ export default function LessonNavigation({
   isAdvancing = false,
   buyHref = null,
   pendingBeforeFinish = 0,
+  pendingCheckpoints = [],
+  isNextModuleLocked = false,
+  checkpointHref = null,
 }: {
   courseSlug: string;
   previous: Lesson | null;
@@ -34,10 +39,22 @@ export default function LessonNavigation({
   /** En la última lección: cuántas otras faltan completar. Con > 0,
       "Finalizar curso" queda deshabilitado. */
   pendingBeforeFinish?: number;
+  /** En la última lección: checkpoints sin aprobar. También bloquean "Finalizar
+      curso". Llegan ya ordenados como el temario (ver `sortCheckpoints` en
+      LessonPlayer), así que acá se respeta el orden tal cual viene. */
+  pendingCheckpoints?: readonly CourseCheckpoint[];
+  /** La lección siguiente es del módulo que todavía está cerrado. */
+  isNextModuleLocked?: boolean;
+  /** Checkpoint pendiente de ESTE módulo: el paso que toca antes de seguir. */
+  checkpointHref?: string | null;
 }) {
   // Sin siguiente es la última lección del curso (no del módulo).
   const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
-  const finishBlocked = !next && pendingBeforeFinish > 0;
+  const checkpointsToPass = pendingCheckpoints;
+  const finishBlocked = !next && (pendingBeforeFinish > 0 || checkpointsToPass.length > 0);
+  /* Última lección del módulo: el siguiente paso es su checkpoint, no la
+     lección de un módulo que todavía no se abrió. */
+  const goToCheckpoint = isNextModuleLocked && checkpointHref;
 
   return (
     <div className="border-border mt-12 border-t pt-6">
@@ -62,6 +79,34 @@ export default function LessonNavigation({
           <ShoppingCart className="size-5" aria-hidden />
           Comprar curso
         </Link>
+      ) : goToCheckpoint ? (
+        /* Completa esta lección igual que "Siguiente", pero lleva al
+           checkpoint del módulo en vez de a la lección bloqueada. */
+        <Link
+          href={checkpointHref}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+            event.preventDefault();
+            if (!isAdvancing) onAdvance(checkpointHref);
+          }}
+          aria-disabled={isAdvancing}
+          className={`${PRIMARY} cursor-pointer aria-disabled:cursor-wait aria-disabled:opacity-70`}
+        >
+          <ClipboardCheck className="size-5" aria-hidden />
+          Rendir el checkpoint
+        </Link>
+      ) : isNextModuleLocked ? (
+        /* Módulo siguiente cerrado y sin checkpoint que rendir (o ya aprobado
+           pero el módulo sigue trabado): no se ofrece un link a un candado. */
+        <button
+          type="button"
+          disabled
+          aria-describedby="next-blocked-hint"
+          className={`${PRIMARY} cursor-not-allowed opacity-50`}
+        >
+          Siguiente
+          <ChevronRight className="size-5" aria-hidden />
+        </button>
       ) : finishBlocked ? (
         <button
           type="button"
@@ -94,12 +139,41 @@ export default function LessonNavigation({
       </Link>
       )}
     </div>
-    {finishBlocked && (
-      <p id="finish-blocked-hint" className="text-text-muted mt-3 text-right text-sm">
-        Para finalizar el curso te{" "}
-        {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
-        por completar. Las ves en el temario del curso.
+    {isNextModuleLocked && !goToCheckpoint && (
+      <p id="next-blocked-hint" className="text-text-muted mt-3 text-right text-sm">
+        El módulo siguiente se desbloquea cuando termines éste y apruebes su checkpoint.
       </p>
+    )}
+
+    {/* Un botón gris sin explicación es una mala pantalla: cada motivo del
+        bloqueo se dice en voz alta, y los checkpoints llevan directo al quiz. */}
+    {finishBlocked && (
+      <div id="finish-blocked-hint" className="text-text-muted mt-3 space-y-1 text-right text-sm">
+        {pendingBeforeFinish > 0 && (
+          <p>
+            Para finalizar el curso te{" "}
+            {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
+            por completar. Las ves en el temario del curso.
+          </p>
+        )}
+        {checkpointsToPass.length > 0 && (
+          <p>
+            Aprobá{" "}
+            {checkpointsToPass.map((checkpoint, position) => (
+              <Fragment key={checkpoint.quizId}>
+                {position > 0 && (position === checkpointsToPass.length - 1 ? " y " : ", ")}
+                <Link
+                  href={quizHref(courseSlug, checkpoint.quizId)}
+                  className="text-primary font-medium hover:underline"
+                >
+                  {checkpoint.title}
+                </Link>
+              </Fragment>
+            ))}{" "}
+            para finalizar.
+          </p>
+        )}
+      </div>
     )}
     </div>
   );

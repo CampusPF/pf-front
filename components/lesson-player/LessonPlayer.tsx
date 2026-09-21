@@ -17,6 +17,8 @@ import {
   getAdjacentLessons,
   getAllLessons,
   getLessonPosition,
+  lessonHref,
+  quizHref,
 } from "@/lib/course-utils";
 import { buildLessonAccess, canOpenLesson, shouldAutoEnroll } from "@/lib/lesson-access";
 import { getCourseBySlug, getLesson, loadSyllabus } from "@/services/courses/courses.service";
@@ -26,7 +28,15 @@ import {
   setLessonCompleted,
   type CourseProgress,
 } from "@/services/progress/course-progress.service";
-import type { Course, LessonDetail } from "@/types/course.types";
+import {
+  getCourseProgression,
+  isModuleUnlocked,
+  moduleGate,
+} from "@/services/progress/course-progression.service";
+import { getCourseCheckpoints } from "@/services/quizzes/quizzes.service";
+import type { Course, Lesson, LessonDetail } from "@/types/course.types";
+import type { CourseProgression } from "@/types/progression.types";
+import type { CourseCheckpoint } from "@/types/quiz.types";
 
 /* Reproductor de lecciones con datos reales:
    - curso por slug (público) + temario (con sesión, ver loadSyllabus);
@@ -47,6 +57,55 @@ type State =
   | { status: "error"; message: string }
   | { status: "not-found" }
   | { status: "ready"; course: Course; lesson: LessonDetail };
+
+/**
+ * La primera lección pendiente de un módulo que SÍ esté desbloqueado: a dónde
+ * mandar al que cayó en una lección que todavía no le corresponde.
+ *
+ * Sin progresión cargada no se adivina: devuelve null y la pantalla muestra
+ * sólo el motivo del bloqueo, sin un botón que podría llevar a otro candado.
+ */
+function findResumeLesson(
+  course: Course,
+  progression: CourseProgression | null,
+  completedLessonIds: readonly string[] = [],
+): Lesson | null {
+  if (!progression) return null;
+
+  const modules = [...course.modules].sort((a, b) => a.order - b.order);
+  for (const courseModule of modules) {
+    const gate = progression.modules.find((m) => m.moduleId === courseModule.id);
+    if (gate && !gate.lessonsUnlocked) continue;
+
+    const pending = [...courseModule.lessons]
+      .sort((a, b) => a.order - b.order)
+      .find((item) => !completedLessonIds.includes(item.id));
+    if (pending) return pending;
+  }
+
+  return null;
+}
+
+/**
+ * Ordena los checkpoints como aparecen en el temario: por el orden del módulo
+ * al que pertenecen, y el de fin de curso (moduleId null) siempre último.
+ *
+ * Se hace acá, una vez, y no en cada componente que los muestra: el orden del
+ * módulo vive en el curso, que sólo este componente tiene entero.
+ */
+function sortCheckpoints(
+  checkpoints: readonly CourseCheckpoint[],
+  course: Course,
+): CourseCheckpoint[] {
+  const orderOf = new Map(course.modules.map((m) => [m.id, m.order]));
+  // Un checkpoint de fin de curso (o de un módulo que ya no está) va al final.
+  const rank = (checkpoint: CourseCheckpoint) =>
+    checkpoint.moduleId === null
+      ? Number.MAX_SAFE_INTEGER
+      : (orderOf.get(checkpoint.moduleId) ?? Number.MAX_SAFE_INTEGER);
+
+  return [...checkpoints].sort((a, b) => rank(a) - rank(b));
+}
 
 export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonId: string }) {
   const { user } = useAuth();
@@ -73,6 +132,8 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
 
   // El curso + temario se cachean entre lecciones: sólo cambia la lección.
   const [course, setCourse] = useState<Course | null>(null);
+  const [checkpoints, setCheckpoints] = useState<CourseCheckpoint[]>([]);
+  const [progression, setProgression] = useState<CourseProgression | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,13 +145,21 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
           if (!cancelled) setState({ status: "not-found" });
           return;
         }
-        const [full, fetchedProgress] = await Promise.all([
-          loadSyllabus(base),
-          getCourseProgress(base.id).catch(() => null),
-        ]);
+        const [full, fetchedProgress, fetchedCheckpoints, fetchedProgression] =
+          await Promise.all([
+            loadSyllabus(base),
+            getCourseProgress(base.id).catch(() => null),
+            // Un fallo acá no debe trabar la lección: sin checkpoints simplemente
+            // no se bloquea "Finalizar curso" (el back es quien valida de verdad).
+            getCourseCheckpoints(base.id).catch(() => []),
+            // Ídem: sin progresión se dibuja todo abierto y corta el back.
+            getCourseProgression(base.id).catch(() => null),
+          ]);
         if (cancelled) return;
         setCourse(full);
         setProgress(fetchedProgress);
+        setCheckpoints(sortCheckpoints(fetchedCheckpoints, full));
+        setProgression(fetchedProgression);
       } catch (caught) {
         if (!cancelled) {
           setState({
@@ -141,7 +210,15 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
     setSaveError(null);
     try {
       await setLessonCompleted(progress, lessonId, completed);
-      setProgress(await getCourseProgress(course.id));
+      /* La progresión se relee junto con el progreso: marcar la última lección
+         del módulo habilita su checkpoint, y el candado del temario tiene que
+         soltarse en el momento, sin recargar la página. */
+      const [freshProgress, freshProgression] = await Promise.all([
+        getCourseProgress(course.id),
+        getCourseProgression(course.id).catch(() => null),
+      ]);
+      setProgress(freshProgress);
+      if (freshProgression) setProgression(freshProgression);
     } catch (caught) {
       setSaveError(caught instanceof Error ? caught.message : "No pudimos guardar tu progreso.");
     } finally {
@@ -176,7 +253,15 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
 
   const readyLesson = state.status === "ready" ? state.lesson : null;
   const access = buildLessonAccess(user, progress, course);
-  const canView = Boolean(readyLesson?.hasAccess && canOpenLesson(readyLesson, access));
+  /* Tres condiciones, no dos. Faltaba la progresión: como `hasAccess` sigue
+     siendo true en un módulo bloqueado (el alumno SÍ tiene derecho al curso),
+     la lección se renderizaba como si fuera visible y hasta ofrecía "Marcar
+     como completada" sobre un módulo al que todavía no había llegado. */
+  const canView = Boolean(
+    readyLesson?.hasAccess &&
+      !readyLesson.isLockedByProgression &&
+      canOpenLesson(readyLesson, access),
+  );
 
   /* Avanzar a la lección siguiente completa la actual: la lección 1 no queda
      completada al abrirla, sino cuando el alumno pasa a la 2 (con "Siguiente"
@@ -256,6 +341,29 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
         (item) => item.id !== lesson.id && !progress?.completedLessonIds.includes(item.id),
       ).length;
 
+  // Motivo del candado y a dónde mandarlo, para la pantalla de módulo bloqueado.
+  const lockedModuleReason = courseModule
+    ? (moduleGate(progression, courseModule.id)?.lockedReason ?? null)
+    : null;
+  const resumeLesson = findResumeLesson(state.course, progression, progress?.completedLessonIds);
+  const resumeHref = resumeLesson ? lessonHref(state.course.slug, resumeLesson.id) : null;
+
+  /* La lección siguiente puede ser del módulo que todavía está cerrado. En ese
+     caso "Siguiente" no puede llevar ahí: el paso que corresponde es el
+     checkpoint de ESTE módulo. */
+  const nextModule = next ? findModuleOfLesson(state.course, next.id) : null;
+  const isNextModuleLocked = Boolean(
+    nextModule &&
+      nextModule.id !== courseModule?.id &&
+      !isModuleUnlocked(progression, nextModule.id),
+  );
+  const pendingCheckpoint = courseModule
+    ? (checkpoints.find((c) => c.moduleId === courseModule.id && !c.passed) ?? null)
+    : null;
+  const checkpointHref = pendingCheckpoint
+    ? quizHref(state.course.slug, pendingCheckpoint.quizId)
+    : null;
+
   return (
     <>
       <LessonTutorContext lessonTitle={lesson.title} />
@@ -276,6 +384,8 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
           access={access}
           nextLessonId={next?.id ?? null}
           onAdvance={advance}
+          checkpoints={checkpoints}
+          progression={progression}
         />
 
         <main className="min-w-0 flex-1">
@@ -287,6 +397,28 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
                 moduleTitle={courseModule?.title ?? ""}
                 content={lesson.content ?? undefined}
               />
+            ) : lesson.isLockedByProgression ? (
+              /* Bloqueo por progresión: no le falta pagar ni inscribirse, le
+                 falta terminar el módulo anterior. Ofrecer "Comprar curso"
+                 acá sería mentirle. */
+              <div className="border-border bg-surface my-8 rounded-2xl border p-10 text-center">
+                <span className="bg-warning-subtle text-warning mx-auto flex size-12 items-center justify-center rounded-xl">
+                  <Lock className="size-6" aria-hidden />
+                </span>
+                <h1 className="text-text mt-4 text-xl font-semibold">{lesson.title}</h1>
+                <p className="text-text-secondary mx-auto mt-2 max-w-sm text-sm">
+                  {lockedModuleReason ??
+                    "Todavía no llegaste a este módulo. Completá el anterior y aprobá su checkpoint para desbloquearlo."}
+                </p>
+                {resumeHref && (
+                  <Link
+                    href={resumeHref}
+                    className="bg-primary-solid hover:bg-primary-solid-hover mt-5 inline-block rounded-lg px-4 py-2.5 text-sm font-medium text-white"
+                  >
+                    Seguir donde quedaste
+                  </Link>
+                )}
+              </div>
             ) : (
               <div className="border-border bg-surface my-8 rounded-2xl border p-10 text-center">
                 <span className="bg-primary/10 text-primary mx-auto flex size-12 items-center justify-center rounded-xl">
@@ -389,6 +521,9 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
                   : null
               }
               pendingBeforeFinish={pendingBeforeFinish}
+              pendingCheckpoints={checkpoints.filter((checkpoint) => !checkpoint.passed)}
+              isNextModuleLocked={isNextModuleLocked}
+              checkpointHref={checkpointHref}
             />
           </div>
         </main>
