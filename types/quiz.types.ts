@@ -33,6 +33,14 @@ export interface Quiz {
   title: string;
   /** Porcentaje mínimo para aprobar (70 = 70%). */
   passingScore: number;
+  /** Cuántas veces se puede rendir en total. */
+  maxAttempts: number;
+  /** Intentos que le quedan al alumno. 0 = agotado (el back devuelve 403). */
+  attemptsLeft: number;
+  /** Ya lo aprobó: puede verlo, pero no volver a rendirlo. */
+  passed: boolean;
+  /** Puede rendirlo AHORA. false si ya aprobó o si agotó los intentos. */
+  canAttempt: boolean;
   questions: QuizQuestion[];
 }
 
@@ -69,6 +77,14 @@ export interface QuizAttemptResult {
   passingScore: number;
   correctCount: number;
   totalQuestions: number;
+  /**
+   * Intentos que quedan DESPUÉS de éste, ya descontados por el back.
+   *
+   * Lo manda el servidor en vez de que el front reste uno: la pantalla se
+   * carga una sola vez y su número local quedaba viejo en el segundo intento,
+   * ofreciendo "volver a intentar" con los intentos ya agotados.
+   */
+  attemptsLeft: number;
   details: QuizAttemptDetail[];
 }
 

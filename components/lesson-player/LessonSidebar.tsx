@@ -5,7 +5,9 @@ import Link from "next/link";
 import { CircleCheck, ClipboardCheck, ListVideo, Lock, Play, X } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
+import type { CourseProgression, ModuleGate } from "@/types/progression.types";
 import type { CourseCheckpoint } from "@/types/quiz.types";
+import { moduleGate } from "@/services/progress/course-progression.service";
 import { displayModuleTitle, formatDuration, lessonHref, quizHref } from "@/lib/course-utils";
 import { canOpenLesson, type LessonAccessContext } from "@/lib/lesson-access";
 
@@ -17,6 +19,7 @@ function SidebarContent({
   nextLessonId,
   onAdvance,
   checkpoints,
+  progression,
   onNavigate,
 }: {
   course: Course;
@@ -26,24 +29,38 @@ function SidebarContent({
   nextLessonId: string | null;
   onAdvance: (href: string) => void;
   checkpoints: readonly CourseCheckpoint[];
+  progression: CourseProgression | null;
   onNavigate?: () => void;
 }) {
   const modules = [...course.modules].sort((a, b) => a.order - b.order);
 
   return (
     <nav aria-label="Lecciones del curso" className="pb-8">
-      {modules.map((courseModule) => (
+      {modules.map((courseModule) => {
+        const gate = moduleGate(progression, courseModule.id);
+        // Sin progresión cargada no se bloquea nada: el back es el que corta.
+        const moduleLocked = gate ? !gate.lessonsUnlocked : false;
+
+        return (
         <div key={courseModule.id}>
-          <p className="text-text-muted px-4 pt-5 pb-2 text-xs font-semibold tracking-wider uppercase">
-            Módulo {courseModule.order} · {displayModuleTitle(courseModule.title)}
+          <p className="text-text-muted flex items-center gap-1.5 px-4 pt-5 pb-2 text-xs font-semibold tracking-wider uppercase">
+            {moduleLocked && <Lock className="size-3 shrink-0" aria-hidden />}
+            <span className="min-w-0 truncate">
+              Módulo {courseModule.order} · {displayModuleTitle(courseModule.title)}
+            </span>
           </p>
+          {moduleLocked && gate?.lockedReason && (
+            <p className="text-text-muted px-4 pb-2 text-xs normal-case">{gate.lockedReason}</p>
+          )}
 
           {[...courseModule.lessons]
             .sort((a, b) => a.order - b.order)
             .map((lesson) => {
               const isCurrent = lesson.id === currentLessonId;
               const isCompleted = completedLessonIds.includes(lesson.id);
-              const isLocked = !canOpenLesson(lesson, access);
+              // Dos candados distintos: el de acceso (pago/inscripción) y el
+              // de progresión (no llegó todavía). Cualquiera cierra la lección.
+              const isLocked = moduleLocked || !canOpenLesson(lesson, access);
 
               const body = (
                 <>
@@ -120,10 +137,13 @@ function SidebarContent({
                 checkpoint={checkpoint}
                 courseSlug={course.slug}
                 onNavigate={onNavigate}
+                locked={gate ? !gate.checkpointUnlocked : false}
+                lockedReason={checkpointReason(gate)}
               />
             ))}
         </div>
-      ))}
+        );
+      })}
 
       {/* Checkpoint de fin de curso (moduleId null): no cuelga de ningún
           módulo, así que cierra el temario entero. */}
@@ -135,6 +155,8 @@ function SidebarContent({
               checkpoint={checkpoint}
               courseSlug={course.slug}
               onNavigate={onNavigate}
+              locked={progression?.finalCheckpoint ? !progression.finalCheckpoint.unlocked : false}
+              lockedReason={progression?.finalCheckpoint?.lockedReason ?? null}
             />
           </div>
         ))}
@@ -142,32 +164,76 @@ function SidebarContent({
   );
 }
 
+/** Por qué no se puede rendir todavía el checkpoint de este módulo. */
+function checkpointReason(gate: ModuleGate | null): string | null {
+  if (!gate || gate.checkpointUnlocked) return null;
+  if (!gate.lessonsUnlocked) return gate.lockedReason;
+
+  const pending = gate.totalLessons - gate.completedLessons;
+  if (pending <= 0) return gate.lockedReason;
+
+  return pending === 1
+    ? "Te falta 1 lección del módulo"
+    : `Te faltan ${pending} lecciones del módulo`;
+}
+
 function CheckpointLink({
   checkpoint,
   courseSlug,
   onNavigate,
+  locked = false,
+  lockedReason = null,
 }: {
   checkpoint: CourseCheckpoint;
   courseSlug: string;
   onNavigate?: () => void;
+  locked?: boolean;
+  lockedReason?: string | null;
 }) {
+  const icon = checkpoint.passed ? (
+    <CircleCheck className="text-success mt-0.5 size-4 shrink-0" aria-hidden />
+  ) : locked ? (
+    <Lock className="text-text-muted mt-0.5 size-4 shrink-0" aria-hidden />
+  ) : (
+    <ClipboardCheck className="text-text-muted mt-0.5 size-4 shrink-0" aria-hidden />
+  );
+
+  const label = (
+    <span className="min-w-0 flex-1">
+      {checkpoint.title}
+      <span className="text-text-muted mt-0.5 block text-xs">
+        {checkpoint.passed
+          ? "Aprobado"
+          : locked
+            ? (lockedReason ?? "Bloqueado")
+            : "Pendiente"}
+      </span>
+    </span>
+  );
+
+  /* Bloqueado no se linkea: entrar igual daría 403 del back, y un link que
+     lleva a un error no es navegación, es una trampa. */
+  if (locked && !checkpoint.passed) {
+    return (
+      <div
+        aria-disabled="true"
+        className="text-text-muted flex cursor-not-allowed items-start gap-2.5 border-l-2 border-transparent px-4 py-2.5 text-sm"
+      >
+        {icon}
+        {label}
+        <span className="sr-only">(bloqueado)</span>
+      </div>
+    );
+  }
+
   return (
     <Link
       href={quizHref(courseSlug, checkpoint.quizId)}
       onClick={onNavigate}
       className="text-text-secondary hover:bg-surface-elevated hover:text-text flex cursor-pointer items-start gap-2.5 border-l-2 border-transparent px-4 py-2.5 text-sm transition-colors duration-150"
     >
-      {checkpoint.passed ? (
-        <CircleCheck className="text-success mt-0.5 size-4 shrink-0" aria-hidden />
-      ) : (
-        <ClipboardCheck className="text-text-muted mt-0.5 size-4 shrink-0" aria-hidden />
-      )}
-      <span className="min-w-0 flex-1">
-        {checkpoint.title}
-        <span className="text-text-muted mt-0.5 block text-xs">
-          {checkpoint.passed ? "Aprobado" : "Pendiente"}
-        </span>
-      </span>
+      {icon}
+      {label}
     </Link>
   );
 }
@@ -180,6 +246,7 @@ export default function LessonSidebar({
   nextLessonId,
   onAdvance,
   checkpoints = [],
+  progression = null,
 }: {
   course: Course;
   currentLessonId: string;
@@ -188,6 +255,8 @@ export default function LessonSidebar({
   nextLessonId: string | null;
   onAdvance: (href: string) => void;
   checkpoints?: readonly CourseCheckpoint[];
+  /** Sin progresión el temario se dibuja sin candados: corta el back. */
+  progression?: CourseProgression | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -203,6 +272,7 @@ export default function LessonSidebar({
           nextLessonId={nextLessonId}
           onAdvance={onAdvance}
           checkpoints={checkpoints}
+          progression={progression}
         />
       </aside>
 
@@ -249,6 +319,7 @@ export default function LessonSidebar({
                 nextLessonId={nextLessonId}
                 onAdvance={onAdvance}
                 checkpoints={checkpoints}
+                progression={progression}
                 onNavigate={() => setIsOpen(false)}
               />
             </div>

@@ -100,5 +100,11 @@ export interface LessonContent {
 export interface LessonDetail extends Lesson {
   /** `false` = curso pago sin inscripción ni suscripción: content/video vienen en null. */
   hasAccess: boolean;
+  /**
+   * El módulo todavía no se desbloqueó en la progresión del curso. Es OTRA
+   * cosa que `hasAccess: false`: acá el alumno sí tiene derecho al contenido,
+   * sólo le falta terminar el módulo anterior y aprobar su checkpoint.
+   */
+  isLockedByProgression: boolean;
   content: LessonContent | null;
 }

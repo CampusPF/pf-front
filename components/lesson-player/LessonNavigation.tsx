@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Loader2, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardCheck, Loader2, ShoppingCart } from "lucide-react";
 
 import type { Lesson } from "@/types/course.types";
 import type { CourseCheckpoint } from "@/types/quiz.types";
@@ -21,6 +21,8 @@ export default function LessonNavigation({
   buyHref = null,
   pendingBeforeFinish = 0,
   pendingCheckpoints = [],
+  isNextModuleLocked = false,
+  checkpointHref = null,
 }: {
   courseSlug: string;
   previous: Lesson | null;
@@ -41,11 +43,18 @@ export default function LessonNavigation({
       curso". Llegan ya ordenados como el temario (ver `sortCheckpoints` en
       LessonPlayer), así que acá se respeta el orden tal cual viene. */
   pendingCheckpoints?: readonly CourseCheckpoint[];
+  /** La lección siguiente es del módulo que todavía está cerrado. */
+  isNextModuleLocked?: boolean;
+  /** Checkpoint pendiente de ESTE módulo: el paso que toca antes de seguir. */
+  checkpointHref?: string | null;
 }) {
   // Sin siguiente es la última lección del curso (no del módulo).
   const forwardHref = next ? lessonHref(courseSlug, next.id) : `/courses/${courseSlug}`;
   const checkpointsToPass = pendingCheckpoints;
   const finishBlocked = !next && (pendingBeforeFinish > 0 || checkpointsToPass.length > 0);
+  /* Última lección del módulo: el siguiente paso es su checkpoint, no la
+     lección de un módulo que todavía no se abrió. */
+  const goToCheckpoint = isNextModuleLocked && checkpointHref;
 
   return (
     <div className="border-border mt-12 border-t pt-6">
@@ -70,6 +79,34 @@ export default function LessonNavigation({
           <ShoppingCart className="size-5" aria-hidden />
           Comprar curso
         </Link>
+      ) : goToCheckpoint ? (
+        /* Completa esta lección igual que "Siguiente", pero lleva al
+           checkpoint del módulo en vez de a la lección bloqueada. */
+        <Link
+          href={checkpointHref}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+            event.preventDefault();
+            if (!isAdvancing) onAdvance(checkpointHref);
+          }}
+          aria-disabled={isAdvancing}
+          className={`${PRIMARY} cursor-pointer aria-disabled:cursor-wait aria-disabled:opacity-70`}
+        >
+          <ClipboardCheck className="size-5" aria-hidden />
+          Rendir el checkpoint
+        </Link>
+      ) : isNextModuleLocked ? (
+        /* Módulo siguiente cerrado y sin checkpoint que rendir (o ya aprobado
+           pero el módulo sigue trabado): no se ofrece un link a un candado. */
+        <button
+          type="button"
+          disabled
+          aria-describedby="next-blocked-hint"
+          className={`${PRIMARY} cursor-not-allowed opacity-50`}
+        >
+          Siguiente
+          <ChevronRight className="size-5" aria-hidden />
+        </button>
       ) : finishBlocked ? (
         <button
           type="button"
@@ -102,6 +139,12 @@ export default function LessonNavigation({
       </Link>
       )}
     </div>
+    {isNextModuleLocked && !goToCheckpoint && (
+      <p id="next-blocked-hint" className="text-text-muted mt-3 text-right text-sm">
+        El módulo siguiente se desbloquea cuando termines éste y apruebes su checkpoint.
+      </p>
+    )}
+
     {/* Un botón gris sin explicación es una mala pantalla: cada motivo del
         bloqueo se dice en voz alta, y los checkpoints llevan directo al quiz. */}
     {finishBlocked && (
