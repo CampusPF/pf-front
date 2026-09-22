@@ -1,15 +1,23 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, Clock, FolderCode, Star, Users } from "lucide-react";
+import { ArrowRight, Clock, FolderCode, Star, Users } from "lucide-react";
 
 import type { Course } from "@/types/course.types";
 import { formatDuration, formatStudents, getLessonsCount, lessonsLabel } from "@/lib/course-utils";
 import { formatRating, reviewsLabel } from "@/components/ui/StarRating";
 import { formatPrice } from "@/types/checkout";
 import CourseCover from "@/components/course/CourseCover";
+import LevelBadge from "@/components/course/LevelBadge";
 
 /* Los datos que el back todavía no tiene (proyectos, tags) llegan en
-   null/vacío para los cursos reales y se ocultan. Sin reseñas se muestra el
-   nivel en lugar de un "0,0" que parecería una mala nota. */
+   null/vacío para los cursos reales y se ocultan.
+
+   El nivel vive SIEMPRE en la misma fila del cuerpo (no en la portada): así
+   queda en el mismo lugar en toda la grilla, que es lo que importa para
+   diferenciar cards al escanear un catálogo filtrado por nivel — arriba, con
+   colores encima de la imagen, competía por espacio con la categoría y el
+   "Premium" y tapaba buena parte de la portada. El rating (cuando hay
+   reseñas) se corrió a la fila de abajo, junto a duración/lecciones: no hay
+   dos datos peleando por el mismo lugar. */
 export default function CourseCard({ course }: { course: Course }) {
   // El listado del back no trae el temario pero sí la cantidad de lecciones;
   // con el temario cargado (mocks, detalle) se cuenta desde `modules`.
@@ -29,7 +37,7 @@ export default function CourseCard({ course }: { course: Course }) {
               {course.categoryLabel}
             </span>
             {course.isPremium && (
-              <span className="bg-accent-solid rounded-full px-2 py-0.5 text-xs font-medium text-white">
+              <span className="bg-accent-solid shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-white">
                 Premium
               </span>
             )}
@@ -52,24 +60,8 @@ export default function CourseCard({ course }: { course: Course }) {
 
       {/* ── Cuerpo ──────────────────────────────────────────────── */}
       <div className="bg-surface p-4">
-        <div className="text-text-muted flex items-center justify-between gap-2 text-sm">
-          {course.rating !== null && course.reviewsCount > 0 ? (
-            <span
-              className="flex items-center gap-1.5"
-              aria-label={`${formatRating(course.rating)} de 5, ${reviewsLabel(course.reviewsCount)}`}
-            >
-              <Star className="fill-warning text-warning size-4" aria-hidden />
-              <span className="text-text font-medium" aria-hidden>
-                {formatRating(course.rating)}
-              </span>
-              <span aria-hidden>({formatStudents(course.reviewsCount)})</span>
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5">
-              <BarChart3 className="size-4" aria-hidden />
-              {course.levelLabel}
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <LevelBadge level={course.level} label={course.levelLabel} />
 
           <span className="text-text font-semibold">
             {course.isPremium ? formatPrice(course.priceInCents, course.currency) : "Gratis"}
@@ -82,7 +74,19 @@ export default function CourseCard({ course }: { course: Course }) {
         <p className="text-text-muted mt-1 text-sm">{course.instructor.name}</p>
 
         <div className="border-border mt-4 flex items-center justify-between gap-2 border-t pt-3">
-          <p className="text-text-muted flex items-center gap-3 text-sm">
+          <p className="text-text-muted flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            {course.rating !== null && course.reviewsCount > 0 && (
+              <span
+                className="flex items-center gap-1"
+                aria-label={`${formatRating(course.rating)} de 5, ${reviewsLabel(course.reviewsCount)}`}
+              >
+                <Star className="fill-warning text-warning size-4 shrink-0" aria-hidden />
+                <span className="text-text font-medium" aria-hidden>
+                  {formatRating(course.rating)}
+                </span>
+                <span aria-hidden>({formatStudents(course.reviewsCount)})</span>
+              </span>
+            )}
             {hasSize && (
               <span className="flex items-center gap-1.5">
                 <Clock className="size-4" aria-hidden />

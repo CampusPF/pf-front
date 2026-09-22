@@ -81,8 +81,10 @@ export interface Course {
   /** Precio de compra individual en la unidad menor de la moneda (4999 = $49.99). */
   priceInCents: number;
   currency: string;
-  /** Sólo lo ve el admin (los listados públicos filtran inactivos). */
+  /** Sólo lo ve el admin/docente (los listados públicos filtran inactivos). */
   isActive?: boolean;
+  /** Sólo importa con isActive:false. Ver RawCourse. */
+  deactivatedByAdmin?: boolean;
   modules: Module[];
   syllabusStatus?: SyllabusStatus;
 }

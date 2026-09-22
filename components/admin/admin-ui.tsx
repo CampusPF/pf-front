@@ -44,7 +44,24 @@ export function Loading({ label = "Cargando…" }: { label?: string }) {
   );
 }
 
-export function StatusBadge({ active }: { active: boolean }) {
+export function StatusBadge({
+  active,
+  blocked = false,
+}: {
+  active: boolean;
+  /** Inactivo Y desactivado por un admin (no por su propio dueño): se
+   * distingue de un "Inactivo" común porque el docente dueño no lo puede
+   * restaurar por su cuenta. Ver AdminCoursesList. */
+  blocked?: boolean;
+}) {
+  if (blocked) {
+    return (
+      <span className="bg-danger-subtle text-danger rounded-full px-2 py-0.5 text-xs font-medium">
+        Bloqueado por admin
+      </span>
+    );
+  }
+
   return (
     <span
       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
