@@ -66,9 +66,12 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
 export default function CourseForm({
   course,
   onSaved,
+  readOnly = false,
 }: {
   course?: RawCourse;
   onSaved?: (updated: RawCourse) => void;
+  /** Curso bloqueado por un admin: nada acá se puede tocar (ver CourseEditor). */
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const isEdit = Boolean(course);
@@ -96,6 +99,9 @@ export default function CourseForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    // El fieldset ya deshabilita el botón, esto es sólo el respaldo — que el
+    // 403 del back nunca dependa de que el front se acuerde de chequear bien.
+    if (readOnly) return;
     setTouched(true);
     if (Object.keys(errors).length > 0) return;
 
@@ -144,6 +150,7 @@ export default function CourseForm({
           <ImageUploader
             label={imageUrl ? "Cambiar portada" : "Subir portada"}
             currentUrl={imageUrl}
+            disabled={readOnly}
             upload={(file) => uploadCourseImage<RawCourse>(course.id, file)}
             onUploaded={(updated) => {
               setImageUrl(updated.imageUrl ?? null);
@@ -165,6 +172,12 @@ export default function CourseForm({
           </div>
         )}
 
+        {/* fieldset disabled deshabilita TODOS los controles de adentro de
+            una sola vez (inputs, selects, el botón de guardar) — un único
+            punto en vez de repetir `disabled={readOnly}` campo por campo,
+            que es fácil de olvidar en alguno. className resetea el borde/
+            padding por default de <fieldset>, que si no rompe el grid. */}
+        <fieldset disabled={readOnly} className="contents">
         <Field label="Título" error={showError("title")} className="md:col-span-2">
           {(props) => (
             <input
@@ -259,6 +272,7 @@ export default function CourseForm({
             {isEdit ? "Guardar cambios" : "Crear curso"}
           </button>
         </div>
+        </fieldset>
       </form>
     </section>
   );

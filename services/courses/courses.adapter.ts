@@ -119,6 +119,7 @@ export function toCourse(raw: RawCourse): Course {
     priceInCents: raw.priceInCents ?? 0,
     currency: raw.currency ?? "usd",
     isActive: raw.isActive,
+    deactivatedByAdmin: raw.deactivatedByAdmin,
     modules,
     syllabusStatus: lessonsIncluded ? "complete" : "modules-only",
   };

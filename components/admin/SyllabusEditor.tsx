@@ -50,10 +50,15 @@ export default function SyllabusEditor({
   courseId,
   modules,
   onChanged,
+  readOnly = false,
 }: {
   courseId: string;
   modules: RawModule[];
   onChanged: () => Promise<void> | void;
+  /** Curso bloqueado por un admin: se puede seguir mirando el temario
+   * (expandir módulos, abrir una lección para leerla), pero no tocar nada —
+   * agregar, editar, borrar, ni módulos ni lecciones. Ver CourseEditor. */
+  readOnly?: boolean;
 }) {
   const [newModuleTitle, setNewModuleTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -86,7 +91,8 @@ export default function SyllabusEditor({
 
   async function handleAddModule(event: React.FormEvent) {
     event.preventDefault();
-    if (!newModuleTitle.trim()) return;
+    // El fieldset del form ya lo deshabilita; esto es el respaldo.
+    if (readOnly || !newModuleTitle.trim()) return;
     setIsCreating(true);
     setError(null);
     try {
@@ -101,7 +107,7 @@ export default function SyllabusEditor({
   }
 
   async function handleDelete() {
-    if (!pendingDelete) return;
+    if (readOnly || !pendingDelete) return;
     setIsDeleting(true);
     setError(null);
     try {
@@ -148,6 +154,7 @@ export default function SyllabusEditor({
             courseModule={courseModule}
             lessonsVersion={lessonsVersion}
             courseId={courseId}
+            readOnly={readOnly}
             quiz={quizzes.find((quiz) => quiz.moduleId === courseModule.id) ?? null}
             onQuizChanged={loadQuizzes}
             onRenamed={onChanged}
@@ -167,23 +174,25 @@ export default function SyllabusEditor({
         ))}
       </div>
 
-      <form onSubmit={handleAddModule} className="mt-4 flex gap-2">
-        <label htmlFor="new-module" className="sr-only">
-          Título del nuevo módulo
-        </label>
-        <input
-          id="new-module"
-          type="text"
-          value={newModuleTitle}
-          onChange={(e) => setNewModuleTitle(e.target.value)}
-          placeholder="Título del nuevo módulo"
-          className={inputClass(false)}
-        />
-        <button type="submit" disabled={isCreating || !newModuleTitle.trim()} className={BUTTON_PRIMARY}>
-          {isCreating ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
-          Módulo
-        </button>
-      </form>
+      {!readOnly && (
+        <form onSubmit={handleAddModule} className="mt-4 flex gap-2">
+          <label htmlFor="new-module" className="sr-only">
+            Título del nuevo módulo
+          </label>
+          <input
+            id="new-module"
+            type="text"
+            value={newModuleTitle}
+            onChange={(e) => setNewModuleTitle(e.target.value)}
+            placeholder="Título del nuevo módulo"
+            className={inputClass(false)}
+          />
+          <button type="submit" disabled={isCreating || !newModuleTitle.trim()} className={BUTTON_PRIMARY}>
+            {isCreating ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+            Módulo
+          </button>
+        </form>
+      )}
 
       {/* Checkpoint de fin de curso: no cuelga de ningún módulo, así que va
           suelto al final del temario. Es opcional. */}
@@ -193,13 +202,15 @@ export default function SyllabusEditor({
           Opcional, y se rinde además de los de cada módulo. Mientras quede alguno sin
           aprobar, el alumno no puede finalizar el curso ni emitir su certificado.
         </p>
-        <QuizEditor
-          courseId={courseId}
-          moduleId={null}
-          defaultTitle="Examen final"
-          quiz={finalQuiz}
-          onChanged={loadQuizzes}
-        />
+        <fieldset disabled={readOnly} className="contents">
+          <QuizEditor
+            courseId={courseId}
+            moduleId={null}
+            defaultTitle="Examen final"
+            quiz={finalQuiz}
+            onChanged={loadQuizzes}
+          />
+        </fieldset>
       </div>
 
       <ConfirmDialog
@@ -220,6 +231,7 @@ function ModuleRow({
   courseModule,
   lessonsVersion,
   courseId,
+  readOnly,
   quiz,
   onQuizChanged,
   onRenamed,
@@ -230,6 +242,7 @@ function ModuleRow({
   courseModule: RawModule;
   lessonsVersion: number;
   courseId: string;
+  readOnly: boolean;
   /** El checkpoint de este módulo, o null si todavía no tiene. */
   quiz: TeacherQuiz | null;
   onQuizChanged: () => Promise<void> | void;
@@ -263,6 +276,7 @@ function ModuleRow({
 
   async function saveModule(event: React.FormEvent) {
     event.preventDefault();
+    if (readOnly) return;
     setIsBusy(true);
     try {
       await updateModule(courseModule.id, { title: title.trim(), order: Number(order) || 0 });
@@ -277,7 +291,7 @@ function ModuleRow({
 
   async function addLesson(event: React.FormEvent) {
     event.preventDefault();
-    if (!newLessonTitle.trim()) return;
+    if (readOnly || !newLessonTitle.trim()) return;
     setIsBusy(true);
     try {
       // Duración inicial de 10 min para que no quede en 0 (y no sume horas
@@ -343,22 +357,26 @@ function ModuleRow({
                 aria-hidden
               />
             </button>
-            <button
-              type="button"
-              onClick={() => setIsRenaming(true)}
-              className={BUTTON_SECONDARY}
-              aria-label={`Editar módulo ${courseModule.title}`}
-            >
-              <Pencil className="size-3.5" aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={onDeleteModule}
-              className={BUTTON_GHOST_DANGER}
-              aria-label={`Eliminar módulo ${courseModule.title}`}
-            >
-              <Trash2 className="size-4" aria-hidden />
-            </button>
+            {!readOnly && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsRenaming(true)}
+                  className={BUTTON_SECONDARY}
+                  aria-label={`Editar módulo ${courseModule.title}`}
+                >
+                  <Pencil className="size-3.5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={onDeleteModule}
+                  className={BUTTON_GHOST_DANGER}
+                  aria-label={`Eliminar módulo ${courseModule.title}`}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </button>
+              </>
+            )}
           </>
         )}
       </div>
@@ -392,54 +410,65 @@ function ModuleRow({
                     </span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onDeleteLesson(lesson)}
-                  className={BUTTON_GHOST_DANGER}
-                  aria-label={`Eliminar lección ${lesson.title}`}
-                >
-                  <Trash2 className="size-4" aria-hidden />
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteLesson(lesson)}
+                    className={BUTTON_GHOST_DANGER}
+                    aria-label={`Eliminar lección ${lesson.title}`}
+                  >
+                    <Trash2 className="size-4" aria-hidden />
+                  </button>
+                )}
               </div>
 
+              {/* Se puede abrir para LEER contenido aunque esté bloqueado
+                  (readOnly no oculta esto) — lo que el fieldset le saca es
+                  poder guardar cambios o subir adjuntos. */}
               {openLessonId === lesson.id && (
                 <div className="border-border border-t p-4">
-                  <LessonEditor
-                    lessonId={lesson.id}
-                    onSaved={loadLessons}
-                  />
+                  <fieldset disabled={readOnly} className="contents">
+                    <LessonEditor
+                      lessonId={lesson.id}
+                      onSaved={loadLessons}
+                    />
+                  </fieldset>
                 </div>
               )}
             </div>
           ))}
 
-          <form onSubmit={addLesson} className="mt-1 flex gap-2">
-            <label htmlFor={`new-lesson-${courseModule.id}`} className="sr-only">
-              Título de la nueva lección
-            </label>
-            <input
-              id={`new-lesson-${courseModule.id}`}
-              type="text"
-              value={newLessonTitle}
-              onChange={(e) => setNewLessonTitle(e.target.value)}
-              placeholder="Título de la nueva lección"
-              className={inputClass(false)}
-            />
-            <button type="submit" disabled={isBusy || !newLessonTitle.trim()} className={BUTTON_SECONDARY}>
-              <Plus className="size-4" aria-hidden />
-              Lección
-            </button>
-          </form>
+          {!readOnly && (
+            <form onSubmit={addLesson} className="mt-1 flex gap-2">
+              <label htmlFor={`new-lesson-${courseModule.id}`} className="sr-only">
+                Título de la nueva lección
+              </label>
+              <input
+                id={`new-lesson-${courseModule.id}`}
+                type="text"
+                value={newLessonTitle}
+                onChange={(e) => setNewLessonTitle(e.target.value)}
+                placeholder="Título de la nueva lección"
+                className={inputClass(false)}
+              />
+              <button type="submit" disabled={isBusy || !newLessonTitle.trim()} className={BUTTON_SECONDARY}>
+                <Plus className="size-4" aria-hidden />
+                Lección
+              </button>
+            </form>
+          )}
 
           {/* El checkpoint cierra el módulo, igual que en el temario del alumno. */}
           <div className="border-border mt-2 border-t pt-3">
-            <QuizEditor
-              courseId={courseId}
-              moduleId={courseModule.id}
-              defaultTitle={`Checkpoint del módulo ${courseModule.order}`}
-              quiz={quiz}
-              onChanged={onQuizChanged}
-            />
+            <fieldset disabled={readOnly} className="contents">
+              <QuizEditor
+                courseId={courseId}
+                moduleId={courseModule.id}
+                defaultTitle={`Checkpoint del módulo ${courseModule.order}`}
+                quiz={quiz}
+                onChanged={onQuizChanged}
+              />
+            </fieldset>
           </div>
         </div>
       )}

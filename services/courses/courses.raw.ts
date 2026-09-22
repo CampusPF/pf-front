@@ -51,6 +51,11 @@ export interface RawCourse {
   priceInCents: number;
   currency: string;
   isActive: boolean;
+  /** true = la última desactivación la hizo un ADMIN, no el propio docente.
+   * Sólo importa cuando isActive:false — ver assertCanRestoreCourse/
+   * assertCourseOwner en pf-back: si es true, ni el docente dueño puede
+   * restaurar el curso ni seguir editando su contenido. */
+  deactivatedByAdmin?: boolean;
   createdAt?: string;
   category?: RawCategory | null;
   instructor?: RawInstructor | null;

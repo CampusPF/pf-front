@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShieldAlert } from "lucide-react";
 
 import CourseForm from "@/components/admin/CourseForm";
 import SyllabusEditor from "@/components/admin/SyllabusEditor";
@@ -15,6 +15,12 @@ import type { RawCourse } from "@/services/courses/courses.raw";
 export default function CourseEditor({ courseId }: { courseId: string }) {
   const [course, setCourse] = useState<RawCourse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Un ADMIN desactivó este curso (no el propio docente pausándolo): mientras
+  // siga así, el docente no puede editar contenido ni reactivarlo por su
+  // cuenta — el back ya lo rechaza (assertCourseOwner), esto sólo lo explica
+  // en vez de dejar que se entere recién al chocar con un error al guardar.
+  const blocked = Boolean(course && !course.isActive && course.deactivatedByAdmin);
 
   const load = useCallback(async () => {
     try {
@@ -54,10 +60,29 @@ export default function CourseEditor({ courseId }: { courseId: string }) {
       {error && <ErrorBanner message={error} />}
       {!course && !error && <Loading label="Cargando curso…" />}
 
+      {blocked && (
+        <p
+          role="alert"
+          className="bg-danger-subtle text-danger flex items-start gap-2 rounded-xl px-4 py-3 text-sm"
+        >
+          <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Un administrador desactivó este curso y no está disponible en el catálogo. No podés
+            editar su contenido ni volver a publicarlo vos mismo — pedile a un administrador que
+            lo restaure si creés que fue un error.
+          </span>
+        </p>
+      )}
+
       {course && (
         <>
-          <CourseForm course={course} onSaved={setCourse} />
-          <SyllabusEditor courseId={course.id} modules={course.modules ?? []} onChanged={load} />
+          <CourseForm course={course} onSaved={setCourse} readOnly={blocked} />
+          <SyllabusEditor
+            courseId={course.id}
+            modules={course.modules ?? []}
+            onChanged={load}
+            readOnly={blocked}
+          />
         </>
       )}
     </div>
