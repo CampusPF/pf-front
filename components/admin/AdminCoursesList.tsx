@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Eye, Lock, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -13,6 +13,7 @@ import {
   ErrorBanner,
   Loading,
   StatusBadge,
+  SuccessBanner,
 } from "@/components/admin/admin-ui";
 import CourseCover from "@/components/course/CourseCover";
 import { adminErrorMessage } from "@/services/admin/admin-errors";
@@ -23,6 +24,7 @@ import {
 } from "@/services/admin/admin.service";
 import { formatPrice } from "@/types/checkout";
 import type { Course } from "@/types/course.types";
+import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
 
 /* Listado de cursos para admin (todos, activos e inactivos) o teacher (sólo
    los suyos, filtrados acá por instructor).
@@ -40,6 +42,7 @@ export default function AdminCoursesList() {
   const isAdmin = user?.role === "admin";
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [toDeactivate, setToDeactivate] = useState<Course | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -57,12 +60,24 @@ export default function AdminCoursesList() {
     load();
   }, [load]);
 
-  async function run(course: Course, action: () => Promise<unknown>) {
+  // Si otro admin/docente eliminó, restauró o creó un curso mientras esta
+  // pestaña estaba de fondo, se entera solo al volver — sin esto, sólo se
+  // veía recargando la página a mano.
+  useRevalidateOnFocus(load);
+
+  /* La lista se recarga después de cada acción (create/deactivate/restore ya
+     hacen lo mismo en sus propios flujos): la pantalla del que actúa siempre
+     queda al día sin F5. El aviso de éxito es la confirmación visible de que
+     "ya pasó" — sin él, la fila cambiando de estado sola podía leerse como un
+     parpadeo en vez de una confirmación. */
+  async function run(course: Course, action: () => Promise<unknown>, successMessage: string) {
     setPendingId(course.id);
     setError(null);
+    setNotice(null);
     try {
       await action();
       await load();
+      setNotice(successMessage);
     } catch (caught) {
       setError(adminErrorMessage(caught));
     } finally {
@@ -92,6 +107,7 @@ export default function AdminCoursesList() {
       </div>
 
       {error && <ErrorBanner message={error} />}
+      {notice && <SuccessBanner message={notice} />}
 
       {!courses && !error && <Loading label="Cargando cursos…" />}
 
@@ -121,6 +137,9 @@ export default function AdminCoursesList() {
             <tbody className="divide-border bg-surface divide-y">
               {courses.map((course) => {
                 const active = course.isActive !== false;
+                // Sólo importa para el docente: un admin siempre puede
+                // restaurar cualquier curso, esté bloqueado por quien esté.
+                const blockedForTeacher = !isAdmin && !active && Boolean(course.deactivatedByAdmin);
                 return (
                   <tr key={course.id}>
                     <td className="px-4 py-3">
@@ -139,7 +158,7 @@ export default function AdminCoursesList() {
                       {course.isPremium ? formatPrice(course.priceInCents, course.currency) : "Gratis"}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge active={active} />
+                      <StatusBadge active={active} blocked={blockedForTeacher} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
@@ -172,10 +191,28 @@ export default function AdminCoursesList() {
                           >
                             <Trash2 className="size-4" aria-hidden />
                           </button>
+                        ) : blockedForTeacher ? (
+                          // Un admin lo bajó: nada de "Restaurar" acá — el
+                          // docente no puede reactivarlo por su cuenta (podría
+                          // haberlo bajado por contenido inadecuado). El botón
+                          // deshabilitado explica el porqué en vez de
+                          // desaparecer sin dar pistas.
+                          <button
+                            type="button"
+                            disabled
+                            title="Un administrador desactivó este curso. Sólo un administrador puede restaurarlo."
+                            aria-label={`${course.title}: sólo un administrador puede restaurarlo`}
+                            className={`${BUTTON_SECONDARY} cursor-not-allowed`}
+                          >
+                            <Lock className="size-3.5" aria-hidden />
+                            Restaurar
+                          </button>
                         ) : (
                           <button
                             type="button"
-                            onClick={() => run(course, () => restoreCourse(course.id))}
+                            onClick={() =>
+                              run(course, () => restoreCourse(course.id), `"${course.title}" fue restaurado.`)
+                            }
                             disabled={pendingId === course.id}
                             className={BUTTON_SECONDARY}
                           >
@@ -200,7 +237,14 @@ export default function AdminCoursesList() {
         description={`"${toDeactivate?.title ?? ""}" deja de aparecer en el catálogo. Los alumnos inscriptos no pierden su progreso y lo podés restaurar cuando quieras.`}
         confirmLabel="Sí, eliminar"
         isPending={pendingId !== null}
-        onConfirm={() => toDeactivate && run(toDeactivate, () => deactivateCourse(toDeactivate.id))}
+        onConfirm={() =>
+          toDeactivate &&
+          run(
+            toDeactivate,
+            () => deactivateCourse(toDeactivate.id),
+            `"${toDeactivate.title}" fue eliminado del catálogo.`,
+          )
+        }
         onCancel={() => setToDeactivate(null)}
       />
     </div>

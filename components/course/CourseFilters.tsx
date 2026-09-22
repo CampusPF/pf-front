@@ -6,6 +6,7 @@ import { ChevronDown, Loader2, RotateCcw, Search, SlidersHorizontal, Star } from
 
 import { MIN_RATING_OPTIONS, type CategoryOption } from "@/services/courses/courses.types";
 import { LEVEL_OPTIONS } from "@/services/courses/courses.service";
+import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
 
 /* Los filtros viven en la URL (?q=&nivel=&categoria=&precio=&valoracion=; el
    orden, ?orden=, lo maneja CourseSort arriba de la grilla): el filtro es
@@ -57,6 +58,12 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
   const [optimisticQuery, setOptimisticQuery] = useOptimistic(searchParams.toString());
   const [isPending, setIsPending] = useOptimistic(false);
   const current = new URLSearchParams(optimisticQuery);
+
+  // Si un docente/admin dio de alta, editó o eliminó un curso mientras esta
+  // pestaña estaba de fondo, el catálogo se pone al día solo al volver —
+  // router.refresh() vuelve a pedirle al server los mismos filtros que ya
+  // están en la URL, sin tocarlos ni perder lo que el usuario tipeó acá.
+  useRevalidateOnFocus(() => router.refresh());
 
   const levels = readList(current.get("nivel"));
   const selectedCategories = readList(current.get("categoria"));

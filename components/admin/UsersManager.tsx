@@ -21,6 +21,7 @@ import {
   type AdminUser,
   type UserRole,
 } from "@/services/admin/admin.service";
+import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
 
 /* Gestión de usuarios: cambiar el rol y dar de baja.
 
@@ -88,6 +89,10 @@ export default function UsersManager() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  // Si otro admin cambió un rol o dio de baja a alguien mientras esta
+  // pestaña estaba de fondo, se entera solo al volver.
+  useRevalidateOnFocus(load);
 
   const visible = useMemo(() => {
     const needle = normalize(search);

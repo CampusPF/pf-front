@@ -89,15 +89,21 @@ export function certificateVerificationPath(code: string): string {
  *
  * El atributo `download` de un <a> se ignora en un link a otro dominio
  * (Cloudinary), así que se usa el flag `fl_attachment` de sus URLs de
- * entrega. Una URL que no sea de Cloudinary se devuelve tal cual.
+ * entrega. Con `code`, el flag lleva el nombre del archivo
+ * (`fl_attachment:Certificado-CMP-XXXX`); sin él Cloudinary lo baja como
+ * `file.pdf`. Una URL que no sea de Cloudinary se devuelve tal cual.
  */
-export function certificateDownloadUrl(pdfUrl: string): string {
+export function certificateDownloadUrl(pdfUrl: string, code?: string): string {
   try {
     const url = new URL(pdfUrl);
     if (url.hostname !== "res.cloudinary.com") return pdfUrl;
     if (url.pathname.includes("/fl_attachment")) return pdfUrl;
 
-    url.pathname = url.pathname.replace("/upload/", "/upload/fl_attachment/");
+    // Cloudinary agrega la extensión sola: el nombre va sin ".pdf".
+    const flag = code
+      ? `fl_attachment:${encodeURIComponent(`Certificado-${code}`)}`
+      : "fl_attachment";
+    url.pathname = url.pathname.replace("/upload/", `/upload/${flag}/`);
     return url.toString();
   } catch {
     return pdfUrl;

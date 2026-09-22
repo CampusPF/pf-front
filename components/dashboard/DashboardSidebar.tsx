@@ -89,10 +89,16 @@ export default function DashboardSidebar({
   const name = user?.name?.trim() || "Invitado";
   const isPro = data?.plan === "PRO";
   const roleLabel = ROLE_LABEL[user?.role ?? "student"];
-  // El panel de administración sólo aparece para quien lo puede usar.
+  // El panel de administración sólo aparece para quien lo puede usar. Mismo
+  // link para los dos roles, pero con nombre distinto: el admin administra la
+  // plataforma (usuarios, categorías, moderación); el docente sólo gestiona
+  // sus propios cursos. Mismo texto que ya usa AdminNav para el título de la
+  // página — evita que un docente lea "Administración" y piense que tiene el
+  // panel completo de un admin.
   const canManage = user?.role === "admin" || user?.role === "teacher";
+  const managementLabel = user?.role === "admin" ? "Administración" : "Gestión de cursos";
   const navItems = canManage
-    ? [...NAV_ITEMS, { label: "Administración", href: "/dashboard/admin", icon: ShieldCheck }]
+    ? [...NAV_ITEMS, { label: managementLabel, href: "/dashboard/admin", icon: ShieldCheck }]
     : NAV_ITEMS;
 
   return (
