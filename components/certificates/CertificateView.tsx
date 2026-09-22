@@ -25,20 +25,6 @@ type State =
 
 type CopyState = "idle" | "copied" | "failed";
 
-/* El PDF se baja como Blob y se muestra desde una URL local.
-
-   Cloudinary entrega el archivo como `application/octet-stream` con
-   `Content-Disposition: attachment` (el back lo sube sin la extensión .pdf):
-   en un <iframe> el navegador lo descarga en vez de mostrarlo, y el archivo
-   baja sin nombre. Marcándolo como `application/pdf` en el cliente, la vista
-   previa y la descarga funcionan sin importar cómo lo sirva el CDN.
-   TODO(back): subirlo con `public_id: "<code>.pdf"` (uploadPublicPdf en
-   file-upload/cloudinary.service.ts) y esto deja de hacer falta. */
-type PdfState =
-  | { status: "loading" }
-  | { status: "ready"; url: string }
-  | { status: "failed" };
-
 const BUTTON =
   "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors duration-150";
 
@@ -46,9 +32,7 @@ export default function CertificateView({ code }: { code: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [copy, setCopy] = useState<CopyState>("idle");
   const [verifyUrl, setVerifyUrl] = useState("");
-  const [pdf, setPdf] = useState<PdfState>({ status: "loading" });
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pdfUrl = state.status === "ready" ? state.certificate.pdfUrl : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,33 +53,6 @@ export default function CertificateView({ code }: { code: string }) {
 
     return () => controller.abort();
   }, [code]);
-
-  // Baja el PDF y lo expone como Blob local (ver PdfState).
-  useEffect(() => {
-    if (!pdfUrl) return;
-
-    const controller = new AbortController();
-    let objectUrl: string | null = null;
-
-    fetch(pdfUrl, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.arrayBuffer();
-      })
-      .then((buffer) => {
-        if (controller.signal.aborted) return;
-        objectUrl = URL.createObjectURL(new Blob([buffer], { type: "application/pdf" }));
-        setPdf({ status: "ready", url: objectUrl });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setPdf({ status: "failed" });
-      });
-
-    return () => {
-      controller.abort();
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [pdfUrl]);
 
   useEffect(
     () => () => {
@@ -168,42 +125,35 @@ export default function CertificateView({ code }: { code: string }) {
             </p>
           </header>
 
-          {/* Vista previa. En celulares el visor de PDF del navegador puede
-              mostrar sólo la primera página o nada: por eso el link de abajo. */}
+          {/* Vista previa directo desde Cloudinary: el PDF se sirve como
+              `application/pdf` inline, así que el <iframe> lo muestra tal
+              cual. En celulares el visor de PDF del navegador puede mostrar
+              sólo la primera página o nada: por eso el link de abajo. */}
           <div className="border-border bg-surface mt-6 overflow-hidden rounded-xl border shadow-sm">
-            {pdf.status === "ready" ? (
-              <iframe
-                src={pdf.url}
-                title={`Certificado de ${state.certificate.course?.title ?? "curso"}`}
-                className="h-[60vh] w-full sm:aspect-[1.414/1] sm:h-auto"
-              />
-            ) : (
-              <div className="text-text-muted flex h-[40vh] flex-col items-center justify-center gap-2 px-6 text-center text-sm">
-                {pdf.status === "loading" ? (
-                  <>
-                    <Loader2 className="text-primary size-5 animate-spin" aria-hidden />
-                    Cargando vista previa…
-                  </>
-                ) : (
-                  "No pudimos mostrar la vista previa. Podés descargar el PDF o abrirlo en una pestaña nueva."
-                )}
-              </div>
-            )}
+            <iframe
+              src={state.certificate.pdfUrl}
+              title={`Certificado de ${state.certificate.course?.title ?? "curso"}`}
+              className="h-[60vh] w-full sm:aspect-[1.414/1] sm:h-auto"
+            />
           </div>
+          <p className="text-text-muted mt-3 text-sm">
+            ¿No ves la vista previa? Descargá el PDF o abrilo en una pestaña nueva.
+          </p>
           <a
-            href={pdf.status === "ready" ? pdf.url : state.certificate.pdfUrl}
+            href={state.certificate.pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary mt-3 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+            className="text-primary mt-1 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
           >
             <ExternalLink className="size-3.5" aria-hidden />
             Abrir en una pestaña nueva
           </a>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            {/* `download` no sirve en un link a otro dominio: la descarga (y
+                el nombre del archivo) los fuerza `fl_attachment`. */}
             <a
-              href={pdf.status === "ready" ? pdf.url : certificateDownloadUrl(state.certificate.pdfUrl)}
-              download={`Certificado-${code}.pdf`}
+              href={certificateDownloadUrl(state.certificate.pdfUrl, code)}
               className={`${BUTTON} bg-primary-solid hover:bg-primary-solid-hover text-white`}
             >
               <Download className="size-4" aria-hidden />
