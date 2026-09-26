@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 
 // ~4 líneas de texto a text-sm + el padding vertical del textarea.
 const MAX_HEIGHT = 104;
 
 export default function ChatInput({
   onSend,
+  disabled = false,
+  isSending = false,
 }: {
   onSend: (text: string) => void;
+  /** El tutor no está disponible ahora mismo (sin lección, límite diario alcanzado). */
+  disabled?: boolean;
+  /** Esperando la respuesta del mensaje anterior. */
+  isSending?: boolean;
 }) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,9 +30,10 @@ export default function ChatInput({
   }, [value]);
 
   const isEmpty = value.trim().length === 0;
+  const isDisabled = disabled || isSending;
 
   function submit() {
-    if (isEmpty) return;
+    if (isEmpty || isDisabled) return;
 
     onSend(value.trim());
     setValue("");
@@ -54,16 +61,21 @@ export default function ChatInput({
         rows={1}
         placeholder="Preguntale algo sobre esta lección…"
         aria-label="Mensaje para el tutor IA"
-        className="bg-surface-elevated border-border text-text placeholder:text-text-muted focus:border-primary max-h-26 flex-1 resize-none rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 outline-none"
+        disabled={isDisabled}
+        className="bg-surface-elevated border-border text-text placeholder:text-text-muted focus:border-primary max-h-26 flex-1 resize-none rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 outline-none disabled:opacity-60"
       />
 
       <button
         type="submit"
-        disabled={isEmpty}
+        disabled={isEmpty || isDisabled}
         aria-label="Enviar mensaje"
         className="bg-primary-solid hover:bg-primary-solid-hover flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-white transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <Send className="size-5" aria-hidden />
+        {isSending ? (
+          <Loader2 className="size-5 animate-spin" aria-hidden />
+        ) : (
+          <Send className="size-5" aria-hidden />
+        )}
       </button>
     </form>
   );

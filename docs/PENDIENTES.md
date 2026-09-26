@@ -33,8 +33,8 @@ Ordenado por lo que más destraba al front.
 
 | Qué | Dónde |
 |---|---|
-| Pantallas "Tutor IA" y "Logros" (hoy `comingSoon` en el sidebar) | `DashboardSidebar.tsx` |
-| Conectar el drawer del tutor IA a `/ai-tutor/conversations` (el back ya existe) | `components/ai-tutor/` |
+| Pantalla "Logros" (hoy `comingSoon` en el sidebar; el ítem "Tutor IA" del sidebar apuntaba a una página aparte que nunca existió — el tutor real es el FAB/drawer global, ver fila de abajo) | `DashboardSidebar.tsx` |
+| ~~Conectar el drawer del tutor IA a `/ai-tutor/conversations`~~ — resuelto el 26/09/2026: una conversación por lección (`services/ai-tutor/ai-tutor.service.ts`), límite diario del plan Free mostrado y respetado, y el tutor sólo se habilita con acceso real a la lección (`canView`, mismo criterio que el contenido) | — |
 | Pantalla de usuarios en el admin (cambiar rol con `PATCH /users/:id`) | `components/admin/` |
 | Calcular "Lección X/Y" y próxima lección del dashboard con el temario (si el back no lo agrega) | `dashboard.view.ts` |
 | Bio real del instructor en la tab "Instructor" | `CourseTabs.tsx` |

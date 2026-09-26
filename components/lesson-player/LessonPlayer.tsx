@@ -366,7 +366,9 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
 
   return (
     <>
-      <LessonTutorContext lessonTitle={lesson.title} />
+      {/* Sólo con acceso real: no discutir gratis una lección paga que el
+          alumno tiene bloqueada (mismo criterio que el contenido de abajo). */}
+      {canView && <LessonTutorContext lessonId={lesson.id} lessonTitle={lesson.title} />}
 
       <LessonHeader
         courseSlug={state.course.slug}

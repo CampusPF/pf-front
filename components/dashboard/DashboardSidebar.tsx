@@ -11,10 +11,10 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  MessageCircle,
   Moon,
   Settings,
   ShieldCheck,
-  Sparkles,
   Sun,
   Trophy,
   X,
@@ -35,13 +35,18 @@ interface NavItem {
   comingSoon?: boolean;
 }
 
-/* TODO(campus): "Tutor IA" y "Logros" todavía no existen como rutas. Cuando
-   se armen, se les saca el `comingSoon`. */
+/* TODO(campus): "Logros" todavía no existe como ruta. Cuando se arme, se le
+   saca el `comingSoon`.
+
+   El tutor IA NO tiene un ítem acá a propósito: es el botón flotante
+   (AiTutorFAB) + el drawer, globales en todas las pantallas, no una página
+   del dashboard. Un ítem "Tutor IA" con `comingSoon` habría quedado al lado
+   de un tutor que ya funciona de verdad — más confuso que no tenerlo. */
 const NAV_ITEMS: NavItem[] = [
   { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
   { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen },
+  { label: "Chats", href: "/dashboard/chats", icon: MessageCircle },
   { label: "Explorar", href: "/courses", icon: Compass },
-  { label: "Tutor IA", href: "/dashboard/tutor", icon: Sparkles, comingSoon: true },
   { label: "Logros", href: "/dashboard/logros", icon: Trophy, comingSoon: true },
   { label: "Configuración", href: "/dashboard/configuracion", icon: Settings },
 ];

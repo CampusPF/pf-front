@@ -8,18 +8,23 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
    `useAiTutor` y borrar el provider.
 
    Vive en el root layout (ver app/layout.tsx): el FAB y el drawer son
-   globales, no sólo del reproductor de lecciones. `lessonTitle` es lo único
-   que varía según dónde estés — una lección lo setea (ver
-   LessonTutorContext.tsx) para personalizar el saludo del tutor; en
-   cualquier otra pantalla queda en null y el tutor saluda genérico. */
+   globales, no sólo del reproductor de lecciones. `lessonId`/`lessonTitle`
+   son lo único que varía según dónde estés — una lección los setea (ver
+   LessonTutorContext.tsx); en cualquier otra pantalla quedan en null.
+
+   `lessonId` no es cosmético: el back exige una lección real para crear la
+   conversación (`POST /ai-tutor/conversations`, ver ai-tutor.service.ts) —
+   no existe un chat general. Sin él, el drawer muestra un estado "abrí una
+   lección para usar el tutor" en vez de un composer que fallaría al enviar. */
 
 interface AiTutorValue {
   isOpen: boolean;
   open: () => void;
   close: () => void;
   toggle: () => void;
+  lessonId: string | null;
   lessonTitle: string | null;
-  setLessonTitle: (title: string | null) => void;
+  setLesson: (lesson: { id: string; title: string } | null) => void;
 }
 
 const AiTutorContext = createContext<AiTutorValue | null>(null);
@@ -40,15 +45,24 @@ export default function AiTutorProvider({
   children: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [lessonTitle, setLessonTitle] = useState<string | null>(null);
+  const [lesson, setLessonState] = useState<{ id: string; title: string } | null>(null);
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+  const setLesson = useCallback((next: { id: string; title: string } | null) => setLessonState(next), []);
 
   const value = useMemo(
-    () => ({ isOpen, open, close, toggle, lessonTitle, setLessonTitle }),
-    [isOpen, open, close, toggle, lessonTitle],
+    () => ({
+      isOpen,
+      open,
+      close,
+      toggle,
+      lessonId: lesson?.id ?? null,
+      lessonTitle: lesson?.title ?? null,
+      setLesson,
+    }),
+    [isOpen, open, close, toggle, lesson, setLesson],
   );
 
   return (
