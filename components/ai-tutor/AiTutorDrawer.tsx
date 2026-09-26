@@ -56,6 +56,15 @@ export default function AiTutorDrawer() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  // Respuesta en curso: permite pausarla ("Detener") y cortarla sola si se
+  // cierra el drawer o se cambia de lección (el back deja de pedirle a la IA).
+  const streamAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) streamAbortRef.current?.abort();
+  }, [isOpen, lessonId]);
+
+  useEffect(() => () => streamAbortRef.current?.abort(), []);
 
   // Carga (o arranca de cero) la conversación de la lección actual: al abrir
   // el drawer y cada vez que se cambia de lección con el drawer abierto
@@ -63,6 +72,7 @@ export default function AiTutorDrawer() {
   useEffect(() => {
     if (!isOpen || !lessonId) return;
     let cancelled = false;
+    streamAbortRef.current?.abort(); // cambio de lección con una respuesta a medias
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- primera carga al abrir/cambiar de lección.
     setLoad({ status: "loading" });
@@ -141,6 +151,8 @@ export default function AiTutorDrawer() {
     ]);
 
     let receivedText = false;
+    const abort = new AbortController();
+    streamAbortRef.current = abort;
     try {
       let activeConversationId = conversationId;
       if (!activeConversationId) {
@@ -149,14 +161,27 @@ export default function AiTutorDrawer() {
         setConversationId(activeConversationId);
       }
 
-      await streamMessage(activeConversationId, { content: text }, (chunk) => {
-        receivedText = true;
-        setMessages((prev) =>
-          prev.map((m) => (m.id === replyId ? { ...m, text: m.text + chunk } : m)),
-        );
-      });
+      await streamMessage(
+        activeConversationId,
+        { content: text },
+        (chunk) => {
+          receivedText = true;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === replyId ? { ...m, text: m.text + chunk } : m)),
+          );
+        },
+        abort.signal,
+      );
       setUsage(await getUsage());
     } catch (caught) {
+      if (abort.signal.aborted) {
+        // Pausado por el alumno: queda lo que ya se escribió (el back también
+        // lo guarda). Si todavía no había texto, sólo se saca el "Escribiendo…";
+        // el mensaje del alumno sí llegó al back y cuenta.
+        if (!receivedText) setMessages((prev) => prev.filter((m) => m.id !== replyId));
+        getUsage().then(setUsage).catch(() => {});
+        return;
+      }
       setMessages((prev) =>
         prev.filter((m) => m.id !== replyId && (receivedText || m.id !== userId)),
       );
@@ -165,6 +190,7 @@ export default function AiTutorDrawer() {
       }
       setSendError(aiTutorErrorMessage(caught));
     } finally {
+      if (streamAbortRef.current === abort) streamAbortRef.current = null;
       setIsSending(false);
     }
   }
@@ -306,7 +332,11 @@ export default function AiTutorDrawer() {
                 </Link>
               </div>
             ) : (
-              <ChatInput onSend={send} isSending={isSending} />
+              <ChatInput
+                onSend={send}
+                isSending={isSending}
+                onStop={() => streamAbortRef.current?.abort()}
+              />
             )}
           </>
         )}
