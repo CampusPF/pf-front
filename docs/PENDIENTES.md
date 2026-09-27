@@ -28,6 +28,8 @@ Ordenado por lo que más destraba al front.
 | 15 | `GET /users` no lista los usuarios dados de baja y no acepta `?includeDeleted=true` | El panel de usuarios no puede ofrecer "restaurar", aunque `PATCH /users/:id/restore` exista | `UsersManager` |
 | 16 | No hay endpoint para **quitar** una imagen (dejar un curso o categoría sin portada) | Sólo se puede reemplazar por otra | Faltaría un `DELETE /courses/:id/image` |
 | 17 | El avatar y las portadas quedan en Cloudinary cuando se da de baja al usuario o al curso | Archivos huérfanos que consumen cuota | — |
+| 20 | Chat sin sala grupal por curso (sólo directo alumno↔docente) — resuelto el 27/09/2026 en el sentido de que el front ya no la pide: se agregó `GET /chat/contacts` (`ChatService.getContacts`) para listar con quién chatear, con último mensaje y no leídos | Si se quiere una sala grupal real haría falta modelarla en el back (hoy `messages` es 1 a 1) | Si existe algún día, `chat.service.ts` vuelve a poder ofrecer `kind: "group"` en modo real |
+| 21 | `GET /chat/contacts` hace, por cada contacto, una consulta de último mensaje y otra de no leídos (N+1) | No escala con muchos contactos por usuario | Si se nota lento, agregar esas dos cuentas con una sola consulta agregada (`GROUP BY`) en `ChatService.getContacts` |
 
 ## Front (`pf-front`)
 
@@ -35,6 +37,7 @@ Ordenado por lo que más destraba al front.
 |---|---|
 | Pantalla "Logros" (hoy `comingSoon` en el sidebar; el ítem "Tutor IA" del sidebar apuntaba a una página aparte que nunca existió — el tutor real es el FAB/drawer global, ver fila de abajo) | `DashboardSidebar.tsx` |
 | ~~Conectar el drawer del tutor IA a `/ai-tutor/conversations`~~ — resuelto el 26/09/2026: una conversación por lección (`services/ai-tutor/ai-tutor.service.ts`), límite diario del plan Free mostrado y respetado, y el tutor sólo se habilita con acceso real a la lección (`canView`, mismo criterio que el contenido) | — |
+| ~~Conectar `/dashboard/chats` a pf-back~~ — resuelto el 27/09/2026: `chat.service.ts` habla con `GET /chat/contacts` + historial + el socket de `/chat` (ver fila 20 arriba); se sacó la sala grupal, que el back no soporta | — |
 | Pantalla de usuarios en el admin (cambiar rol con `PATCH /users/:id`) | `components/admin/` |
 | Calcular "Lección X/Y" y próxima lección del dashboard con el temario (si el back no lo agrega) | `dashboard.view.ts` |
 | Bio real del instructor en la tab "Instructor" | `CourseTabs.tsx` |
@@ -47,6 +50,7 @@ Ordenado por lo que más destraba al front.
 | Logros y el punto de notificación de la campana (hardcodeados de momento, decisión del 14/09/2026; se muestran aunque el usuario tenga 0 cursos) | `data/dashboard.mock.ts`, `dashboard.view.ts` |
 | Texto de la bio del instructor | `CourseTabs.tsx` |
 | Todo el catálogo, **sólo** si `NEXT_PUBLIC_COURSES_SOURCE=mock` | `data/*.mock.ts` |
+| El chat (incluida la sala grupal por curso, que el back no tiene), **sólo** si `NEXT_PUBLIC_CHAT_SOURCE=mock` | `data/chat.mock.ts` |
 
 Con `NEXT_PUBLIC_COURSES_SOURCE` sin definir (lo normal, y lo que tiene que
 estar en producción) todo sale del back.

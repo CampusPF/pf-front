@@ -6,14 +6,13 @@ import { ArrowLeft, MessageCircle, Users } from "lucide-react";
 import ChatComposer from "@/components/chat/ChatComposer";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { getMessages, markConversationRead, sendMessage } from "@/services/chat/chat.service";
+import {
+  getMessages,
+  markConversationRead,
+  sendMessage,
+  subscribeToMessages,
+} from "@/services/chat/chat.service";
 import type { ChatConversation, ChatMessage, ChatParticipant } from "@/types/chat.types";
-
-/* Sin WebSocket todavía: los mensajes nuevos llegan por polling. Es el mismo
-   criterio que otras partes del front (progreso, dashboard) y el lugar
-   natural para cambiar por una suscripción en tiempo real cuando el back
-   la tenga — el resto del componente no se entera del cambio. */
-const POLL_MS = 3000;
 
 export default function ChatThread({
   conversation,
@@ -34,19 +33,52 @@ export default function ChatThread({
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages(null);
+    setError(null);
     markConversationRead(conversation.id);
 
-    async function poll() {
-      const data = await getMessages(conversation.id);
-      if (!cancelled) setMessages(data);
+    async function load() {
+      try {
+        const data = await getMessages(conversation, me);
+        if (!cancelled) setMessages(data);
+      } catch (caught) {
+        if (!cancelled) {
+          setMessages([]);
+          setError(caught instanceof Error ? caught.message : "No pudimos cargar los mensajes.");
+        }
+      }
     }
 
-    void poll();
-    const interval = setInterval(poll, POLL_MS);
+    void load();
+
+    const otherId = conversation.otherParticipant?.id;
+    const unsubscribe = subscribeToMessages((raw) => {
+      // Sólo los mensajes entre yo y quien está del otro lado de ESTA
+      // conversación (el socket entrega los de todas las conversaciones).
+      const belongsHere =
+        (raw.senderId === me.id && raw.receiverId === otherId) ||
+        (raw.senderId === otherId && raw.receiverId === me.id);
+      if (!belongsHere) return;
+
+      setMessages((prev) => {
+        const list = prev ?? [];
+        // El propio mensaje enviado ya lo agrega handleSend con lo que
+        // devuelve sendMessage; acá se evita duplicarlo.
+        if (list.some((m) => m.id === raw.id)) return list;
+        const author = raw.senderId === me.id ? me : (conversation.otherParticipant ?? me);
+        return [...list, { id: raw.id, conversationId: conversation.id, author, text: raw.content, sentAt: raw.createdAt }];
+      });
+
+      if (raw.senderId === otherId) markConversationRead(conversation.id);
+    });
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      unsubscribe();
     };
+    // Sólo conversation.id: ChatsView reconstruye `conversation` (objeto
+    // nuevo, mismo id) cada vez que refresca la lista de contactos, y no
+    // hay que reiniciar el hilo (mensajes a null de nuevo) por eso.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.id]);
 
   useEffect(() => {
@@ -57,8 +89,13 @@ export default function ChatThread({
     setIsSending(true);
     setError(null);
     try {
-      const sent = await sendMessage(conversation.id, me, text);
-      setMessages((prev) => [...(prev ?? []), sent]);
+      const sent = await sendMessage(conversation, me, text);
+      // El mismo mensaje puede llegar también por `message:new` (ver el
+      // efecto de arriba): se evita duplicarlo si ya está.
+      setMessages((prev) => {
+        const list = prev ?? [];
+        return list.some((m) => m.id === sent.id) ? list : [...list, sent];
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No pudimos enviar el mensaje.");
     } finally {

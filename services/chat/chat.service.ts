@@ -9,6 +9,9 @@ import {
   type MockCourseChat,
   type SeedMessage,
 } from "@/data/chat.mock";
+import { apiFetch } from "@/services/api-client";
+import { backendMessageOr } from "@/services/backend-message";
+import { getChatSocket, onNewMessage } from "@/services/chat/chat.socket";
 import type { User } from "@/services/auth/auth.types";
 import type {
   ChatConversation,
@@ -17,18 +20,16 @@ import type {
   ChatRole,
 } from "@/types/chat.types";
 
-/* Chat en vivo con el docente: sala grupal por curso + un directo por
-   alumno.
+/* Chat en vivo con el docente: un directo por alumno↔docente.
 
-   TODO(back): no hay endpoints todavía. Este archivo es el ÚNICO que se toca
-   cuando existan: cada función pasa de leer/escribir el store de acá a un
-   `apiFetch` (REST) o a un socket, según lo que se decida. `getMessages` ya
-   se llama por polling desde ChatThread — es el lugar natural para cambiar
-   por una suscripción en tiempo real sin tocar la UI.
+   pf-back sólo soporta mensajes directos (tabla `messages`, namespace de
+   socket '/chat'): no hay sala grupal por curso, así que ese modo quedó sólo
+   para los mocks (ver "kind: group" en @/types/chat.types).
 
-   NEXT_PUBLIC_CHAT_SOURCE=mock enciende los mocks. Sin la variable (lo normal
-   y lo que tiene que estar en producción) el chat no muestra nada: mejor
-   ausente que con conversaciones inventadas delante de un usuario real. */
+   NEXT_PUBLIC_CHAT_SOURCE=mock sigue disponible para trabajar la UI sin el
+   back (útil para diseño/demo); sin la variable (lo normal, y lo que tiene
+   que estar en producción) todo sale de GET /chat/contacts,
+   GET /chat/:otherUserId/messages y el socket del namespace '/chat'. */
 const USE_MOCK_CHAT = process.env.NEXT_PUBLIC_CHAT_SOURCE === "mock";
 
 function fakeLatency(ms = 200): Promise<void> {
@@ -45,7 +46,14 @@ function directId(otherId: string): string {
   return `direct-${otherId}`;
 }
 
-/* ── Store en memoria (sólo del lado del cliente) ─────────────────────────
+/** Inversa de `directId`: de un id de conversación directa, el id de la otra
+    persona. Lo usan tanto el modo real (arma la URL/el payload del socket)
+    como el mock (`scheduleCannedReply`). */
+function otherIdOf(conversationId: string): string {
+  return conversationId.slice("direct-".length);
+}
+
+/* ── Mock: store en memoria (sólo del lado del cliente) ───────────────────
    Vive mientras dure la pestaña: no hay back que lo persista. Se arma una
    sola vez a partir de los mocks y después sólo se le agregan mensajes. */
 
@@ -138,12 +146,9 @@ function findOtherParticipant(otherId: string): ChatParticipant | null {
 }
 
 /** La parte "en vivo": unos segundos después de escribir en un directo,
-    llega sola una respuesta canned de la otra persona. No aplica a la sala
-    grupal (con varias voces de mentira contestando sería ruido, no demo). */
+    llega sola una respuesta canned de la otra persona. */
 function scheduleCannedReply(conversationId: string, sentBy: ChatParticipant) {
-  if (!conversationId.startsWith("direct-")) return;
-
-  const otherId = conversationId.slice("direct-".length);
+  const otherId = otherIdOf(conversationId);
   const other = findOtherParticipant(otherId);
   if (!other || other.id === sentBy.id) return;
 
@@ -161,35 +166,7 @@ function scheduleCannedReply(conversationId: string, sentBy: ChatParticipant) {
   }, delayMs);
 }
 
-/** Rol del usuario logueado como participante del chat, o `null` si el chat
-    no es para ese rol (hoy sólo alumno y docente; el admin no cursa ni dicta). */
-export function chatRoleFor(role: User["role"]): ChatRole | null {
-  return role === "student" || role === "teacher" ? role : null;
-}
-
-/** `false` sin NEXT_PUBLIC_CHAT_SOURCE=mock: distingue "todavía no está
-    disponible" de "no tenés conversaciones" en la pantalla. */
-export function isChatAvailable(): boolean {
-  return USE_MOCK_CHAT;
-}
-
-export function toCurrentParticipant(
-  user: Pick<User, "id" | "name" | "avatarUrl">,
-  role: ChatRole,
-): ChatParticipant {
-  return { id: user.id, name: user.name, role, avatarUrl: user.avatarUrl ?? null };
-}
-
-/**
- * Mis conversaciones: la sala grupal de cada curso, más un directo por
- * alumno (vista docente) o el directo con el/la docente (vista alumno).
- * Ordenadas por el mensaje más reciente.
- */
-export async function getMyConversations(
-  user: Pick<User, "id" | "name" | "avatarUrl">,
-  role: ChatRole | null,
-): Promise<ChatConversation[]> {
-  if (!USE_MOCK_CHAT || !role) return [];
+async function getMockConversations(role: ChatRole): Promise<ChatConversation[]> {
   await fakeLatency();
 
   const { messages, unread } = ensureStore();
@@ -254,30 +231,20 @@ export async function getMyConversations(
   });
 }
 
-/** Mensajes de una conversación, del más viejo al más nuevo. Pensada para
-    pedirse por polling (ver ChatThread): es barata, no hace red todavía. */
-export async function getMessages(conversationId: string): Promise<ChatMessage[]> {
-  if (!USE_MOCK_CHAT) return [];
+async function getMockMessages(conversationId: string): Promise<ChatMessage[]> {
   const { messages } = ensureStore();
   return sortedMessages(messages.get(conversationId));
 }
 
-/** Se llama al abrir una conversación: la saca de "sin leer". */
-export function markConversationRead(conversationId: string): void {
-  if (!USE_MOCK_CHAT) return;
+function markMockConversationRead(conversationId: string): void {
   ensureStore().unread.set(conversationId, 0);
 }
 
-/**
- * Manda un mensaje. En un chat directo, programa la respuesta de mentira que
- * le da vida a la demo (ver `scheduleCannedReply`); en la sala grupal no.
- */
-export async function sendMessage(
+async function sendMockMessage(
   conversationId: string,
   author: ChatParticipant,
   text: string,
 ): Promise<ChatMessage> {
-  if (!USE_MOCK_CHAT) throw new Error("El chat todavía no está disponible.");
   await fakeLatency(300);
 
   const { messages } = ensureStore();
@@ -293,4 +260,225 @@ export async function sendMessage(
   scheduleCannedReply(conversationId, author);
 
   return message;
+}
+
+/* ── Real: contra pf-back (GET /chat/contacts, GET /chat/:id/messages,
+   PATCH /chat/:id/read y el socket del namespace '/chat') ─────────────── */
+
+/** Forma cruda de `GET /chat/contacts` (ver ChatContactDto en pf-back). */
+interface RawChatContact {
+  user: { id: string; name: string; avatarUrl: string | null; role: ChatRole };
+  courses: { id: string; slug: string; title: string }[];
+  lastMessage: { content: string; senderId: string; createdAt: string } | null;
+  unreadCount: number;
+}
+
+/** Forma cruda de un mensaje (entidad `Message` serializada): la misma tanto
+    en `GET /chat/:otherUserId/messages` como en el evento `message:new`. */
+export interface RawChatMessage {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+function isRawChatMessage(value: unknown): value is RawChatMessage {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.id === "string" &&
+    typeof record.senderId === "string" &&
+    typeof record.receiverId === "string" &&
+    typeof record.content === "string"
+  );
+}
+
+function toConversation(contact: RawChatContact, me: Pick<User, "id" | "name">): ChatConversation {
+  const [firstCourse] = contact.courses;
+  return {
+    id: directId(contact.user.id),
+    kind: "direct",
+    courseId: firstCourse?.id ?? "",
+    courseSlug: firstCourse?.slug ?? "",
+    courseTitle: firstCourse?.title ?? "",
+    title: contact.user.name,
+    subtitle: contact.courses.map((c) => c.title).join(" · ") || "Sin curso activo en común",
+    avatarUrl: contact.user.avatarUrl,
+    otherParticipant: {
+      id: contact.user.id,
+      name: contact.user.name,
+      role: contact.user.role,
+      avatarUrl: contact.user.avatarUrl,
+    },
+    lastMessage: contact.lastMessage
+      ? {
+          text: contact.lastMessage.content,
+          sentAt: contact.lastMessage.createdAt,
+          authorName: contact.lastMessage.senderId === me.id ? me.name : contact.user.name,
+        }
+      : null,
+    unreadCount: contact.unreadCount,
+  };
+}
+
+function toChatMessage(
+  raw: RawChatMessage,
+  conversationId: string,
+  me: ChatParticipant,
+  other: ChatParticipant | null | undefined,
+): ChatMessage {
+  return {
+    id: raw.id,
+    conversationId,
+    author: raw.senderId === me.id ? me : (other ?? me),
+    text: raw.content,
+    sentAt: raw.createdAt,
+  };
+}
+
+async function getRealConversations(user: Pick<User, "id" | "name">): Promise<ChatConversation[]> {
+  const contacts = await apiFetch<RawChatContact[]>("/chat/contacts", { auth: true });
+  return contacts.map((contact) => toConversation(contact, user));
+}
+
+async function getRealMessages(
+  conversation: ChatConversation,
+  me: ChatParticipant,
+): Promise<ChatMessage[]> {
+  const otherId = otherIdOf(conversation.id);
+  const raws = await apiFetch<RawChatMessage[]>(`/chat/${otherId}/messages`, { auth: true });
+  return raws.map((raw) => toChatMessage(raw, conversation.id, me, conversation.otherParticipant));
+}
+
+function markRealConversationRead(conversationId: string): void {
+  const otherId = otherIdOf(conversationId);
+  void apiFetch(`/chat/${otherId}/read`, { method: "PATCH", auth: true }).catch(() => {
+    // Best-effort: si falla, el mensaje sigue apareciendo "sin leer" y se
+    // vuelve a intentar la próxima vez que se abra la conversación.
+  });
+}
+
+/** Manda el mensaje por el socket y resuelve con la confirmación que llega
+    por `message:new` (el back se lo emite también a quien lo mandó, ver
+    ChatGateway.sendMessage). Si el back lo rechaza (permisos, sin Premium),
+    Nest emite `exception` con el motivo. */
+function sendRealMessage(
+  conversation: ChatConversation,
+  me: ChatParticipant,
+  text: string,
+): Promise<ChatMessage> {
+  const otherId = otherIdOf(conversation.id);
+  const socket = getChatSocket();
+  if (!socket) return Promise.reject(new Error("Iniciá sesión de nuevo para poder chatear."));
+
+  return new Promise<ChatMessage>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error("No pudimos enviar el mensaje. Probá de nuevo."));
+    }, 8000);
+
+    function cleanup() {
+      clearTimeout(timeoutId);
+      socket!.off("message:new", onMessage);
+      socket!.off("exception", onException);
+    }
+
+    function onMessage(raw: unknown) {
+      if (!isRawChatMessage(raw)) return;
+      if (raw.senderId !== me.id || raw.receiverId !== otherId || raw.content !== text) return;
+      cleanup();
+      resolve(toChatMessage(raw, conversation.id, me, conversation.otherParticipant));
+    }
+
+    function onException(payload: unknown) {
+      cleanup();
+      const record = payload as { message?: unknown } | null;
+      const message = typeof record?.message === "string" ? record.message : "No se pudo enviar el mensaje.";
+      reject(new Error(message));
+    }
+
+    socket.on("message:new", onMessage);
+    socket.on("exception", onException);
+    socket.emit("message:send", { receiverId: otherId, content: text });
+  });
+}
+
+/** Rol del usuario logueado como participante del chat, o `null` si el chat
+    no es para ese rol (hoy sólo alumno y docente; el admin no cursa ni dicta). */
+export function chatRoleFor(role: User["role"]): ChatRole | null {
+  return role === "student" || role === "teacher" ? role : null;
+}
+
+export function toCurrentParticipant(
+  user: Pick<User, "id" | "name" | "avatarUrl">,
+  role: ChatRole,
+): ChatParticipant {
+  return { id: user.id, name: user.name, role, avatarUrl: user.avatarUrl ?? null };
+}
+
+/**
+ * Mis conversaciones. En modo real, un directo por cada docente (vista
+ * alumno) o alumno (vista docente) con quien comparto un curso activo. En
+ * modo mock, además la sala grupal de cada curso. Ordenadas por el mensaje
+ * más reciente.
+ */
+export async function getMyConversations(
+  user: Pick<User, "id" | "name" | "avatarUrl">,
+  role: ChatRole | null,
+): Promise<ChatConversation[]> {
+  if (!role) return [];
+  if (USE_MOCK_CHAT) return getMockConversations(role);
+
+  try {
+    return await getRealConversations(user);
+  } catch (error) {
+    throw new Error(backendMessageOr(error, "No pudimos cargar tus conversaciones."));
+  }
+}
+
+/** Mensajes de una conversación, del más viejo al más nuevo. */
+export async function getMessages(
+  conversation: ChatConversation,
+  me: ChatParticipant,
+): Promise<ChatMessage[]> {
+  if (USE_MOCK_CHAT) return getMockMessages(conversation.id);
+
+  try {
+    return await getRealMessages(conversation, me);
+  } catch (error) {
+    throw new Error(backendMessageOr(error, "No pudimos cargar los mensajes."));
+  }
+}
+
+/** Se llama al abrir una conversación (o al recibir un mensaje con esa
+    conversación abierta): la saca de "sin leer". Silenciosa por diseño, ver
+    markRealConversationRead. */
+export function markConversationRead(conversationId: string): void {
+  if (USE_MOCK_CHAT) markMockConversationRead(conversationId);
+  else markRealConversationRead(conversationId);
+}
+
+/** Manda un mensaje. En modo mock programa además la respuesta de mentira
+    que le da vida a la demo (ver `scheduleCannedReply`). */
+export async function sendMessage(
+  conversation: ChatConversation,
+  me: ChatParticipant,
+  text: string,
+): Promise<ChatMessage> {
+  if (USE_MOCK_CHAT) return sendMockMessage(conversation.id, me, text);
+
+  return sendRealMessage(conversation, me, text);
+}
+
+/** Mensajes nuevos en tiempo real (evento `message:new` del socket). No hace
+    nada en modo mock: ahí la "vida" la da `scheduleCannedReply`, no un
+    socket. Devuelve la función para desuscribirse. */
+export function subscribeToMessages(callback: (message: RawChatMessage) => void): () => void {
+  if (USE_MOCK_CHAT) return () => {};
+
+  return onNewMessage((raw) => {
+    if (isRawChatMessage(raw)) callback(raw);
+  });
 }

@@ -1,11 +1,11 @@
 /* Modelo del chat en vivo con el docente.
 
-   TODO(back): no hay endpoints todavía — se arma contra mocks (ver
-   services/chat/chat.service.ts) mientras el back no exista. Dos tipos de
-   conversación por curso:
-   - "group": la sala del curso, todos los inscriptos + el docente.
-   - "direct": un alumno a solas con el docente del curso.
-   Quién ve qué según el rol lo resuelve el service, no los componentes. */
+   pf-back sólo soporta "direct" (un alumno a solas con el docente del
+   curso): no hay sala grupal en el back. "group" (la sala del curso, todos
+   los inscriptos + el docente) sigue existiendo acá sólo para
+   NEXT_PUBLIC_CHAT_SOURCE=mock — ver services/chat/chat.service.ts, que es
+   el único que sabe la diferencia. Quién ve qué según el rol lo resuelve el
+   service, no los componentes. */
 
 export type ChatRole = "student" | "teacher";
 
