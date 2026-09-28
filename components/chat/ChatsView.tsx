@@ -9,13 +9,16 @@ import ChatThread from "@/components/chat/ChatThread";
 import {
   chatRoleFor,
   getMyConversations,
-  isChatAvailable,
   markConversationRead,
+  subscribeToMessages,
   toCurrentParticipant,
 } from "@/services/chat/chat.service";
 import type { ChatConversation } from "@/types/chat.types";
 
-const LIST_POLL_MS = 5000;
+/* Respaldo largo por si el socket se cae: el último mensaje/no-leídos de
+   cada conversación de todos modos se refresca al toque con
+   subscribeToMessages más abajo. */
+const LIST_POLL_MS = 30_000;
 
 /* pb del topbar (4rem) + aire para que el FAB del tutor IA (fixed
    bottom-4/6, ver AiTutorFAB) no tape el composer en mobile. En lg+ el FAB
@@ -23,10 +26,10 @@ const LIST_POLL_MS = 5000;
    topbar. */
 const PANEL_HEIGHT = "h-[calc(100vh-7.5rem)] lg:h-[calc(100vh-4rem)]";
 
-/* Chat en vivo: sala grupal por curso + un directo con el docente (o, si sos
-   docente, uno por alumno). Todo contra mocks por ahora — ver
-   services/chat/chat.service.ts, que es el único archivo a cambiar cuando el
-   back exista.
+/* Chat en vivo: un directo con el docente (o, si sos docente, uno por
+   alumno) por cada curso activo en común. Contra pf-back real; con
+   NEXT_PUBLIC_CHAT_SOURCE=mock arma además una sala grupal por curso — ver
+   services/chat/chat.service.ts, el único archivo que sabe la diferencia.
 
    Maestro-detalle simple: en desktop, lista + hilo lado a lado; en mobile,
    uno a la vez con "Volver" desde el hilo. La selección vive en estado local
@@ -50,14 +53,19 @@ export default function ChatsView() {
     }
   }, [user, role]);
 
-  // El polling de la lista mantiene actualizados el último mensaje y las
-  // insignias de "sin leer" aunque no se esté mirando ninguna conversación.
+  // El polling (de respaldo) y la suscripción en vivo mantienen actualizados
+  // el último mensaje y las insignias de "sin leer" aunque no se esté
+  // mirando ninguna conversación.
   useEffect(() => {
-    if (!user || !role || !isChatAvailable()) return;
+    if (!user || !role) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- primera carga al montar, mismo criterio que el resto del dashboard.
     void reload();
     const interval = setInterval(reload, LIST_POLL_MS);
-    return () => clearInterval(interval);
+    const unsubscribe = subscribeToMessages(() => void reload());
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, [user, role, reload]);
 
   function handleSelect(conversation: ChatConversation) {
@@ -90,18 +98,6 @@ export default function ChatsView() {
         <h1 className="text-text text-lg font-semibold">El chat es para alumnos y docentes</h1>
         <p className="text-text-secondary max-w-sm text-sm">
           Por tu rol no tenés cursos ni alumnos con quien chatear acá.
-        </p>
-      </div>
-    );
-  }
-
-  if (!isChatAvailable()) {
-    return (
-      <div className={`flex flex-col items-center justify-center gap-2 px-6 text-center ${PANEL_HEIGHT}`}>
-        <MessageCircle className="text-text-muted size-10" aria-hidden />
-        <h1 className="text-text text-lg font-semibold">El chat en vivo todavía no está disponible</h1>
-        <p className="text-text-secondary max-w-sm text-sm">
-          Estamos terminando de conectarlo. Volvé a intentar más adelante.
         </p>
       </div>
     );
