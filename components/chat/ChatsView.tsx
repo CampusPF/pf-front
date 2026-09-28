@@ -1,82 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Loader2, MessageCircle } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useChatCenter } from "@/components/chat/ChatCenterProvider";
 import ChatConversationList from "@/components/chat/ChatConversationList";
 import ChatThread from "@/components/chat/ChatThread";
-import {
-  chatRoleFor,
-  getMyConversations,
-  markConversationRead,
-  subscribeToMessages,
-  toCurrentParticipant,
-} from "@/services/chat/chat.service";
-import type { ChatConversation } from "@/types/chat.types";
+import { toCurrentParticipant } from "@/services/chat/chat.service";
 
-/* Respaldo largo por si el socket se cae: el último mensaje/no-leídos de
-   cada conversación de todos modos se refresca al toque con
-   subscribeToMessages más abajo. */
-const LIST_POLL_MS = 30_000;
-
-/* pb del topbar (4rem) + aire para que el FAB del tutor IA (fixed
-   bottom-4/6, ver AiTutorFAB) no tape el composer en mobile. En lg+ el FAB
-   nunca se superpone al layout de dos columnas, así que ahí alcanza con el
-   topbar. */
+/* Alto disponible: topbar (4rem) + el pb-14 que DashboardShell le pone al
+   <main> en mobile. El launcher flotante no aparece en esta página (ver
+   FloatingLauncher), así que ya no tapa el composer. */
 const PANEL_HEIGHT = "h-[calc(100vh-7.5rem)] lg:h-[calc(100vh-4rem)]";
 
 /* Chat en vivo: un directo con el docente (o, si sos docente, uno por
-   alumno) por cada curso activo en común. Contra pf-back real; con
-   NEXT_PUBLIC_CHAT_SOURCE=mock arma además una sala grupal por curso — ver
-   services/chat/chat.service.ts, el único archivo que sabe la diferencia.
+   alumno) por cada curso activo en común. Los datos (lista, no leídos,
+   selección) los tiene ChatCenterProvider, compartidos con el panel lateral
+   y el launcher: esta página es sólo la vista grande.
 
    Maestro-detalle simple: en desktop, lista + hilo lado a lado; en mobile,
-   uno a la vez con "Volver" desde el hilo. La selección vive en estado local
-   (no en la URL): todavía no hace falta que una conversación sea un link
-   compartible. */
+   uno a la vez con "Volver" desde el hilo. */
 export default function ChatsView() {
   const { user, isLoading: authLoading } = useAuth();
-  const [conversations, setConversations] = useState<ChatConversation[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const role = chatRoleFor(user?.role);
-
-  const reload = useCallback(async () => {
-    if (!user || !role) return;
-    try {
-      const data = await getMyConversations(user, role);
-      setConversations(data);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No pudimos cargar tus conversaciones.");
-    }
-  }, [user, role]);
-
-  // El polling (de respaldo) y la suscripción en vivo mantienen actualizados
-  // el último mensaje y las insignias de "sin leer" aunque no se esté
-  // mirando ninguna conversación.
-  useEffect(() => {
-    if (!user || !role) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- primera carga al montar, mismo criterio que el resto del dashboard.
-    void reload();
-    const interval = setInterval(reload, LIST_POLL_MS);
-    const unsubscribe = subscribeToMessages(() => void reload());
-    return () => {
-      clearInterval(interval);
-      unsubscribe();
-    };
-  }, [user, role, reload]);
-
-  function handleSelect(conversation: ChatConversation) {
-    setSelectedId(conversation.id);
-    if (conversation.unreadCount > 0) {
-      markConversationRead(conversation.id);
-      setConversations((prev) =>
-        prev ? prev.map((c) => (c.id === conversation.id ? { ...c, unreadCount: 0 } : c)) : prev,
-      );
-    }
-  }
+  const { role, conversations, error, selectedId, selectConversation } = useChatCenter();
 
   if (authLoading) {
     return (
@@ -103,7 +49,7 @@ export default function ChatsView() {
     );
   }
 
-  if (error) {
+  if (error && conversations === null) {
     return (
       <div className={`flex items-center justify-center px-6 ${PANEL_HEIGHT}`}>
         <p
@@ -143,14 +89,15 @@ export default function ChatsView() {
         <ChatConversationList
           conversations={conversations}
           selectedId={selectedId}
-          onSelect={handleSelect}
+          role={role}
+          onSelect={(conversation) => selectConversation(conversation.id)}
         />
       </aside>
 
       {/* Hilo: en mobile, sólo si hay selección. En desktop, un estado vacío si no. */}
       <div className={`min-h-0 ${PANEL_HEIGHT} ${selected ? "block" : "hidden lg:block"}`}>
         {selected ? (
-          <ChatThread conversation={selected} me={me} onBack={() => setSelectedId(null)} />
+          <ChatThread conversation={selected} me={me} onBack={() => selectConversation(null)} />
         ) : (
           <div className="text-text-muted hidden h-full flex-col items-center justify-center gap-2 lg:flex">
             <MessageCircle className="size-10" aria-hidden />

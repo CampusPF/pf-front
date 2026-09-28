@@ -18,11 +18,17 @@ export default function ChatThread({
   conversation,
   me,
   onBack,
+  alwaysShowBack = false,
+  headerAction,
 }: {
+  /** Botón extra a la derecha del header (el panel pone ahí "Cerrar"). */
+  headerAction?: React.ReactNode;
   conversation: ChatConversation;
   me: ChatParticipant;
-  /** Sólo se ve en mobile (el botón vuelve a la lista). */
+  /** Vuelve a la lista. En la página sólo se ve en mobile (en desktop la
+      lista está al lado); en el panel lateral, siempre (`alwaysShowBack`). */
   onBack?: () => void;
+  alwaysShowBack?: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -75,7 +81,7 @@ export default function ChatThread({
       cancelled = true;
       unsubscribe();
     };
-    // Sólo conversation.id: ChatsView reconstruye `conversation` (objeto
+    // Sólo conversation.id: ChatCenterProvider reconstruye `conversation` (objeto
     // nuevo, mismo id) cada vez que refresca la lista de contactos, y no
     // hay que reiniciar el hilo (mensajes a null de nuevo) por eso.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,7 +117,7 @@ export default function ChatThread({
             type="button"
             onClick={onBack}
             aria-label="Volver a las conversaciones"
-            className="text-text-secondary hover:text-text hover:bg-surface-elevated -ml-1 cursor-pointer rounded-lg p-1.5 transition-colors duration-150 lg:hidden"
+            className={`text-text-secondary hover:text-text hover:bg-surface-elevated -ml-1 cursor-pointer rounded-lg p-1.5 transition-colors duration-150 ${alwaysShowBack ? "" : "lg:hidden"}`}
           >
             <ArrowLeft className="size-5" aria-hidden />
           </button>
@@ -125,10 +131,12 @@ export default function ChatThread({
           <UserAvatar name={conversation.title} avatarUrl={conversation.avatarUrl} />
         )}
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-text truncate text-sm font-semibold">{conversation.title}</p>
           <p className="text-text-muted truncate text-xs">{conversation.subtitle}</p>
         </div>
+
+        {headerAction}
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">

@@ -405,6 +405,12 @@ function sendRealMessage(
   });
 }
 
+/** Id de la conversación directa con otra persona: lo usa ChatCenterProvider
+    para saber a qué conversación pertenece un `message:new` del socket. */
+export function directConversationId(otherUserId: string): string {
+  return directId(otherUserId);
+}
+
 /** Rol del usuario logueado como participante del chat, o `null` si el chat
     no es para ese rol (hoy sólo alumno y docente; el admin no cursa ni dicta). */
 export function chatRoleFor(role: User["role"]): ChatRole | null {

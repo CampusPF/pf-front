@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import { useAiTutor } from "@/components/ai-tutor/AiTutorProvider";
 
 /* Acceso al tutor dentro del reproductor, en el header de la lección. Ahí
-   reemplaza al botón flotante (AiTutorFAB se oculta en /learn/), que tapaba
+   reemplaza al botón flotante (FloatingLauncher se oculta en /learn/), que tapaba
    "Siguiente" y el botón de lecciones en mobile. */
 export default function AskTutorButton() {
   const { isOpen, open } = useAiTutor();

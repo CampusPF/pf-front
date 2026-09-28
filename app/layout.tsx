@@ -3,8 +3,11 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/auth/AuthProvider";
 import AiTutorProvider from "@/components/ai-tutor/AiTutorProvider";
-import AiTutorFAB from "@/components/ai-tutor/AiTutorFAB";
 import AiTutorDrawer from "@/components/ai-tutor/AiTutorDrawer";
+import ChatCenterProvider from "@/components/chat/ChatCenterProvider";
+import ChatPanel from "@/components/chat/ChatPanel";
+import ChatToast from "@/components/chat/ChatToast";
+import FloatingLauncher from "@/components/launcher/FloatingLauncher";
 import BackendWakeNotice from "@/components/ui/BackendWakeNotice";
 
 const inter = Inter({
@@ -39,10 +42,11 @@ const themeScript = `(function () {
    El chrome (Navbar/Footer vs. sidebar del dashboard) lo pone cada route
    group — (marketing) y (app) — con su propio layout.
 
-   El tutor IA (FAB + drawer) vive acá, no en el reproductor de lecciones:
-   tiene que poder abrirse desde cualquier pantalla. Dentro de una lección,
-   LessonTutorContext le avisa al provider en qué lección está el usuario
-   para personalizar el saludo; en el resto de la app queda genérico. */
+   El tutor IA y el chat en vivo viven acá, no en una pantalla puntual:
+   tienen que poder abrirse (y avisar de un mensaje nuevo) desde cualquier
+   lado. Un único botón flotante (FloatingLauncher) da acceso a los dos.
+   Dentro de una lección, LessonTutorContext le avisa al provider del tutor
+   en qué lección está el usuario; en el resto de la app queda genérico. */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -56,11 +60,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="bg-bg text-text flex min-h-full flex-col">
         <AuthProvider>
           <AiTutorProvider>
-            {children}
-            <AiTutorFAB />
-            <AiTutorDrawer />
-            {/* Despierta el back (Render free) al abrir la web y avisa si tarda. */}
-            <BackendWakeNotice />
+            <ChatCenterProvider>
+              {children}
+              <FloatingLauncher />
+              <AiTutorDrawer />
+              <ChatPanel />
+              <ChatToast />
+              {/* Despierta el back (Render free) al abrir la web y avisa si tarda. */}
+              <BackendWakeNotice />
+            </ChatCenterProvider>
           </AiTutorProvider>
         </AuthProvider>
       </body>

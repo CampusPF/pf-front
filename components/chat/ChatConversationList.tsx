@@ -4,22 +4,30 @@ import { MessageCircle, Users } from "lucide-react";
 
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatRelativeTime } from "@/lib/chat-utils";
-import type { ChatConversation } from "@/types/chat.types";
+import type { ChatConversation, ChatRole } from "@/types/chat.types";
 
 export default function ChatConversationList({
   conversations,
   selectedId,
   onSelect,
+  role,
 }: {
   conversations: ChatConversation[];
   selectedId: string | null;
   onSelect: (conversation: ChatConversation) => void;
+  /** Sólo para explicar el estado vacío según quién mira. */
+  role?: ChatRole | null;
 }) {
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
         <MessageCircle className="text-text-muted size-8" aria-hidden />
-        <p className="text-text-muted text-sm">Todavía no tenés conversaciones.</p>
+        <p className="text-text text-sm font-medium">Todavía no tenés conversaciones</p>
+        <p className="text-text-muted max-w-xs text-xs">
+          {role === "teacher"
+            ? "Cuando un alumno se inscriba en uno de tus cursos, vas a poder chatear con él desde acá."
+            : "Inscribite en un curso y vas a poder escribirle a su docente desde acá."}
+        </p>
       </div>
     );
   }
