@@ -1,18 +1,10 @@
 "use client";
 
-import {
-  Award,
-  Flame,
-  Footprints,
-  GraduationCap,
-  Lock,
-  Medal,
-  Star,
-  Trophy,
-  type LucideIcon,
-} from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Lock, type LucideIcon } from "lucide-react";
 
 import ProgressBar from "@/components/course/ProgressBar";
+import { achievementIcon } from "@/lib/achievement-icons";
 import { useDashboardSummary } from "@/services/gamification/use-dashboard-summary";
 import type {
   LockedAchievement,
@@ -24,22 +16,11 @@ import type {
    anda, con sus propios loading/error/vacío igual que el resto de las
    tarjetas del dashboard.
 
-   Los íconos del back son strings libres (ver achievement.seed.ts en
-   pf-back): un código nuevo que este mapa no conozca cae en el ícono
-   genérico (Medal), nunca rompe. */
-const ACHIEVEMENT_ICONS: Record<string, LucideIcon> = {
-  footprints: Footprints,
-  flame: Flame,
-  fire: Flame,
-  "graduation-cap": GraduationCap,
-  trophy: Trophy,
-  award: Award,
-  star: Star,
-};
-
-function iconFor(name: string): LucideIcon {
-  return ACHIEVEMENT_ICONS[name] ?? Medal;
-}
+   Es un adelanto: hasta PREVIEW_LIMIT logros (los desbloqueados más
+   recientes primero). El detalle, con cuánto falta para cada uno, está en
+   /dashboard/logros. */
+const PREVIEW_LIMIT = 8;
+const iconFor = achievementIcon;
 
 export default function LevelAndAchievements() {
   const summary = useDashboardSummary();
@@ -58,6 +39,8 @@ export default function LevelAndAchievements() {
 
   const { value } = summary;
   const totalAchievements = value.logros.length + value.logrosBloqueados.length;
+  const unlockedPreview = value.logros.slice(0, PREVIEW_LIMIT);
+  const lockedPreview = value.logrosBloqueados.slice(0, PREVIEW_LIMIT - unlockedPreview.length);
 
   return (
     <section aria-label="Tu nivel y tus logros" className="flex flex-col gap-4">
@@ -70,22 +53,31 @@ export default function LevelAndAchievements() {
 
       {totalAchievements > 0 && (
         <div className="bg-surface border-border rounded-xl border p-5 shadow-sm">
-          <h2 className="text-text mb-4 text-sm font-semibold">
-            Logros
-            <span className="text-text-muted ml-1.5 font-normal">
-              ({value.logros.length}/{totalAchievements})
-            </span>
-          </h2>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-text text-sm font-semibold">
+              Logros
+              <span className="text-text-muted ml-1.5 font-normal">
+                ({value.logros.length}/{totalAchievements})
+              </span>
+            </h2>
+            <Link
+              href="/dashboard/logros"
+              className="text-primary inline-flex items-center gap-0.5 text-xs font-medium hover:underline"
+            >
+              Ver todos
+              <ChevronRight className="size-3.5" aria-hidden />
+            </Link>
+          </div>
 
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {value.logros.map((achievement) => (
+            {unlockedPreview.map((achievement) => (
               <UnlockedBadge
                 key={achievement.code}
                 achievement={achievement}
                 icon={iconFor(achievement.icono)}
               />
             ))}
-            {value.logrosBloqueados.map((achievement) => (
+            {lockedPreview.map((achievement) => (
               <LockedBadge
                 key={achievement.code}
                 achievement={achievement}

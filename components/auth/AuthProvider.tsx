@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import * as authService from "@/services/auth/auth.service";
 import { clearSession, getStoredUser, getToken, isLoggedIn, saveSession } from "@/services/auth/token-storage";
+import { disconnectChatSocket } from "@/services/chat/chat.socket";
 import type { LoginPayload, RegisterPayload, User } from "@/services/auth/auth.types";
 
 /* Sesión vía Context (no external store como el tema) porque acá sí hay
@@ -146,6 +147,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
+    // El socket del chat quedó autenticado con el token de esta sesión: si
+    // no se cierra, la próxima persona que use el navegador (u otra sesión
+    // en la misma pestaña) podría seguir recibiendo sus mensajes.
+    disconnectChatSocket();
   }, []);
 
   /* La pantalla de configuración edita datos que se muestran en el chrome del
