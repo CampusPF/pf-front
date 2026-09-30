@@ -15,6 +15,15 @@ export default function ChatMessage({ message }: { message: ChatMessageData }) {
     );
   }
 
+  // Respuesta en streaming que todavía no trajo la primera palabra.
+  if (message.text === "") {
+    return (
+      <p className="bg-surface-elevated border-border text-text-muted max-w-[92%] animate-pulse rounded-2xl rounded-tl-sm border px-3 py-2 text-sm">
+        Escribiendo…
+      </p>
+    );
+  }
+
   // La respuesta del tutor puede traer bloques ```de código```, con texto
   // antes y/o después — no un único `code` fijo al final como antes.
   const parts = splitMessageParts(message.text);

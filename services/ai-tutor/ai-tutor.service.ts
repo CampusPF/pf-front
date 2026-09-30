@@ -1,4 +1,5 @@
-import { apiFetch, ApiError } from "@/services/api-client";
+import { apiFetch, ApiError, API_URL } from "@/services/api-client";
+import { getToken } from "@/services/auth/token-storage";
 import { backendMessageOr } from "@/services/backend-message";
 import type {
   AiTutorConversation,
@@ -51,17 +52,23 @@ export async function getMyConversations(signal?: AbortSignal): Promise<AiTutorC
 }
 
 /**
- * Mi conversación de esta lección si ya existe, o `null`. El drawer la usa
- * para retomar el historial en vez de arrancar una charla nueva cada vez que
- * se abre — el back no tiene un "buscar por lessonId", así que se filtra acá
- * sobre el listado completo (es corto: una fila por lección visitada).
+ * `GET /ai-tutor/lessons/:lessonId/conversation` — mi última conversación de
+ * esta lección CON su historial, o `null` si nunca le pregunté nada acá. El
+ * back también valida que tenga acceso a la lección (403 si no).
  */
 export async function findConversationForLesson(
   lessonId: string,
   signal?: AbortSignal,
-): Promise<AiTutorConversation | null> {
-  const conversations = await getMyConversations(signal);
-  return conversations.find((c) => c.lessonId === lessonId) ?? null;
+): Promise<AiTutorConversationDetail | null> {
+  const raw = await apiFetch<{ conversation: RawConversation | null }>(
+    `/ai-tutor/lessons/${encodeURIComponent(lessonId)}/conversation`,
+    { auth: true, signal },
+  );
+  if (!raw.conversation) return null;
+  return {
+    ...toConversation(raw.conversation),
+    messages: (raw.conversation.messages ?? []).map(toMessage),
+  };
 }
 
 /** `GET /ai-tutor/conversations/:id` — con el historial completo, ya ordenado por el back. */
@@ -86,24 +93,82 @@ export async function createConversation(lessonId: string): Promise<AiTutorConve
   return toConversation(raw);
 }
 
+/** Acciones rápidas ("burbujas"): el back arma el pedido real a la IA. */
+export type AiTutorQuickAction =
+  | "SIMPLER_EXAMPLES"
+  | "SUMMARIZE"
+  | "PRACTICE_QUESTIONS"
+  | "EXPLAIN_AGAIN";
+
+export type AiTutorMessageInput = { content: string } | { action: AiTutorQuickAction };
+
+/** Código del back cuando el plan Free se queda sin mensajes del día. */
+export const AI_DAILY_LIMIT_CODE = "AI_DAILY_LIMIT_REACHED";
+
 /**
  * `POST /ai-tutor/conversations/:id/messages` — manda el mensaje del alumno
- * y devuelve, en la misma respuesta, la del tutor ya generada (no hay
- * streaming: la UI espera esta promesa entera).
+ * y la respuesta del tutor llega en STREAMING (Server-Sent Events): cada
+ * pedacito de texto se entrega a `onToken` apenas llega, para ir mostrándolo.
  *
- * Puede fallar con 400 (límite diario del plan Free alcanzado — el mensaje ya
- * viene listo para mostrar) o 429 (demasiados mensajes seguidos). Usar
- * `aiTutorErrorMessage` para el texto que se le muestra al usuario.
+ * No usa `apiFetch` porque éste lee el body entero como JSON; acá hay que
+ * leerlo de a poco. Los errores previos al stream (403 sin acceso, 429 por
+ * límite diario con `code: AI_DAILY_LIMIT_REACHED` o por ráfaga, 503 sin IA)
+ * llegan como JSON normal y se tiran como ApiError, igual que en apiFetch.
  */
-export async function sendMessage(
+export async function streamMessage(
   conversationId: string,
-  content: string,
-): Promise<{ userMessage: AiTutorMessage; assistantMessage: AiTutorMessage }> {
-  const raw = await apiFetch<{ userMessage: RawMessage; assistantMessage: RawMessage }>(
-    `/ai-tutor/conversations/${encodeURIComponent(conversationId)}/messages`,
-    { method: "POST", body: { content }, auth: true },
-  );
-  return { userMessage: toMessage(raw.userMessage), assistantMessage: toMessage(raw.assistantMessage) };
+  input: AiTutorMessageInput,
+  onToken: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<{ messageId: string | null }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_URL}/ai-tutor/conversations/${encodeURIComponent(conversationId)}/messages`,
+      { method: "POST", headers, body: JSON.stringify(input), credentials: "include", signal },
+    );
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    throw new ApiError("No pudimos conectarnos con el servidor. Revisá que el back esté levantado.", 0, error);
+  }
+
+  if (!response.ok || !response.body) {
+    const payload = await response.json().catch(() => null);
+    const message = (payload as { message?: string } | null)?.message;
+    throw new ApiError(message ?? `La petición falló (${response.status}).`, response.status, payload);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let messageId: string | null = null;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // Cada evento termina en una línea en blanco; el último puede estar a medias.
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+
+    for (const event of events) {
+      const type = event.match(/^event: (.+)$/m)?.[1];
+      const data = event.match(/^data: (.+)$/m)?.[1];
+      if (!type || !data) continue;
+      const parsed = JSON.parse(data);
+
+      if (type === "token") onToken(parsed.text);
+      else if (type === "done") messageId = parsed.messageId;
+      else if (type === "error") throw new ApiError(parsed.message, 502, parsed);
+    }
+  }
+
+  return { messageId };
 }
 
 /** `DELETE /ai-tutor/conversations/:id` — el back valida que sea mía. */
@@ -119,13 +184,24 @@ export function getUsage(signal?: AbortSignal): Promise<AiTutorUsage> {
   return apiFetch<AiTutorUsage>("/ai-tutor/usage/me", { auth: true, signal });
 }
 
+/** true si el error es "te quedaste sin mensajes gratis hoy". */
+export function isDailyLimitError(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.payload as { code?: string } | null)?.code === AI_DAILY_LIMIT_CODE
+  );
+}
+
 /**
- * El 429 lo tira el ThrottlerGuard con un texto técnico en inglés
- * ("ThrottlerException..."); el 400 del límite diario ya lo escribe
- * AiTutorService en español y se muestra tal cual (`backendMessageOr` lo deja
- * pasar). El resto cae al mismo criterio que `adminErrorMessage`/`uploadErrorMessage`.
+ * Hay dos 429: el del límite diario (`code: AI_DAILY_LIMIT_REACHED`, con el
+ * texto ya en español) y el del ThrottlerGuard por ráfaga, con un texto
+ * técnico en inglés ("ThrottlerException..."). El resto cae al mismo criterio
+ * que `adminErrorMessage`/`uploadErrorMessage`.
  */
 export function aiTutorErrorMessage(error: unknown): string {
+  if (isDailyLimitError(error)) {
+    return (error as ApiError).message;
+  }
   if (error instanceof ApiError && error.status === 429) {
     return "Mandaste muchos mensajes muy rápido. Esperá un momento y probá de nuevo.";
   }
