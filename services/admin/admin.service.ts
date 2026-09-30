@@ -1,6 +1,7 @@
 import { apiFetch } from "@/services/api-client";
 import { withCatalogRevalidation } from "@/services/admin/catalog-revalidation";
 import { toCourse, toLesson } from "@/services/courses/courses.adapter";
+import { isSubscriptionCurrentlyActive } from "@/services/subscriptions/subscriptions.service";
 import type {
   RawCategory,
   RawCourse,
@@ -270,7 +271,11 @@ export async function getAdminStats(): Promise<AdminStats> {
     settle(listAdminCourses()),
     settle(listAdminCategories()),
     settle(apiFetch<RawAdminEnrollment[]>("/course-enrollments", { auth: true })),
-    settle(apiFetch<{ status: string }[]>("/subscriptions", { auth: true })),
+    settle(
+      apiFetch<{ status: "active" | "cancelled" | "expired"; endDate: string }[]>("/subscriptions", {
+        auth: true,
+      }),
+    ),
   ]);
 
   return {
@@ -279,8 +284,10 @@ export async function getAdminStats(): Promise<AdminStats> {
     activeCourses: courses ? courses.filter((c) => c.isActive !== false).length : null,
     categories: categories?.length ?? null,
     enrollments: enrollments?.length ?? null,
+    // Una cancelada dentro de su período pago sigue contando: todavía es
+    // alguien pagando Premium hoy (ver isSubscriptionCurrentlyActive).
     activeSubscriptions: subscriptions
-      ? subscriptions.filter((s) => s.status === "active").length
+      ? subscriptions.filter((s) => isSubscriptionCurrentlyActive(s.status, s.endDate)).length
       : null,
     recentEnrollments: (enrollments ?? []).slice(0, 5).map((e) => ({
       id: e.id,

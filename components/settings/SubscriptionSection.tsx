@@ -59,6 +59,9 @@ export default function SubscriptionSection() {
   }, []);
 
   const active = subscriptions ? findActiveSubscription(subscriptions) : null;
+  // `active` incluye una CANCELLED todavía vigente (ver findActiveSubscription):
+  // ese caso no renueva y ya no hay nada para cancelar de nuevo.
+  const isCancelled = active?.status === "cancelled";
   const { user } = useAuth();
   // Sólo el admin tiene todo por su rol. El docente tiene gratis lo gratuito y
   // lo suyo: para el resto le sirve un plan, igual que a un alumno.
@@ -139,26 +142,36 @@ export default function SubscriptionSection() {
           {active ? (
             <div className="mt-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-accent-subtle text-accent inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
+                    isCancelled ? "bg-warning-subtle text-warning" : "bg-accent-subtle text-accent"
+                  }`}
+                >
                   <Sparkles className="size-4" aria-hidden />
                   {PLAN_LABEL[active.plan]}
                 </span>
                 <span className="text-text-muted text-sm">
-                  Renueva el {formatDate(active.endDate)}
+                  {isCancelled
+                    ? `Tenés acceso hasta el ${formatDate(active.endDate)}`
+                    : `Renueva el ${formatDate(active.endDate)}`}
                 </span>
               </div>
 
               <p className="text-text-secondary mt-3 text-sm">
-                Tenés acceso completo al catálogo y al tutor de IA sin límite diario.
+                {isCancelled
+                  ? "Cancelaste la renovación: seguís con acceso completo al catálogo y al tutor de IA sin límite diario hasta esa fecha. Después volvés al plan gratuito."
+                  : "Tenés acceso completo al catálogo y al tutor de IA sin límite diario."}
               </p>
 
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(true)}
-                className="border-danger/40 text-danger hover:bg-danger-subtle mt-4 cursor-pointer rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-150"
-              >
-                Cancelar suscripción
-              </button>
+              {!isCancelled && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
+                  className="border-danger/40 text-danger hover:bg-danger-subtle mt-4 cursor-pointer rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-150"
+                >
+                  Cancelar suscripción
+                </button>
+              )}
             </div>
           ) : isAdmin ? (
             /* El admin ya tiene acceso completo por su rol y no puede pasar
