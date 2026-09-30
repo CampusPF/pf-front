@@ -324,7 +324,7 @@ export default function AiTutorDrawer() {
                   Alcanzaste tu límite diario de mensajes gratis con el tutor.
                 </p>
                 <Link
-                  href="/#planes"
+                  href="/#precios"
                   onClick={close}
                   className="text-primary mt-1 inline-block text-xs font-medium hover:underline"
                 >

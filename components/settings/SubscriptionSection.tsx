@@ -195,7 +195,7 @@ export default function SubscriptionSection() {
                 diario de mensajes con el tutor de IA.
               </p>
               <Link
-                href="/#planes"
+                href="/#precios"
                 className="bg-primary-solid hover:bg-primary-solid-hover mt-4 inline-flex cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-150"
               >
                 Ver planes
