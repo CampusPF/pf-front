@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
+import { ApiError } from "@/services/api-client";
 import StarRatingInput from "@/components/ui/StarRatingInput";
 import { inputClass } from "@/components/ui/input-styles";
 import {
@@ -12,7 +13,11 @@ import {
   type ReviewInput,
 } from "@/services/reviews/course-reviews.service";
 
-/* Formulario de la reseña propia: crear o editar (el back hace upsert). */
+/* Formulario de la reseña propia: crear o editar (el back hace upsert).
+
+   El back modera el comentario (lista de groserías + IA) y responde 422 si es
+   ofensivo. En ese caso el texto NO se borra: se marca el campo y se le da
+   el foco, para que el alumno lo corrija en vez de reescribirlo entero. */
 export default function ReviewForm({
   initial,
   onSubmit,
@@ -29,9 +34,12 @@ export default function ReviewForm({
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commentRejected, setCommentRejected] = useState(false);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
 
   const ratingMissing = rating === 0;
   const tooLong = comment.length > REVIEW_COMMENT_MAX_LENGTH;
+  const commentInvalid = tooLong || commentRejected;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -40,17 +48,24 @@ export default function ReviewForm({
 
     setIsSaving(true);
     setError(null);
+    setCommentRejected(false);
     try {
       await onSubmit({ rating, comment });
     } catch (caught) {
       setError(reviewErrorMessage(caught));
       setIsSaving(false);
+      if (caught instanceof ApiError && caught.status === 422) {
+        setCommentRejected(true);
+        // Tras re-habilitar el textarea (isSaving=false) en el próximo render.
+        requestAnimationFrame(() => commentRef.current?.focus());
+      }
     }
   }
 
   const ratingErrorId = `${baseId}-rating-error`;
   const commentId = `${baseId}-comment`;
   const counterId = `${baseId}-counter`;
+  const errorId = `${baseId}-error`;
 
   return (
     <form onSubmit={handleSubmit} noValidate className="bg-surface border-border space-y-4 rounded-xl border p-5">
@@ -76,26 +91,36 @@ export default function ReviewForm({
           Comentario <span className="text-text-muted font-normal">(opcional)</span>
         </label>
         <textarea
+          ref={commentRef}
           id={commentId}
           rows={4}
           value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          onChange={(e) => {
+            setComment(e.target.value);
+            // Apenas lo edita, deja de mostrarse como rechazado.
+            if (commentRejected) setCommentRejected(false);
+          }}
           disabled={isSaving}
           placeholder="Contá qué te sirvió, qué mejorarías, para quién lo recomendás…"
-          aria-describedby={counterId}
-          aria-invalid={tooLong || undefined}
-          className={inputClass(tooLong)}
+          aria-describedby={commentRejected ? `${counterId} ${errorId}` : counterId}
+          aria-invalid={commentInvalid || undefined}
+          className={inputClass(commentInvalid)}
         />
-        <p
-          id={counterId}
-          className={`mt-1 text-right text-xs tabular-nums ${tooLong ? "text-danger" : "text-text-muted"}`}
-        >
-          {comment.length}/{REVIEW_COMMENT_MAX_LENGTH}
-        </p>
+        <div className="mt-1 flex items-start justify-between gap-3 text-xs">
+          <p className="text-text-muted">
+            Se revisa antes de publicarse. Las críticas son bienvenidas; el lenguaje ofensivo, no.
+          </p>
+          <p
+            id={counterId}
+            className={`shrink-0 tabular-nums ${tooLong ? "text-danger" : "text-text-muted"}`}
+          >
+            {comment.length}/{REVIEW_COMMENT_MAX_LENGTH}
+          </p>
+        </div>
       </div>
 
       {error && (
-        <p role="alert" className="bg-danger-subtle text-danger rounded-lg px-3 py-2 text-sm">
+        <p id={errorId} role="alert" className="bg-danger-subtle text-danger rounded-lg px-3 py-2 text-sm">
           {error}
         </p>
       )}

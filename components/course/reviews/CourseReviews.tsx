@@ -286,7 +286,7 @@ function MyReviewSlot({
         >
           Iniciá sesión
         </Link>{" "}
-        e inscribite al curso para dejar tu reseña.
+        y terminá el curso para dejar tu reseña.
       </p>
     );
   }
@@ -295,12 +295,22 @@ function MyReviewSlot({
   if (mine && !mine.canReview && !mine.review) {
     return (
       <p className="bg-surface-elevated text-text-secondary rounded-lg px-4 py-3 text-sm">
-        {mine.reason === "own_course"
-          ? "Sos instructor de este curso: las reseñas quedan para quienes lo cursan."
-          : "Inscribite al curso para dejar tu valoración y tu comentario."}
+        {cannotReviewMessage(mine.reason)}
       </p>
     );
   }
 
   return <>{children}</>;
+}
+
+/** El mismo criterio que el back (CourseReviewsService.cannotReviewReason). */
+function cannotReviewMessage(reason: MyCourseReview["reason"]): string {
+  switch (reason) {
+    case "own_course":
+      return "Sos instructor de este curso: las reseñas quedan para quienes lo cursan.";
+    case "not_completed":
+      return "Terminá el curso para dejar tu valoración y tu comentario.";
+    default:
+      return "Inscribite al curso para dejar tu valoración y tu comentario.";
+  }
 }

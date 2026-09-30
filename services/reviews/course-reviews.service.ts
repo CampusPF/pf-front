@@ -6,8 +6,8 @@ import { USE_MOCK_COURSES } from "@/services/courses/courses.source";
 /* Reseñas de un curso: /courses/:courseId/reviews.
 
    El listado es público. La reseña propia va siempre por `/me` (el dueño sale
-   del token), y escribirla exige inscripción activa: el back responde 403 con
-   un mensaje en español que se muestra tal cual. */
+   del token), y escribirla exige inscripción activa **y el curso terminado**:
+   el back responde 403 con un mensaje en español que se muestra tal cual. */
 
 export interface CourseReview {
   id: string;
@@ -34,8 +34,11 @@ export interface CourseReviewsPage {
   summary: CourseReviewsSummary;
 }
 
-/** Por qué no puede reseñar: no inscripto, o es el instructor del curso. */
-export type CannotReviewReason = "not_enrolled" | "own_course";
+/**
+ * Por qué no puede reseñar: no inscripto, inscripto pero sin terminar el
+ * curso, o es el instructor del curso.
+ */
+export type CannotReviewReason = "not_enrolled" | "not_completed" | "own_course";
 
 export interface MyCourseReview {
   canReview: boolean;

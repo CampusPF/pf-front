@@ -11,8 +11,8 @@ export const metadata: Metadata = {
    app/(app)/layout.tsx; acá sólo se agrega el gate de rol y las pestañas.
 
    Entran admin y teacher, con permisos distintos sobre los cursos:
-   - teacher: ve sólo "Cursos" (los suyos) y los crea, edita, elimina y
-     restaura;
+   - teacher: ve "Resumen" (métricas de sus cursos), "Cursos" (los suyos:
+     los crea, edita, elimina y restaura) y "Ventas" (las suyas);
    - admin: ve todas las pestañas, pero sobre los cursos sólo elimina y
      restaura (crear/editar son páginas sólo para teacher). */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
