@@ -90,7 +90,7 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
             </span>
             <h1 className="text-text text-xl font-semibold">Todavía no podés rendirlo</h1>
             {/* El mensaje lo escribe el back: es el que conoce la regla exacta
-                (lecciones pendientes, módulo anterior, intentos agotados). */}
+                (lecciones pendientes, módulo anterior). */}
             <p className="text-text-secondary max-w-sm text-sm">{load.message}</p>
             <Link href={courseHref} className="text-primary text-sm font-medium hover:underline">
               Volver al curso
@@ -127,6 +127,23 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
     setIndex(0);
     setSubmitError(null);
     setPhase({ step: "answering" });
+  }
+
+  /* Reintentar desde el resultado: el back mezcla preguntas y opciones al
+     abrir, pero acá no se vuelve a pedir el quiz, así que se mezclan de nuevo
+     en el cliente. De paso el intento recién corregido pasa a ser "la última
+     nota". */
+  function retry(result: QuizAttemptResult) {
+    setLoad({
+      status: "ready",
+      quiz: {
+        ...quiz,
+        questions: shuffle(quiz.questions).map((q) => ({ ...q, options: shuffle(q.options) })),
+        passed: quiz.passed || result.passed,
+        lastAttempt: { score: result.score, passed: result.passed, createdAt: new Date().toISOString() },
+      },
+    });
+    start();
   }
 
   async function submit() {
@@ -168,47 +185,37 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
             una respuesta antes de enviar.
           </p>
 
-          {/* Tres desenlaces posibles, y sólo uno ofrece "Empezar". Aprobado es
-              estado final: no se vuelve a rendir aunque sobren intentos. */}
-          {quiz.passed ? (
-            <>
-              <p className="bg-success-subtle text-success border-success/30 mx-auto mt-6 flex max-w-sm items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium">
-                <CheckCircle2 className="size-4 shrink-0" aria-hidden />
-                Ya aprobaste este checkpoint
-              </p>
-              <Link href={courseHref} className={`${PRIMARY} mt-8 px-6`}>
-                Volver al curso
-              </Link>
-            </>
-          ) : quiz.canAttempt ? (
-            <>
-              <p
-                className={`mx-auto mt-4 max-w-sm text-sm font-medium ${
-                  quiz.attemptsLeft === 1 ? "text-warning" : "text-text-secondary"
-                }`}
-              >
-                {quiz.attemptsLeft === 1
-                  ? `Te queda 1 intento de ${quiz.maxAttempts}. Si no aprobás, vas a tener que hablar con el docente.`
-                  : `Tenés ${quiz.attemptsLeft} intentos de ${quiz.maxAttempts}.`}
-              </p>
-              <button type="button" onClick={start} className={`${PRIMARY} mt-8 px-6`}>
-                Empezar
-              </button>
-            </>
-          ) : (
-            <>
-              <p
-                role="alert"
-                className="bg-warning-subtle text-warning border-warning/30 mx-auto mt-6 max-w-sm rounded-xl border px-4 py-3 text-sm"
-              >
-                Usaste tus {quiz.maxAttempts} intentos y no aprobaste. Escribile al docente del
-                curso para que te habilite otro.
-              </p>
-              <Link href={courseHref} className={`${SECONDARY} mt-8 px-6`}>
-                Volver al curso
-              </Link>
-            </>
+          {/* Se rinde sin límite, también si ya está aprobado. Lo que se
+              muestra es la última nota; aprobarlo una vez alcanza para avanzar. */}
+          {quiz.lastAttempt && (
+            <p
+              className={`mx-auto mt-6 flex max-w-sm items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium ${
+                quiz.lastAttempt.passed
+                  ? "bg-success-subtle text-success border-success/30"
+                  : "bg-surface-elevated text-text-secondary border-border"
+              }`}
+            >
+              {quiz.lastAttempt.passed && <CheckCircle2 className="size-4 shrink-0" aria-hidden />}
+              Tu última nota: {quiz.lastAttempt.score}%
+              {quiz.lastAttempt.passed ? " · Aprobado" : ` · Necesitás ${quiz.passingScore}%`}
+            </p>
           )}
+          {quiz.passed && !quiz.lastAttempt?.passed && (
+            <p className="text-text-muted mx-auto mt-3 max-w-sm text-sm">
+              Ya lo aprobaste antes: volver a rendirlo no te quita el avance.
+            </p>
+          )}
+
+          <div className="mt-8 flex flex-col-reverse items-center justify-center gap-3 sm:flex-row">
+            {quiz.passed && (
+              <Link href={courseHref} className={`${SECONDARY} px-6`}>
+                Volver al curso
+              </Link>
+            )}
+            <button type="button" onClick={start} className={`${PRIMARY} px-6`}>
+              {quiz.lastAttempt ? "Volver a rendir" : "Empezar"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -327,15 +334,21 @@ export default function QuizView({ slug, quizId }: { slug: string; quizId: strin
         <QuizResult
           result={phase.result}
           courseHref={courseHref}
-          onRetry={start}
-          /* El intento recién enviado ya se descontó en el back, pero `quiz`
-             es el que se cargó al entrar: se resta a mano para no volver a
-             pedirlo sólo por este número. */
-          attemptsLeft={phase.result.attemptsLeft}
+          onRetry={() => retry(phase.result)}
         />
       )}
     </Shell>
   );
+}
+
+/** Fisher-Yates sobre una copia: no toca el array original. */
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 /* Barra mínima + columna centrada. No usa LessonHeader porque éste pide los

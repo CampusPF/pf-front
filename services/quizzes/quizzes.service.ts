@@ -27,7 +27,7 @@ import type {
  * muestra "todavía no está disponible", más útil que un cartel de error.
  *
  * El 403 SÍ se propaga: es la progresión diciendo por qué no se puede rendir
- * todavía ("te faltan 2 lecciones", "agotaste los intentos"). Tragarlo como
+ * todavía ("te faltan 2 lecciones", "terminá el módulo anterior"). Tragarlo como
  * un `null` perdía justo el motivo, que es lo único accionable.
  */
 export async function getQuiz(quizId: string, signal?: AbortSignal): Promise<Quiz | null> {

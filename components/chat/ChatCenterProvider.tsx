@@ -12,6 +12,7 @@ import {
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getChatSocket } from "@/services/chat/chat.socket";
 import {
   chatRoleFor,
   directConversationId,
@@ -211,6 +212,28 @@ export default function ChatCenterProvider({ children }: { children: React.React
 
   const closePanel = useCallback(() => setIsPanelOpen(false), []);
   const dismissToast = useCallback(() => setToast(null), []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const socket = getChatSocket();
+    if (!socket) return;
+    const otherUserId = viewingId?.startsWith("direct-")
+      ? viewingId.slice("direct-".length)
+      : null;
+    if (otherUserId) socket.emit("chat:focus", { otherUserId });
+    else socket.emit("chat:blur");
+    return () => {
+      socket.emit("chat:blur");
+    };
+  }, [enabled, viewingId, user?.id]);
+
+  useEffect(() => {
+    if (pathname !== CHATS_PAGE_PATH || !conversations) return;
+    const requestedId = new URLSearchParams(window.location.search).get("conversation");
+    if (!requestedId || !conversations.some((conversation) => conversation.id === requestedId)) return;
+    selectConversation(requestedId);
+    window.history.replaceState(window.history.state, "", pathname);
+  }, [pathname, conversations, selectConversation]);
 
   // Si se navega a la página de chats con el panel abierto, la página toma
   // la posta (misma selección) y el panel sobra.

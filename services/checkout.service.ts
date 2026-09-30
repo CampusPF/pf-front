@@ -1,4 +1,5 @@
 import { ApiError, apiFetch } from "@/services/api-client";
+import { isSubscriptionCurrentlyActive } from "@/services/subscriptions/subscriptions.service";
 
 export interface CreatePaymentIntentInput {
   /** Compra de un curso individual (de por vida). Excluyente con planId. */
@@ -63,7 +64,8 @@ interface EnrollmentSummary {
 }
 
 interface SubscriptionSummary {
-  status: string;
+  status: "active" | "cancelled" | "expired";
+  endDate: string;
 }
 
 /** GET /course-enrollments/me ya sólo trae inscripciones activas por
@@ -78,13 +80,17 @@ async function hasActiveCourseEnrollment(courseId: string): Promise<boolean> {
 }
 
 /** GET /subscriptions/me trae TODAS las suscripciones (activas, canceladas,
-    vencidas) — acá sí hay que filtrar por status vos mismo. */
+    vencidas) — acá sí hay que filtrar vos mismo. Una cancelada dentro de su
+    período pago sigue contando (ver isSubscriptionCurrentlyActive): mientras
+    dure, no tiene sentido ofrecerle pagar Premium de nuevo. */
 async function hasActiveSubscription(): Promise<boolean> {
   const subscriptions = await apiFetch<SubscriptionSummary[]>(
     "/subscriptions/me",
     { auth: true },
   );
-  return subscriptions.some((subscription) => subscription.status === "active");
+  return subscriptions.some((subscription) =>
+    isSubscriptionCurrentlyActive(subscription.status, subscription.endDate),
+  );
 }
 
 export type PendingAccessCheck =
