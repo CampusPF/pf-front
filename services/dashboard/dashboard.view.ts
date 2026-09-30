@@ -3,6 +3,7 @@ import {
   type DashboardStat,
 } from "@/data/dashboard.mock";
 import { gradientFor } from "@/services/courses/courses.adapter";
+import { isSubscriptionCurrentlyActive } from "@/services/subscriptions/subscriptions.service";
 import type {
   CourseDifficulty,
   RawEnrollment,
@@ -172,10 +173,13 @@ function countCompletedByEnrollment(
   return counts;
 }
 
+/* `plan === "premium"` no hace falta chequearlo: el back nunca guarda una
+   fila FREE (contratar el plan gratis no pasa por Stripe), así que toda
+   Subscription es Premium. `isSubscriptionCurrentlyActive` es la única
+   regla (incluye una CANCELLED todavía dentro del período pago). */
 function hasActivePremium(subscriptions: RawSubscription[]): boolean {
-  return subscriptions.some(
-    (subscription) =>
-      subscription.status === "active" && subscription.plan === "premium",
+  return subscriptions.some((subscription) =>
+    isSubscriptionCurrentlyActive(subscription.status, subscription.endDate),
   );
 }
 
