@@ -55,6 +55,9 @@
 
   --color-success:          #10B981;
   --color-success-subtle:   #ECFDF5;
+  /* Verde para TEXTO (deltas "+12" del panel): #10B981 da ~2.5:1 sobre
+     blanco, ilegible en letra chica. #047857 da ~5.5:1. */
+  --color-success-text:     #047857;
   --color-warning:          #F59E0B;
   --color-warning-subtle:   #FFFBEB;
   /* #B91C1C: ~6.5:1 sobre blanco. El valor original (#EF4444) daba 3.8:1,
@@ -62,6 +65,15 @@
      los formularios, que es justamente el caso de uso principal del token. */
   --color-danger:           #B91C1C;
   --color-danger-subtle:    #FEF2F2;
+
+  /* Series de gráficos (panel de admin). Validados con el chequeo de
+     daltonismo y contraste contra la superficie de cada modo: en oscuro, la
+     serie 2 baja un paso (#EA580C) porque el naranja de marca claro
+     encandila sobre fondo oscuro. Orden fijo: la serie 1 es siempre la
+     principal, la 2 sólo aparece cuando hay dos series. */
+  --color-chart-1:          #6366F1;
+  --color-chart-2:          #C2410C;
+  --color-chart-grid:       #E4E4EA;
 
   /* Shadows */
   --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -169,6 +181,10 @@
     --color-warning-subtle:   #1C1400;
     --color-danger:           #F87171;
     --color-danger-subtle:    #2D0707;
+    --color-success-text:     #34D399;
+
+    --color-chart-2:          #EA580C;
+    --color-chart-grid:       #2A2A38;
 
     --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
@@ -203,6 +219,10 @@
   --color-warning-subtle:   #1C1400;
   --color-danger:           #F87171;
   --color-danger-subtle:    #2D0707;
+  --color-success-text:     #34D399;
+
+  --color-chart-2:          #EA580C;
+  --color-chart-grid:       #2A2A38;
 
   --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
