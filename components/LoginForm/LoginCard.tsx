@@ -11,6 +11,8 @@ import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
 import { rememberRedirect, safeRedirect } from '@/services/auth/post-login-redirect';
 import { googleOAuthError } from '@/services/auth/oauth-error';
+import { ACCOUNT_DISABLED_CODE, isAccountDisabledError } from '@/services/auth/account-disabled';
+import AccountDisabledAlert from '@/components/auth/AccountDisabledAlert';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { loginSchema, type LoginFormValues } from '@/services/auth/auth.schemas';
@@ -37,9 +39,11 @@ export const LoginCard = () => {
         router.push(safeRedirect(searchParams.get('redirect')));
       } catch (caught) {
         setStatus(
-          caught instanceof ApiError
-            ? caught.message
-            : 'Algo salió mal. Probá de nuevo en un momento.',
+          isAccountDisabledError(caught)
+            ? ACCOUNT_DISABLED_CODE
+            : caught instanceof ApiError
+              ? caught.message
+              : 'Algo salió mal. Probá de nuevo en un momento.',
         );
         // Sólo reactivamos el botón si falló: si salió bien ya estamos navegando.
         setSubmitting(false);
@@ -53,8 +57,13 @@ export const LoginCard = () => {
   // El back rebota acá con ?error= cuando "Continuar con Google" falla (ej.
   // el email no está registrado). El error de submit (formik.status) tiene
   // prioridad: es la acción más reciente del usuario.
-  const alertMessage =
-    formik.status ?? googleOAuthError(searchParams.get('error'));
+  const errorCode = formik.status ?? searchParams.get('error');
+  // Cuenta dada de baja (por el form, por Google o porque se le cerró la
+  // sesión abierta): aviso propio con salida a Contacto, no el cartel genérico.
+  const accountDisabled = errorCode === ACCOUNT_DISABLED_CODE;
+  const alertMessage = accountDisabled
+    ? null
+    : (formik.status ?? googleOAuthError(searchParams.get('error')));
 
   /* Avisos de "venís de completar otra pantalla". Los setean con un query
      param quien redirige acá: ?registered=1 el alta de cuenta, ?reset=1 el
@@ -145,6 +154,8 @@ export const LoginCard = () => {
               <span>{successMessage}</span>
             </p>
           )}
+
+          {accountDisabled && <AccountDisabledAlert />}
 
           {alertMessage && (
             <p

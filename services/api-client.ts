@@ -1,5 +1,6 @@
 import { markBackendAwake, trackBackendWait } from "@/lib/backend-wakeup";
 import { getToken } from "@/services/auth/token-storage";
+import { handleAccountDisabled, isAccountDisabledResponse } from "@/services/auth/account-disabled";
 
 /* Cliente HTTP único del front. Todo lo que hable con el back pasa por acá:
    base URL, header de auth, desenvoltura del envelope y formato de error viven
@@ -170,6 +171,14 @@ export async function apiFetch<T>(
   }
 
   const payload = await readBody(response);
+
+  // Cuenta dada de baja con la sesión abierta: cualquier request autenticado
+  // lo detecta y se cierra la sesión con el aviso, esté donde esté la persona
+  // (no sólo al recargar). En login/registro (sin `auth`) no se redirige: esas
+  // pantallas muestran el aviso ellas mismas.
+  if (auth && isAccountDisabledResponse(response.status, payload)) {
+    handleAccountDisabled();
+  }
 
   if (!response.ok) {
     throw new ApiError(

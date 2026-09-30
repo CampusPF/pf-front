@@ -11,6 +11,8 @@ import { ApiError } from '@/services/api-client';
 import { getGoogleAuthUrl } from '@/services/auth/auth.service';
 import { rememberRedirect, safeRedirect } from '@/services/auth/post-login-redirect';
 import { googleOAuthError } from '@/services/auth/oauth-error';
+import { ACCOUNT_DISABLED_CODE, isAccountDisabledError } from '@/services/auth/account-disabled';
+import AccountDisabledAlert from '@/components/auth/AccountDisabledAlert';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PasswordField } from '@/components/auth/PasswordField';
 import {
@@ -75,9 +77,11 @@ export const RegisterCard = () => {
         router.push(`/login?${params.toString()}`);
       } catch (caught) {
         setStatus(
-          caught instanceof ApiError
-            ? caught.message
-            : 'Algo salió mal. Probá de nuevo en un momento.',
+          isAccountDisabledError(caught)
+            ? ACCOUNT_DISABLED_CODE
+            : caught instanceof ApiError
+              ? caught.message
+              : 'Algo salió mal. Probá de nuevo en un momento.',
         );
         setSubmitting(false);
       }
@@ -87,8 +91,13 @@ export const RegisterCard = () => {
   // El back rebota acá con ?error= cuando "Continuar con Google" falla (ej.
   // el email ya está registrado). El error de submit (formik.status) tiene
   // prioridad: es la acción más reciente del usuario.
-  const alertMessage =
-    formik.status ?? googleOAuthError(searchParams.get('error'));
+  const errorCode = formik.status ?? searchParams.get('error');
+  // Cuenta dada de baja: aviso propio en lugar de "ya existe una cuenta,
+  // iniciá sesión", que la mandaba a un login que también la rechaza.
+  const accountDisabled = errorCode === ACCOUNT_DISABLED_CODE;
+  const alertMessage = accountDisabled
+    ? null
+    : (formik.status ?? googleOAuthError(searchParams.get('error')));
 
   const fullNameHasError = Boolean(formik.touched.fullName && formik.errors.fullName);
   const emailHasError = Boolean(formik.touched.email && formik.errors.email);
@@ -186,6 +195,8 @@ export const RegisterCard = () => {
 
         {/* Formulario */}
         <form className="space-y-4" onSubmit={formik.handleSubmit} noValidate>
+          {accountDisabled && <AccountDisabledAlert />}
+
           {alertMessage && (
             <p
               role="alert"

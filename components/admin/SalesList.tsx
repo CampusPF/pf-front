@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Receipt } from "lucide-react";
+import { Download, Receipt } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ErrorBanner, Loading } from "@/components/admin/admin-ui";
+import { BUTTON_SECONDARY, ErrorBanner, Loading } from "@/components/admin/admin-ui";
+import { csvAmount, downloadCsv } from "@/lib/csv";
 import { adminErrorMessage } from "@/services/admin/admin-errors";
 import {
   getTeacherPayments,
@@ -31,6 +32,23 @@ function formatDate(value: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+/** Exporta exactamente las filas que ve quien exporta (el back ya las
+ *  recortó por rol): no hay un segundo pedido que pueda devolver otra cosa. */
+function exportSales(sales: TeacherPayment[]) {
+  const today = new Date().toISOString().slice(0, 10);
+  downloadCsv(
+    `ventas-${today}.csv`,
+    ["Fecha", "Curso", "Comprador", "Monto", "Moneda"],
+    sales.map((sale) => [
+      new Date(sale.date).toLocaleDateString("es-AR"),
+      sale.courseName,
+      sale.buyerName,
+      csvAmount(sale.amount),
+      sale.currency.toUpperCase(),
+    ]),
+  );
 }
 
 export default function SalesList() {
@@ -91,9 +109,15 @@ export default function SalesList() {
             {formatPrice(sumAmounts(sales), currency)}
           </p>
         </div>
-        <p className="text-text-muted text-sm">
-          {sales.length} {sales.length === 1 ? "venta" : "ventas"}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-text-muted text-sm">
+            {sales.length} {sales.length === 1 ? "venta" : "ventas"}
+          </p>
+          <button type="button" onClick={() => exportSales(sales)} className={BUTTON_SECONDARY}>
+            <Download className="size-4" aria-hidden />
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       <div className="border-border relative overflow-x-auto rounded-xl border">

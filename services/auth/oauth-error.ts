@@ -9,6 +9,10 @@ const MESSAGES: Record<string, string> = {
   // Entró por "Continuar con Google" desde /register pero el email ya existe.
   already_registered:
     "Ya existe una cuenta con ese email. Iniciá sesión en lugar de registrarte.",
+  // Cuenta dada de baja. LoginCard/RegisterCard muestran AccountDisabledAlert
+  // (con link a Contacto) en lugar de este texto; queda como respaldo.
+  account_disabled:
+    "Tu cuenta fue dada de baja. Si creés que es un error, escribinos desde Contacto.",
 };
 
 const FALLBACK = "No pudimos completar el inicio con Google. Probá de nuevo.";
