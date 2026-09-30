@@ -48,14 +48,13 @@ export function isModuleUnlocked(
 export function checkpointGate(
   progression: CourseProgression | null,
   quizId: string,
-): { unlocked: boolean; attemptsLeft: number; passed: boolean; lockedReason: string | null } | null {
+): { unlocked: boolean; passed: boolean; lockedReason: string | null } | null {
   if (!progression) return null;
 
   const fromModule = progression.modules.find((gate) => gate.quizId === quizId);
   if (fromModule) {
     return {
       unlocked: fromModule.checkpointUnlocked,
-      attemptsLeft: fromModule.attemptsLeft,
       passed: fromModule.quizPassed,
       lockedReason: checkpointLockedReason(fromModule),
     };
@@ -65,7 +64,6 @@ export function checkpointGate(
   if (final?.quizId === quizId) {
     return {
       unlocked: final.unlocked,
-      attemptsLeft: final.attemptsLeft,
       passed: final.passed,
       lockedReason: final.lockedReason,
     };

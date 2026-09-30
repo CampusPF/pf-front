@@ -18,7 +18,6 @@ export interface ModuleGate {
   quizId: string | null;
   quizPassed: boolean;
   attemptsUsed: number;
-  attemptsLeft: number;
   /** Se puede entrar a las lecciones de este módulo. */
   lessonsUnlocked: boolean;
   /** Se puede rendir su checkpoint. */
@@ -31,7 +30,6 @@ export interface FinalCheckpointGate {
   quizId: string;
   passed: boolean;
   attemptsUsed: number;
-  attemptsLeft: number;
   unlocked: boolean;
   lockedReason: string | null;
 }
