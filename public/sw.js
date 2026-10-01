@@ -7,11 +7,12 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title || 'Campus Lite';
+  const tag = payload.tag || `push-${Date.now()}-${crypto.randomUUID()}`;
   event.waitUntil(
     self.registration.showNotification(title, {
       body: payload.body || '',
       icon: payload.icon || '/logo-campus.png',
-      tag: payload.tag,
+      tag,
       renotify: true,
       data: { url: payload.url || '/' },
     }),
