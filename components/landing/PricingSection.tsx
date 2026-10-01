@@ -8,16 +8,14 @@ import PremiumCta from "@/components/landing/PremiumCta";
 const FREE_FEATURES = [
   "Acceso a todos los cursos gratuitos",
   "Tutor IA en cada lección",
-  "Comunidad en Discord para soporte",
-  "Proyectos guiados básicos",
+  "Proyectos guiados básicos"
 ];
 
 const PREMIUM_FEATURES = [
-  "Acceso a todo el catálogo, incluidos los cursos pagos",
+  "Acceso a todo el catálogo, incluidos los cursos premium",
   "Tutor IA sin restricciones 24/7",
   "Certificados verificados con QR oficial",
-  "Revisiones de código personalizadas por expertos",
-  "Workshops en vivo mensuales con mentores",
+  "Revisiones de código personalizadas por expertos"
 ];
 
 export default function PricingSection() {
@@ -27,11 +25,10 @@ export default function PricingSection() {
         Tarifas claras
       </p>
       <h2 className="text-text mt-2 text-2xl font-bold md:text-3xl">
-        Planes transparentes, sin sorpresas
+        Elige el plan ideal para tu ritmo
       </h2>
       <p className="text-text-secondary mx-auto mt-3 max-w-2xl">
-        Empezá gratis y migrá a Premium cuando estés listo para acelerar tu
-        aprendizaje profesional.
+        Empezá gratis y elegí Premium cuando estés listo para llevar tu aprendizaje al siguiente nivel
       </p>
 
       <div className="mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-8 text-left md:grid-cols-2">

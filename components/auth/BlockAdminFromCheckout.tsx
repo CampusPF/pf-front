@@ -6,7 +6,7 @@ import { ShieldCheck } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 /* El admin no compra: ve todo el catálogo y se inscribe sin pagar a cualquier
-   curso. Si llega al checkout (link directo, "Hacerme Premium" desde otra
+   curso. Si llega al checkout (link directo, "Elegir Premium" desde otra
    pestaña) se le explica en vez de mostrar el formulario de pago. Es UX: el
    back responde 403 a POST /payments/create-intent para ese rol.
 

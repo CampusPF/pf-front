@@ -17,7 +17,7 @@ const FEATURES = [
     icon: Clock,
     title: "Disponible 24/7 sin esperas",
     description:
-      "Olvidate de esperar 3 días en un foro de preguntas para continuar aprendiendo.",
+      "Olvidate de esperar días en un foro de preguntas para continuar aprendiendo.",
   },
 ];
 

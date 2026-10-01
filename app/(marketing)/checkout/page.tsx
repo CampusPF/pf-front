@@ -44,7 +44,7 @@ function NotFoundState({ isError = false }: { isError?: boolean }) {
       <p className="text-text-secondary max-w-sm text-sm">
         {isError
           ? "Probá de nuevo en un momento."
-          : 'A esta página se llega desde el botón de "Comprar" de un curso o "Hacerme Premium" en los planes — no se puede abrir directamente.'}
+          : 'A esta página se llega desde el botón de "Comprar" de un curso o "Elegir Premium" en los planes — no se puede abrir directamente.'}
       </p>
       <Link
         href="/courses"

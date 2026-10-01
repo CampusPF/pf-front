@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, Flame, LoaderCircle, Menu, Search, Trash2 } from "lucide-react";
+import { Bell, Check, Flame, LoaderCircle, Menu, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -11,7 +11,6 @@ import {
   isPushEnabled,
   isPushSupported,
   registerPush,
-  sendPushTest,
   unregisterPush,
 } from "@/services/push/push.service";
 import { useStreak } from "@/services/progress/use-progress-stats";
@@ -39,7 +38,6 @@ export default function DashboardTopbar({
   const streakDays = streakState.status === "success" ? streakState.value : 0;
   const streak =
     streakDays > 0 ? `${streakDays} ${streakDays === 1 ? "día" : "días"}` : "";
-  const initial = user?.name?.charAt(0)?.toUpperCase() ?? "?";
   const [notifications, setNotifications] = useState<BellNotification[]>([]);
   const [pushSupported, setPushSupported] = useState(false);
   const [pushState, setPushState] = useState<PushState>("unknown");
@@ -51,6 +49,7 @@ export default function DashboardTopbar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const unreadNotifications = notifications.filter((notification) => !notification.read).length;
 
+  /* eslint-disable react-hooks/set-state-in-effect -- sincroniza con APIs del navegador (localStorage, Notification) */
   useEffect(() => {
     setPushSupported(isPushSupported());
     setPushChecking(true);
@@ -109,6 +108,7 @@ export default function DashboardTopbar({
       document.removeEventListener("visibilitychange", verifyWhenVisible);
     };
   }, [user?.id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!pushConfirmation) return;
@@ -178,18 +178,6 @@ export default function DashboardTopbar({
     }
   }
 
-  async function sendTestNotification() {
-    setPushError(null);
-    setPushConfirmation(null);
-    setPushConfirmationFading(false);
-    try {
-      await sendPushTest();
-      setPushConfirmation("Prueba enviada");
-    } catch (error) {
-      setPushError(error instanceof Error ? error.message : "No pudimos enviar la notificación de prueba.");
-    }
-  }
-
   function openNotification(notification: BellNotification) {
     setNotifications((current) => current.map((item) =>
       item.id === notification.id ? { ...item, read: true } : item,
@@ -209,20 +197,6 @@ export default function DashboardTopbar({
       >
         <Menu className="size-5" aria-hidden />
       </button>
-
-      {/* Buscador global */}
-      <div className="relative min-w-0 flex-1 md:max-w-md">
-        <Search
-          className="text-text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-          aria-hidden
-        />
-        <input
-          type="search"
-          placeholder="Buscar lecciones, ejercicios, conceptos..."
-          aria-label="Buscar"
-          className="bg-bg border-border text-text placeholder:text-text-muted focus:border-primary focus:ring-primary/30 w-full rounded-lg border py-2 pr-3 pl-9 text-sm transition-colors duration-150 focus:ring-2 focus:outline-none"
-        />
-      </div>
 
       <div className="ml-auto flex items-center gap-2">
         {/* Racha */}
@@ -269,37 +243,26 @@ export default function DashboardTopbar({
                 {pushSupported && (
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <span className="text-text-secondary text-sm">Notificaciones del navegador</span>
-                    <div className="flex items-center gap-2">
-                      {process.env.NODE_ENV !== "production" && pushState === "on" && (
-                        <button
-                          type="button"
-                          onClick={() => void sendTestNotification()}
-                          className="text-primary hover:text-primary/80 cursor-pointer text-xs font-medium"
-                        >
-                          Reenviar prueba
-                        </button>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={pushState === "on"}
+                      aria-label="Notificaciones del navegador"
+                      disabled={pushChecking || pushState === "unknown" || (isPushSupported() && Notification.permission === "denied")}
+                      onClick={() => void togglePush()}
+                      className={`relative flex h-6 w-11 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pushState === "on" ? "bg-primary" : "bg-border"}`}
+                    >
+                      {pushState === "unknown" ? (
+                        <LoaderCircle className="size-4 animate-spin text-white" aria-label="Verificando" />
+                      ) : (
+                        <span className={`bg-white absolute top-0.5 size-5 rounded-full shadow transition-transform ${pushState === "on" ? "translate-x-2.5" : "-translate-x-2.5"}`} />
                       )}
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={pushState === "on"}
-                        aria-label="Notificaciones del navegador"
-                        disabled={pushChecking || pushState === "unknown" || (isPushSupported() && Notification.permission === "denied")}
-                        onClick={() => void togglePush()}
-                        className={`relative flex h-6 w-11 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${pushState === "on" ? "bg-primary" : "bg-border"}`}
-                      >
-                        {pushState === "unknown" ? (
-                          <LoaderCircle className="size-4 animate-spin text-white" aria-label="Verificando" />
-                        ) : (
-                          <span className={`bg-white absolute top-0.5 size-5 rounded-full shadow transition-transform ${pushState === "on" ? "translate-x-2.5" : "-translate-x-2.5"}`} />
-                        )}
-                      </button>
-                    </div>
+                    </button>
                   </div>
                 )}
                 {pushSupported && Notification.permission === "denied" && (
                   <p className="text-danger mt-2 text-xs">
-                    Bloqueaste las notificaciones. Habilitalas en la configuración del navegador.{" "}
+                    Bloqueaste las notificaciones. Habilítalas en la configuración del navegador.{" "}
                     <a href="https://support.google.com/chrome/answer/3220216" target="_blank" rel="noreferrer" className="underline">¿Cómo activarlas?</a>
                   </p>
                 )}
@@ -308,7 +271,7 @@ export default function DashboardTopbar({
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <p className="text-text-muted px-4 py-8 text-center text-sm">No tenés notificaciones nuevas.</p>
+                  <p className="text-text-muted px-4 py-8 text-center text-sm">No tienes notificaciones nuevas.</p>
                 ) : notifications.map((notification) => (
                   <button
                     type="button"
@@ -328,8 +291,6 @@ export default function DashboardTopbar({
             </section>
           )}
         </div>
-
-
       </div>
     </header>
   );
