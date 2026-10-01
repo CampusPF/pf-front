@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Loader2, Sparkles, Trash2, X } from "lucide-react";
 
 import { useAiTutor } from "@/components/ai-tutor/AiTutorProvider";
@@ -27,7 +28,14 @@ import type { AiTutorMessage, AiTutorUsage } from "@/types/ai-tutor.types";
    muestra este saludo y recién se crea la conversación con el primer mensaje
    — abrir el drawer y cerrarlo sin escribir nada no deja una fila vacía en
    la base. */
-function greeting(lessonTitle: string): ChatMessageData {
+function greeting(lessonTitle: string, courseTitle: string | null): ChatMessageData {
+  if (courseTitle) {
+    return {
+      id: "greeting",
+      role: "assistant",
+      text: `¡Hola! Puedo ayudarte con el curso "${courseTitle}". Preguntame lo que necesites sobre sus lecciones.`,
+    };
+  }
   return {
     id: "greeting",
     role: "assistant",
@@ -45,7 +53,12 @@ type LoadState =
   | { status: "error"; message: string };
 
 export default function AiTutorDrawer() {
-  const { isOpen, close, lessonId, lessonTitle } = useAiTutor();
+  const { isOpen, close, lessonId, lessonTitle, coursePage } = useAiTutor();
+  const pathname = usePathname();
+  const isCourseDetailPage = Boolean(coursePage && pathname === `/courses/${coursePage.slug}`);
+  const activeLessonId = isCourseDetailPage ? coursePage?.lesson?.id ?? null : lessonId;
+  const activeLessonTitle = isCourseDetailPage ? coursePage?.lesson?.title ?? null : lessonTitle;
+  const courseGreeting = isCourseDetailPage ? coursePage?.title ?? null : null;
   const bodyRef = useRef<HTMLDivElement>(null);
 
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
@@ -62,7 +75,7 @@ export default function AiTutorDrawer() {
 
   useEffect(() => {
     if (!isOpen) streamAbortRef.current?.abort();
-  }, [isOpen, lessonId]);
+  }, [isOpen, activeLessonId]);
 
   useEffect(() => () => streamAbortRef.current?.abort(), []);
 
@@ -70,7 +83,7 @@ export default function AiTutorDrawer() {
   // el drawer y cada vez que se cambia de lección con el drawer abierto
   // ("Siguiente"/"Anterior") — si no, quedaría la charla de la lección vieja.
   useEffect(() => {
-    if (!isOpen || !lessonId) return;
+    if (!isOpen || !activeLessonId) return;
     let cancelled = false;
     streamAbortRef.current?.abort(); // cambio de lección con una respuesta a medias
 
@@ -83,7 +96,7 @@ export default function AiTutorDrawer() {
     (async () => {
       try {
         const [existing, usageData] = await Promise.all([
-          findConversationForLesson(lessonId),
+          findConversationForLesson(activeLessonId),
           getUsage(),
         ]);
         if (cancelled) return;
@@ -94,10 +107,10 @@ export default function AiTutorDrawer() {
           setMessages(
             existing.messages.length > 0
               ? existing.messages.map(toDisplay)
-              : [greeting(lessonTitle ?? "")],
+                : [greeting(activeLessonTitle ?? "", courseGreeting)],
           );
         } else {
-          setMessages([greeting(lessonTitle ?? "")]);
+              setMessages([greeting(activeLessonTitle ?? "", courseGreeting)]);
         }
         setLoad({ status: "ready" });
       } catch (caught) {
@@ -112,7 +125,7 @@ export default function AiTutorDrawer() {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, lessonId, lessonTitle]);
+  }, [isOpen, activeLessonId, activeLessonTitle, courseGreeting]);
 
   // ESC cierra el drawer.
   useEffect(() => {
@@ -133,7 +146,7 @@ export default function AiTutorDrawer() {
   }, [messages, isOpen]);
 
   async function send(text: string) {
-    if (!lessonId) return;
+    if (!activeLessonId) return;
 
     setIsSending(true);
     setSendError(null);
@@ -156,7 +169,7 @@ export default function AiTutorDrawer() {
     try {
       let activeConversationId = conversationId;
       if (!activeConversationId) {
-        const created = await createConversation(lessonId);
+        const created = await createConversation(activeLessonId);
         activeConversationId = created.id;
         setConversationId(activeConversationId);
       }
@@ -205,7 +218,7 @@ export default function AiTutorDrawer() {
     try {
       await deleteConversation(conversationId);
       setConversationId(null);
-      setMessages([greeting(lessonTitle ?? "")]);
+      setMessages([greeting(activeLessonTitle ?? "", courseGreeting)]);
       setSendError(null);
       setConfirmClearOpen(false);
     } catch (caught) {
@@ -280,7 +293,24 @@ export default function AiTutorDrawer() {
           </div>
         </header>
 
-        {!lessonId ? (
+        {!activeLessonId && isCourseDetailPage && coursePage?.loading ? (
+          <div className="flex flex-1 items-center justify-center gap-2">
+            <Loader2 className="text-primary size-5 animate-spin" aria-hidden />
+            <span className="text-text-muted text-sm">Cargando el curso…</span>
+          </div>
+        ) : !activeLessonId && isCourseDetailPage ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+            <Sparkles className="text-text-muted size-10" aria-hidden />
+            <p className="text-text text-sm font-medium">Inscribite para conversar con el tutor</p>
+            <Link
+              href="#course-enroll-cta"
+              onClick={close}
+              className="bg-primary-solid hover:bg-primary-solid-hover rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors"
+            >
+              Ver opciones de inscripción
+            </Link>
+          </div>
+        ) : !activeLessonId ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
             <Sparkles className="text-text-muted size-10" aria-hidden />
             <p className="text-text text-sm font-medium">El tutor está disponible dentro de cada lección</p>

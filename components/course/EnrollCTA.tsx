@@ -86,7 +86,7 @@ export default function EnrollCTA() {
   }
 
   return (
-    <aside className="bg-surface border-border rounded-2xl border p-6 shadow-lg lg:sticky lg:top-24 lg:self-start">
+    <aside id="course-enroll-cta" className="bg-surface border-border rounded-2xl border p-6 shadow-lg lg:sticky lg:top-24 lg:self-start">
       <p className="text-text flex items-baseline gap-1">
         <span className="text-3xl font-bold">
           {course.isPremium ? formatPrice(course.priceInCents, course.currency) : "Gratis"}

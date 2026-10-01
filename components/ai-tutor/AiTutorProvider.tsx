@@ -25,6 +25,8 @@ interface AiTutorValue {
   lessonId: string | null;
   lessonTitle: string | null;
   setLesson: (lesson: { id: string; title: string } | null) => void;
+  coursePage: { slug: string; title: string; lesson: { id: string; title: string } | null; enrolled: boolean; loading: boolean } | null;
+  setCoursePage: (course: AiTutorValue["coursePage"]) => void;
 }
 
 const AiTutorContext = createContext<AiTutorValue | null>(null);
@@ -46,11 +48,13 @@ export default function AiTutorProvider({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [lesson, setLessonState] = useState<{ id: string; title: string } | null>(null);
+  const [coursePage, setCoursePageState] = useState<AiTutorValue["coursePage"]>(null);
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
   const setLesson = useCallback((next: { id: string; title: string } | null) => setLessonState(next), []);
+  const setCoursePage = useCallback((next: AiTutorValue["coursePage"]) => setCoursePageState(next), []);
 
   const value = useMemo(
     () => ({
@@ -61,8 +65,10 @@ export default function AiTutorProvider({
       lessonId: lesson?.id ?? null,
       lessonTitle: lesson?.title ?? null,
       setLesson,
+      coursePage,
+      setCoursePage,
     }),
-    [isOpen, open, close, toggle, lesson, setLesson],
+    [isOpen, open, close, toggle, lesson, setLesson, coursePage, setCoursePage],
   );
 
   return (
