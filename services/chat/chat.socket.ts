@@ -21,10 +21,13 @@ export function getChatSocket(): Socket | null {
   if (socket?.connected || socket?.active) return socket;
 
   socket = io(`${API_URL}/chat`, {
-    auth: { token },
+    auth: (cb) => cb({ token: getToken() }),
     withCredentials: true,
-    autoConnect: true,
+    reconnectionDelayMax: 5000,
   });
+
+  socket.on("disconnect", (reason) => console.warn("[chat] disconnect:", reason));
+  socket.on("connect_error", (err) => console.warn("[chat] connect_error:", err.message));
 
   return socket;
 }
