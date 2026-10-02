@@ -13,17 +13,27 @@ import { getToken } from "@/services/auth/token-storage";
    sola vez al conectar: si el token cambia (login/logout), hay que
    reconectar (ver disconnectChatSocket, llamado desde AuthProvider.logout). */
 let socket: Socket | null = null;
+let socketToken: string | null = null;
 
+/* Se reusa la instancia mientras el token sea el mismo, AUNQUE el back la
+   haya cortado. Si el back rechaza el handshake (token vencido, cuenta dada
+   de baja) socket.io no reintenta solo ("io server disconnect"); antes acá se
+   creaba un socket nuevo en cada llamada, y como la llaman varios efectos
+   (topbar, ChatCenterProvider) eso era un loop de 400 en la consola. Con el
+   mismo token el resultado sería el mismo rechazo: sólo un token nuevo
+   (login) amerita reconectar. Las caídas de red sí las reintenta socket.io. */
 export function getChatSocket(): Socket | null {
   const token = getToken();
   if (!token) return null;
 
-  if (socket?.connected || socket?.active) return socket;
+  if (socket && socketToken === token) return socket;
 
+  socket?.disconnect();
+  socketToken = token;
   socket = io(`${API_URL}/chat`, {
     auth: { token },
     withCredentials: true,
-    autoConnect: true,
+    reconnectionDelayMax: 5000,
   });
 
   return socket;
@@ -35,6 +45,7 @@ export function getChatSocket(): Socket | null {
 export function disconnectChatSocket(): void {
   socket?.disconnect();
   socket = null;
+  socketToken = null;
 }
 
 /** Evento `message:new` del back: un mensaje nuevo en cualquier conversación

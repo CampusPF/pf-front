@@ -34,7 +34,11 @@ export default function CourseTabs() {
   return (
     <div>
       {/* ── Tabs ────────────────────────────────────────────────── */}
-      <div role="tablist" aria-label="Secciones del curso" className="border-border flex gap-1 border-b">
+      {/* En 375px las 4 pestañas (más el contador de reseñas) no entran: se
+          desplazan dentro de la barra en lugar de ensanchar toda la página.
+          Mismo patrón que AdminNav (borde en el div interno por el -mb-px). */}
+      <div className="overflow-x-auto scrollbar-none">
+      <div role="tablist" aria-label="Secciones del curso" className="border-border flex w-max min-w-full gap-1 border-b">
         {TABS.map((item) => {
           const isActive = tab === item.value;
 
@@ -46,7 +50,7 @@ export default function CourseTabs() {
               aria-selected={isActive}
               aria-controls={`panel-${item.value}`}
               onClick={() => setTab(item.value)}
-              className={`-mb-px cursor-pointer border-b-2 px-4 py-3 text-sm font-medium transition-colors duration-150 ${
+              className={`-mb-px cursor-pointer border-b-2 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors duration-150 sm:px-4 ${
                 isActive
                   ? "border-primary text-primary"
                   : "text-text-muted hover:text-text border-transparent"
@@ -59,6 +63,7 @@ export default function CourseTabs() {
             </button>
           );
         })}
+      </div>
       </div>
 
       {/* ── Contenido ───────────────────────────────────────────── */}

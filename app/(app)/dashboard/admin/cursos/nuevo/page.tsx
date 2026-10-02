@@ -5,7 +5,7 @@ import CourseForm from "@/components/admin/CourseForm";
    403); esto evita que llegue al formulario por un link directo. */
 export default function NewCoursePage() {
   return (
-    <RequireRole roles={["teacher"]}>
+    <RequireRole roles={["teacher"]} nested>
       <CourseForm />
     </RequireRole>
   );

@@ -114,7 +114,9 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
       {plan.interval === "month" && (
         <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-surface-elevated px-3 py-1.5 text-xs text-text-secondary">
           <RefreshCw className="size-3.5" aria-hidden />
-          Renovación mensual automática
+          {/* El back activa un período fijo (PaymentIntent único, sin Stripe
+              Subscriptions): no hay cobro recurrente que prometer. */}
+          Un mes de acceso · sin renovación automática
         </span>
       )}
 
@@ -149,7 +151,7 @@ function SubscriptionSummary({ plan }: { plan: SubscriptionPlan }) {
       />
 
       <p className="mt-4 text-center text-xs text-text-muted">
-        Cancelá cuando quieras con un clic sin ningún tipo de penalización.
+        Pagás una sola vez: no se te vuelve a cobrar cuando termina el mes.
       </p>
 
       <SecureNote />

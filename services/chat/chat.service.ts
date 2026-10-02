@@ -159,7 +159,8 @@ function scheduleCannedReply(conversationId: string, sentBy: ChatParticipant) {
       id: `${conversationId}-${Date.now()}-auto`,
       conversationId,
       author: other,
-      text: pickCannedReply(other.role),
+      // En el mock el otro es siempre docente o alumno (no hay admins).
+      text: pickCannedReply(other.role === "teacher" ? "teacher" : "student"),
       sentAt: new Date().toISOString(),
     };
     current.messages.set(conversationId, [...(current.messages.get(conversationId) ?? []), reply]);
@@ -295,6 +296,16 @@ function isRawChatMessage(value: unknown): value is RawChatMessage {
   );
 }
 
+/** Debajo del nombre: los cursos en común, o quién es cuando no hay curso
+    de por medio (el admin para el docente, un docente sin cursos activos
+    para el admin). */
+function contactSubtitle(contact: RawChatContact): string {
+  if (contact.user.role === "admin") return "Administración de Campus";
+  const courses = contact.courses.map((c) => c.title).join(" · ");
+  if (courses) return courses;
+  return contact.user.role === "teacher" ? "Docente · sin cursos activos" : "Sin curso activo en común";
+}
+
 function toConversation(contact: RawChatContact, me: Pick<User, "id" | "name">): ChatConversation {
   const [firstCourse] = contact.courses;
   return {
@@ -304,7 +315,7 @@ function toConversation(contact: RawChatContact, me: Pick<User, "id" | "name">):
     courseSlug: firstCourse?.slug ?? "",
     courseTitle: firstCourse?.title ?? "",
     title: contact.user.name,
-    subtitle: contact.courses.map((c) => c.title).join(" · ") || "Sin curso activo en común",
+    subtitle: contactSubtitle(contact),
     avatarUrl: contact.user.avatarUrl,
     otherParticipant: {
       id: contact.user.id,
@@ -412,9 +423,10 @@ export function directConversationId(otherUserId: string): string {
 }
 
 /** Rol del usuario logueado como participante del chat, o `null` si el chat
-    no es para ese rol (hoy sólo alumno y docente; el admin no cursa ni dicta). */
+    no es para ese rol. Alumno y docente chatean entre sí; el admin, sólo con
+    docentes (los pares los valida el back, ver ChatService.assertCanChat). */
 export function chatRoleFor(role: User["role"]): ChatRole | null {
-  return role === "student" || role === "teacher" ? role : null;
+  return role === "student" || role === "teacher" || role === "admin" ? role : null;
 }
 
 export function toCurrentParticipant(

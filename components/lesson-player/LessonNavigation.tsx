@@ -55,9 +55,57 @@ export default function LessonNavigation({
   /* Última lección del módulo: el siguiente paso es su checkpoint, no la
      lección de un módulo que todavía no se abrió. */
   const goToCheckpoint = isNextModuleLocked && checkpointHref;
+  /* Última lección con todas las lecciones hechas: lo único que falta son
+     checkpoints. En vez de un "Finalizar curso" gris que no hace nada, el
+     botón principal lleva al primero que falta (el paso que toca). */
+  const nextRequiredCheckpoint =
+    finishBlocked && pendingBeforeFinish === 0 ? (checkpointsToPass[0] ?? null) : null;
+  const nextRequiredHref = nextRequiredCheckpoint
+    ? quizHref(courseSlug, nextRequiredCheckpoint.quizId)
+    : null;
 
   return (
     <div className="border-border mt-12 border-t pt-6">
+    {/* El motivo del bloqueo va ANTES de los botones: es lo que el alumno
+        tiene que hacer primero, y leído después del botón queda como una
+        nota al pie. Un botón gris sin explicación es una mala pantalla:
+        cada motivo se dice en voz alta, y los checkpoints llevan directo al
+        quiz. */}
+    {isNextModuleLocked && !goToCheckpoint && (
+      <p id="next-blocked-hint" className="text-text-muted mb-4 text-right text-sm">
+        El módulo siguiente se desbloquea cuando termines éste y apruebes su checkpoint.
+      </p>
+    )}
+
+    {finishBlocked && (
+      <div id="finish-blocked-hint" className="text-text-muted mb-4 space-y-1 text-right text-sm">
+        {pendingBeforeFinish > 0 && (
+          <p>
+            Para finalizar el curso te{" "}
+            {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
+            por completar. Las ves en el temario del curso.
+          </p>
+        )}
+        {checkpointsToPass.length > 0 && (
+          <p>
+            Para finalizar el curso, aprobá{" "}
+            {checkpointsToPass.map((checkpoint, position) => (
+              <Fragment key={checkpoint.quizId}>
+                {position > 0 && (position === checkpointsToPass.length - 1 ? " y " : ", ")}
+                <Link
+                  href={quizHref(courseSlug, checkpoint.quizId)}
+                  className="text-primary font-medium hover:underline"
+                >
+                  {checkpoint.title}
+                </Link>
+              </Fragment>
+            ))}
+            .
+          </p>
+        )}
+      </div>
+    )}
+
     <div className="flex items-center justify-between gap-4">
       {previous ? (
         <Link
@@ -107,6 +155,23 @@ export default function LessonNavigation({
           Siguiente
           <ChevronRight className="size-5" aria-hidden />
         </button>
+      ) : nextRequiredCheckpoint && nextRequiredHref ? (
+        /* Completa esta lección (como "Siguiente") y lleva al checkpoint que
+           falta para poder finalizar. */
+        <Link
+          href={nextRequiredHref}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+            event.preventDefault();
+            if (!isAdvancing) onAdvance(nextRequiredHref);
+          }}
+          aria-disabled={isAdvancing}
+          aria-describedby="finish-blocked-hint"
+          className={`${PRIMARY} cursor-pointer aria-disabled:cursor-wait aria-disabled:opacity-70`}
+        >
+          <ClipboardCheck className="size-5" aria-hidden />
+          {nextRequiredCheckpoint.moduleId === null ? "Rendir examen final" : "Rendir el checkpoint"}
+        </Link>
       ) : finishBlocked ? (
         <button
           type="button"
@@ -139,42 +204,6 @@ export default function LessonNavigation({
       </Link>
       )}
     </div>
-    {isNextModuleLocked && !goToCheckpoint && (
-      <p id="next-blocked-hint" className="text-text-muted mt-3 text-right text-sm">
-        El módulo siguiente se desbloquea cuando termines éste y apruebes su checkpoint.
-      </p>
-    )}
-
-    {/* Un botón gris sin explicación es una mala pantalla: cada motivo del
-        bloqueo se dice en voz alta, y los checkpoints llevan directo al quiz. */}
-    {finishBlocked && (
-      <div id="finish-blocked-hint" className="text-text-muted mt-3 space-y-1 text-right text-sm">
-        {pendingBeforeFinish > 0 && (
-          <p>
-            Para finalizar el curso te{" "}
-            {pendingBeforeFinish === 1 ? "falta 1 lección" : `faltan ${pendingBeforeFinish} lecciones`}{" "}
-            por completar. Las ves en el temario del curso.
-          </p>
-        )}
-        {checkpointsToPass.length > 0 && (
-          <p>
-            Aprobá{" "}
-            {checkpointsToPass.map((checkpoint, position) => (
-              <Fragment key={checkpoint.quizId}>
-                {position > 0 && (position === checkpointsToPass.length - 1 ? " y " : ", ")}
-                <Link
-                  href={quizHref(courseSlug, checkpoint.quizId)}
-                  className="text-primary font-medium hover:underline"
-                >
-                  {checkpoint.title}
-                </Link>
-              </Fragment>
-            ))}{" "}
-            para finalizar.
-          </p>
-        )}
-      </div>
-    )}
     </div>
   );
 }

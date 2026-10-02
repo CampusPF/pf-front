@@ -11,10 +11,10 @@ function formatBadge(count: number): string {
   return count > 9 ? "9+" : String(count);
 }
 
-/* Botón flotante global: reemplaza al que abría sólo el tutor IA. Para
-   alumnos y docentes abre un menú con "Mensajes" (chat en vivo, con los no
-   leídos) y "Tutor IA"; para quien no chatea (sin sesión, admin) sigue
-   abriendo el tutor directo, sin menú de por medio.
+/* Botón flotante global: reemplaza al que abría sólo el tutor IA. Con
+   sesión abre un menú con "Mensajes" (chat en vivo, con los no leídos) y
+   "Tutor IA"; sin sesión sigue abriendo el tutor directo, sin menú de por
+   medio.
 
    El badge es real (no leídos del chat): el punto naranja decorativo que
    tenía el botón anterior se sacó, porque un aviso que nunca significa nada
@@ -116,7 +116,13 @@ export default function FloatingLauncher() {
             }}
             icon={<MessageCircle className="size-5" aria-hidden />}
             title="Mensajes"
-            description={role === "teacher" ? "Chateá con tus alumnos" : "Escribile a tus docentes"}
+            description={
+              role === "admin"
+                ? "Escribile a los docentes"
+                : role === "teacher"
+                  ? "Chateá con tus alumnos y la administración"
+                  : "Escribile a tus docentes"
+            }
             badge={totalUnread}
             onClick={() => choose(() => openConversation())}
           />
