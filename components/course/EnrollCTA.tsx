@@ -56,6 +56,12 @@ export default function EnrollCTA() {
   const hasProgress = (progress?.completedLessonIds.length ?? 0) > 0;
   const loginHref = `/login?redirect=${encodeURIComponent(`/courses/${course.slug}`)}`;
 
+  /* Un curso publicado sin módulos no se vende ni se inscribe: se cobraba
+     (o se inscribía) algo vacío, y "Inscribirme gratis" no llevaba a
+     ninguna lección. Se usa `modules` y no las lecciones porque sin sesión
+     el temario llega sólo con módulos (syllabusStatus "modules-only"). */
+  const isEmptyCourse = course.modules.length === 0;
+
   const lessonsCount = getLessonsCount(course);
   const perks = [
     lessonsCount > 0 ? lessonsLabel(lessonsCount) : modulesLabel(course.modules.length),
@@ -86,7 +92,7 @@ export default function EnrollCTA() {
   }
 
   return (
-    <aside className="bg-surface border-border rounded-2xl border p-6 shadow-lg lg:sticky lg:top-24 lg:self-start">
+    <aside id="course-enroll-cta" className="bg-surface border-border rounded-2xl border p-6 shadow-lg lg:sticky lg:top-24 lg:self-start">
       <p className="text-text flex items-baseline gap-1">
         <span className="text-3xl font-bold">
           {course.isPremium ? formatPrice(course.priceInCents, course.currency) : "Gratis"}
@@ -125,6 +131,11 @@ export default function EnrollCTA() {
           ) : (
             <p className="text-text-muted text-sm">Este curso todavía no tiene lecciones.</p>
           )
+        ) : isEmptyCourse ? (
+          <p className="bg-surface-elevated text-text-secondary rounded-lg px-4 py-3 text-sm">
+            El docente todavía está armando este curso. Vas a poder{" "}
+            {course.isPremium ? "comprarlo" : "inscribirte"} cuando tenga contenido.
+          </p>
         ) : course.isPremium ? (
           <>
             <Link
@@ -153,6 +164,7 @@ export default function EnrollCTA() {
         )}
       </div>
 
+      {!isEmptyCourse && (
       <div className="border-border mt-6 border-t pt-5">
         <p className="text-text-muted mb-3 text-xs font-semibold tracking-wider uppercase">
           Este curso incluye
@@ -166,6 +178,7 @@ export default function EnrollCTA() {
           ))}
         </ul>
       </div>
+      )}
     </aside>
   );
 }

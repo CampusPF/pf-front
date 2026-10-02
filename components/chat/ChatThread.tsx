@@ -166,7 +166,11 @@ export default function ChatThread({
         </p>
       )}
 
-      <ChatComposer onSend={handleSend} isSending={isSending} />
+      <ChatComposer
+        onSend={handleSend}
+        isSending={isSending}
+        voiceContext={conversation.courseTitle || null}
+      />
     </div>
   );
 }

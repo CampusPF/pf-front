@@ -364,6 +364,20 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
     ? quizHref(state.course.slug, pendingCheckpoint.quizId)
     : null;
 
+  /* El % del back (`progressPercent`) cuenta sólo lecciones: con todas hechas
+     marcaba 100% aunque faltara el examen final, y al lado "Finalizar curso"
+     seguía deshabilitado. Acá cada checkpoint pesa como una lección más, así
+     el 100% coincide con poder finalizar. Sin checkpoints da lo mismo que
+     el back. */
+  const lessonsTotal = getAllLessons(state.course).length;
+  const lessonsDone = progress?.completedLessonIds.length ?? 0;
+  const units = lessonsTotal + checkpoints.length;
+  const doneUnits = Math.min(lessonsDone, lessonsTotal) + checkpoints.filter((c) => c.passed).length;
+  const coursePercent =
+    checkpoints.length === 0 || units === 0
+      ? (progress?.progressPercent ?? 0)
+      : Math.floor((doneUnits / units) * 100);
+
   return (
     <>
       {/* Sólo con acceso real: no discutir gratis una lección paga que el
@@ -375,7 +389,7 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
         courseTitle={state.course.title}
         lessonIndex={index}
         lessonTotal={total}
-        progressPercent={progress?.progressPercent ?? 0}
+        progressPercent={coursePercent}
       />
 
       <div className="flex flex-1 pt-16">

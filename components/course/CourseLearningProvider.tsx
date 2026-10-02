@@ -3,6 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useAiTutor } from "@/components/ai-tutor/AiTutorProvider";
+import { getFirstLesson, getResumeLesson } from "@/lib/course-utils";
 import { buildLessonAccess, type LessonAccessContext } from "@/lib/lesson-access";
 import { loadSyllabus } from "@/services/courses/courses.service";
 import {
@@ -46,6 +48,7 @@ export default function CourseLearningProvider({
   children: React.ReactNode;
 }) {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { setCoursePage } = useAiTutor();
   const [course, setCourse] = useState(initialCourse);
   const [progress, setProgress] = useState<CourseProgress | null>(null);
   const [progressLoading, setProgressLoading] = useState(true);
@@ -57,6 +60,21 @@ export default function CourseLearningProvider({
       setProgress(null);
     }
   }, [initialCourse.id]);
+
+  const tutorLesson = progress?.enrollmentId
+    ? getResumeLesson(course, progress.completedLessonIds) ?? getFirstLesson(course)
+    : null;
+
+  useEffect(() => {
+    setCoursePage({
+      slug: course.slug,
+      title: course.title,
+      lesson: tutorLesson ? { id: tutorLesson.id, title: tutorLesson.title } : null,
+      enrolled: Boolean(progress?.enrollmentId),
+      loading: authLoading || progressLoading,
+    });
+    return () => setCoursePage(null);
+  }, [authLoading, course.slug, course.title, progress?.enrollmentId, progressLoading, setCoursePage, tutorLesson ]);
 
   useEffect(() => {
     if (authLoading) return;

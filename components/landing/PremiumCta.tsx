@@ -9,7 +9,7 @@ const BUTTON =
 
 /* Botón del plan Premium en la landing. Es client sólo para leer el rol: el
    admin ya tiene todo el catálogo y el checkout le está cerrado, así que en
-   vez de "Hacerme Premium" ve que ya está incluido. El docente no: Premium le
+   vez de "Elegir Premium" ve que ya está incluido. El docente no: Premium le
    da los cursos pagos de otros docentes, que por su rol no tiene. */
 export default function PremiumCta() {
   const { user } = useAuth();
@@ -25,7 +25,7 @@ export default function PremiumCta() {
       href="/checkout?plan=premium"
       className={`${BUTTON} bg-primary-solid hover:bg-primary-solid-hover cursor-pointer text-white`}
     >
-      Hacerme Premium
+      Elegir Premium
     </Link>
   );
 }

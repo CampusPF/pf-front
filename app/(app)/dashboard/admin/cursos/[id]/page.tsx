@@ -10,7 +10,7 @@ export default async function EditCoursePage(
 ) {
   const { id } = await props.params;
   return (
-    <RequireRole roles={["teacher"]}>
+    <RequireRole roles={["teacher"]} nested>
       <CourseEditor courseId={id} />
     </RequireRole>
   );

@@ -106,7 +106,7 @@ export default function ImageUploader<T>({
             // <img> y no next/image: las URLs de Cloudinary (y las externas de
             // los seeds) son dinámicas y no queremos atar remotePatterns acá.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={shown} alt="" className="h-full w-full object-cover" />
+            <img src={shown} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
           ) : (
             fallback ?? <ImageUp className="text-text-muted size-6" aria-hidden />
           )}
