@@ -308,9 +308,9 @@ export function useVoiceRecorder({
       }
 
       const { peak, voicedMs, appliedGain } = audioStatsRef.current;
-      /* Hubo que amplificar al máximo: el micrófono entra tan bajo que, aun
-         con la ganancia, Whisper puede devolver cualquier cosa. Conviene
-         decirlo una vez, aunque la transcripción salga. */
+      /* Hubo que amplificar casi al máximo: el micrófono entra tan bajo que
+         Whisper puede no entender. Sólo se usa para explicar un dictado que
+         falló, nunca para alertar sobre uno que salió bien. */
       const micTooQuiet = appliedGain >= AGC_MAX_GAIN * 0.95;
       /* Sólo se descarta el silencio real: micrófono mudo, silenciado o un
          dispositivo que no es el que la persona está usando. Si entró algo
@@ -333,12 +333,10 @@ export function useVoiceRecorder({
         const text = await transcribeAudio(new Blob(chunks, { type: mimeType }), contextRef.current);
         if (!mountedRef.current) return;
         if (text) {
+          /* Salió texto: no se avisa nada, ni aunque haya hecho falta mucha
+             ganancia. Un cartel rojo sobre un dictado que salió bien sólo
+             asusta, y quien lee el resultado ya juzga si está bien. */
           onTranscriptRef.current(text);
-          if (micTooQuiet) {
-            setError(
-              "Tu micrófono entra muy bajo, así que la transcripción puede tener errores. Subí el volumen de entrada en Windows, o elegí otro micrófono con el botón de al lado.",
-            );
-          }
         } else {
           // Hubo señal pero Whisper no entendió nada.
           setError(
