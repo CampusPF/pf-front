@@ -24,9 +24,11 @@ export default function ChatConversationList({
         <MessageCircle className="text-text-muted size-8" aria-hidden />
         <p className="text-text text-sm font-medium">Todavía no tenés conversaciones</p>
         <p className="text-text-muted max-w-xs text-xs">
-          {role === "teacher"
-            ? "Cuando un alumno se inscriba en uno de tus cursos, vas a poder chatear con él desde acá."
-            : "Inscribite en un curso y vas a poder escribirle a su docente desde acá."}
+          {role === "admin"
+            ? "Cuando haya docentes en la plataforma, vas a poder escribirles desde acá."
+            : role === "teacher"
+              ? "Cuando un alumno se inscriba en uno de tus cursos, vas a poder chatear con él desde acá."
+              : "Inscribite en un curso y vas a poder escribirle a su docente desde acá."}
         </p>
       </div>
     );

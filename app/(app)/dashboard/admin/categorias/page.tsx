@@ -3,7 +3,7 @@ import CategoriesManager from "@/components/admin/CategoriesManager";
 
 export default function AdminCategoriesPage() {
   return (
-    <RequireRole roles={["admin"]}>
+    <RequireRole roles={["admin"]} nested>
       <CategoriesManager />
     </RequireRole>
   );

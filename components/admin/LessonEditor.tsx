@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import LessonResources from "@/components/lesson-player/LessonResources";
+import MarkdownRenderer from "@/components/lesson-player/MarkdownRenderer";
 import { BUTTON_PRIMARY, ErrorBanner, LABEL, SuccessBanner } from "@/components/admin/admin-ui";
 import { inputClass } from "@/components/ui/input-styles";
 import { adminErrorMessage } from "@/services/admin/admin-errors";
@@ -33,6 +34,7 @@ export default function LessonEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [contentMode, setContentMode] = useState<"edit" | "preview">("edit");
 
   useEffect(() => {
     let cancelled = false;
@@ -197,16 +199,55 @@ export default function LessonEditor({
         </div>
 
         <div className="sm:col-span-4">
-          <label htmlFor={id("content")} className={LABEL}>
-            Contenido <span className="text-text-muted font-normal">(markdown)</span>
-          </label>
-          <textarea
-            id={id("content")}
-            rows={10}
-            value={values.content}
-            onChange={(e) => set("content", e.target.value)}
-            className={`${inputClass(false)} font-mono text-xs`}
-          />
+          <div className="mb-1.5 flex items-end justify-between gap-3">
+            <label htmlFor={id("content")} className={LABEL.replace("mb-1.5 ", "")}>
+              Contenido <span className="text-text-muted font-normal">(markdown)</span>
+            </label>
+            {/* Sin vista previa el docente escribía a ciegas: un bloque de
+                código pegado ya renderizado (sin las ```) se veía como texto
+                corrido recién en el reproductor. La vista previa usa el mismo
+                MarkdownRenderer que ve el alumno. */}
+            <div role="group" aria-label="Modo del contenido" className="border-border flex rounded-lg border p-0.5 text-xs">
+              {(["edit", "preview"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={contentMode === mode}
+                  onClick={() => setContentMode(mode)}
+                  className={`cursor-pointer rounded-md px-2.5 py-1 font-medium transition-colors ${
+                    contentMode === mode ? "bg-primary/10 text-primary" : "text-text-muted hover:text-text"
+                  }`}
+                >
+                  {mode === "edit" ? "Escribir" : "Vista previa"}
+                </button>
+              ))}
+            </div>
+          </div>
+          {contentMode === "edit" ? (
+            <>
+              <textarea
+                id={id("content")}
+                rows={10}
+                value={values.content}
+                onChange={(e) => set("content", e.target.value)}
+                aria-describedby={id("content-hint")}
+                className={`${inputClass(false)} font-mono text-xs`}
+              />
+              <p id={id("content-hint")} className="text-text-muted mt-1 text-xs">
+                Para código, encerralo entre <code className="font-mono">```</code> (por ejemplo{" "}
+                <code className="font-mono">```html</code> en una línea, el código abajo y{" "}
+                <code className="font-mono">```</code> al final).
+              </p>
+            </>
+          ) : (
+            <div className="border-border bg-surface min-h-40 rounded-lg border p-4">
+              {values.content.trim() ? (
+                <MarkdownRenderer markdown={values.content} />
+              ) : (
+                <p className="text-text-muted text-sm">Todavía no hay contenido.</p>
+              )}
+            </div>
+          )}
         </div>
 
       </form>

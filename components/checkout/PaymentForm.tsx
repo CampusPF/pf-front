@@ -126,16 +126,16 @@ export function PaymentForm({ returnUrl, successParams, submitLabel }: PaymentFo
           className="mt-0.5 size-4 shrink-0 rounded border-border bg-surface-elevated accent-primary"
         />
         <span>
+          {/* En otra pestaña: navegar acá perdería lo cargado en el formulario. */}
           Acepto los{" "}
-          <a href="#" className="text-primary hover:underline">
+          <a href="/terminos" target="_blank" rel="noopener" className="text-primary hover:underline">
             Términos del Servicio
-          </a>
-          , la{" "}
-          <a href="#" className="text-primary hover:underline">
-            Política de Privacidad
           </a>{" "}
-          y autorizo la facturación recurrente mensual cancelable en cualquier
-          momento.
+          y la{" "}
+          <a href="/privacidad" target="_blank" rel="noopener" className="text-primary hover:underline">
+            Política de Privacidad
+          </a>
+          .
         </span>
       </label>
 

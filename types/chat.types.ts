@@ -7,7 +7,9 @@
    el único que sabe la diferencia. Quién ve qué según el rol lo resuelve el
    service, no los componentes. */
 
-export type ChatRole = "student" | "teacher";
+/* Pares que acepta el back: alumno↔docente (con curso activo en común) y
+   admin↔docente (soporte interno). Admin↔alumno no existe. */
+export type ChatRole = "student" | "teacher" | "admin";
 
 export interface ChatParticipant {
   id: string;

@@ -4,7 +4,7 @@ import UsersManager from "@/components/admin/UsersManager";
 /* Sólo admin: un docente no gestiona usuarios ni reparte roles. */
 export default function AdminUsersPage() {
   return (
-    <RequireRole roles={["admin"]}>
+    <RequireRole roles={["admin"]} nested>
       <UsersManager />
     </RequireRole>
   );

@@ -175,7 +175,7 @@ export function CheckoutSuccess({
               <p className="mt-1.5 text-xs text-text-muted">
                 {type === "course"
                   ? "Acceso de por vida, sin vencimiento."
-                  : "Se renueva automáticamente cada mes — cancelás cuando quieras."}
+                  : "Un mes de acceso completo. No se renueva solo: no se te vuelve a cobrar."}
               </p>
             </div>
 

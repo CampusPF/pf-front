@@ -41,6 +41,10 @@ export default function ImageWithFallback({
         src={src}
         alt={alt}
         className={className}
+        // Las fotos de perfil de Google (lh3.googleusercontent.com) fallan
+        // con ERR_BLOCKED_BY_ORB cuando el pedido lleva Referer de otro
+        // dominio. Sin referrer cargan; a Cloudinary le da igual.
+        referrerPolicy="no-referrer"
         onError={() => setFailedSrc(src)}
       />
       {children}

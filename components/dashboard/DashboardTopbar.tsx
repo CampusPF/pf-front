@@ -31,7 +31,7 @@ export default function DashboardTopbar({
 }) {
   const { user } = useAuth();
   const pathname = usePathname();
-  const { selectedId, isPanelOpen, openConversation } = useChatCenter();
+  const { enabled: chatEnabled, selectedId, isPanelOpen, openConversation } = useChatCenter();
   /* Píldora de racha: sólo con racha real > 0. Cargando, en cero o con error
      no se muestra — el detalle (vacío / error) lo da StreakCard. */
   const streakState = useStreak();
@@ -120,7 +120,8 @@ export default function DashboardTopbar({
     };
   }, [pushConfirmation]);
 
-  useEffect(() => onNewMessage((payload) => {
+  // Sólo con el chat habilitado: si no, suscribirse abriría un socket propio.
+  useEffect(() => chatEnabled ? onNewMessage((payload) => {
     if (!payload || typeof payload !== "object") return;
     const message = payload as Record<string, unknown>;
     if (
@@ -140,7 +141,7 @@ export default function DashboardTopbar({
       { id: message.id as string, conversationId, body: message.content as string, read: false },
       ...current.filter((notification) => notification.id !== message.id),
     ].slice(0, 20));
-  }), [user?.id, selectedId, isPanelOpen, pathname]);
+  }) : undefined, [chatEnabled, user?.id, selectedId, isPanelOpen, pathname]);
 
   useEffect(() => {
     function closeOnOutsideClick(event: PointerEvent) {

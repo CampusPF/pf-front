@@ -76,7 +76,10 @@ export default function ChatsView() {
   const me = toCurrentParticipant(user, role);
 
   return (
-    <div className={`lg:grid lg:grid-cols-[320px_1fr] ${PANEL_HEIGHT}`}>
+    // minmax(0,1fr) y no 1fr: el mínimo "auto" de 1fr dejaba que un subtítulo
+    // largo (un docente con muchos cursos) ensanchara el hilo más allá de la
+    // pantalla en vez de truncarse.
+    <div className={`lg:grid lg:grid-cols-[320px_minmax(0,1fr)] ${PANEL_HEIGHT}`}>
       {/* Lista: se oculta en mobile en cuanto hay una conversación abierta. */}
       <aside
         className={`border-border bg-surface overflow-y-auto border-r lg:block ${PANEL_HEIGHT} ${
@@ -95,7 +98,7 @@ export default function ChatsView() {
       </aside>
 
       {/* Hilo: en mobile, sólo si hay selección. En desktop, un estado vacío si no. */}
-      <div className={`min-h-0 ${PANEL_HEIGHT} ${selected ? "block" : "hidden lg:block"}`}>
+      <div className={`min-h-0 min-w-0 ${PANEL_HEIGHT} ${selected ? "block" : "hidden lg:block"}`}>
         {selected ? (
           <ChatThread conversation={selected} me={me} onBack={() => selectConversation(null)} />
         ) : (
