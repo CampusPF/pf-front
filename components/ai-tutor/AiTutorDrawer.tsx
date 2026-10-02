@@ -366,6 +366,7 @@ export default function AiTutorDrawer() {
                 onSend={send}
                 isSending={isSending}
                 onStop={() => streamAbortRef.current?.abort()}
+                voiceContext={[courseGreeting, activeLessonTitle].filter(Boolean).join(" · ") || null}
               />
             )}
           </>
