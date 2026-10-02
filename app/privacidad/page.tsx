@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function PrivacidadPage() {
   return (
-    <LegalPageLayout title="Política de privacidad" lastUpdated="9 de septiembre de 2026">
+    <LegalPageLayout title="Política de privacidad" lastUpdated="1 de octubre de 2026">
       <section>
         <h2>1. Qué datos recopilamos</h2>
         <p>Para poder ofrecerte el servicio, Campus recopila:</p>
@@ -18,6 +18,7 @@ export default function PrivacidadPage() {
           <li><strong>Datos de uso:</strong> progreso en los cursos, racha de estudio, logros y estadísticas de aprendizaje.</li>
           <li><strong>Datos de pago:</strong> gestionados enteramente por nuestro procesador de pagos (Stripe). Campus nunca ve ni almacena el número completo de tu tarjeta.</li>
           <li><strong>Preferencias de la interfaz:</strong> como el tema claro/oscuro, guardado localmente en tu navegador.</li>
+          <li><strong>Audio del dictado por voz (opcional):</strong> sólo si tocás el micrófono en el tutor IA o en el chat. Se usa para pasarlo a texto y se descarta en el momento: no guardamos grabaciones.</li>
         </ul>
       </section>
 
@@ -38,6 +39,7 @@ export default function PrivacidadPage() {
         <ul>
           <li><strong>Stripe</strong>, para procesar los pagos de la suscripción Premium.</li>
           <li><strong>Google</strong>, si elegís iniciar sesión con tu cuenta de Google (autenticación OAuth).</li>
+          <li><strong>Groq</strong>, que transcribe el audio cuando usás el dictado por voz. Recibe sólo la grabación (sin tu nombre ni tu email) y no la conservamos.</li>
           <li><strong>Proveedores de infraestructura</strong> (hosting, base de datos, almacenamiento de archivos) necesarios para operar el servicio.</li>
         </ul>
       </section>
