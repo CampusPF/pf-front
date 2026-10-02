@@ -87,7 +87,9 @@ export default function ChatInput({
           }
         }}
         rows={1}
-        placeholder="Preguntale algo sobre esta lección…"
+        // Corto a propósito: con el micrófono al lado, el de antes
+        // ("Preguntale algo sobre esta lección…") no entraba en el drawer.
+        placeholder="Escribí o dictá tu pregunta…"
         aria-label="Mensaje para el tutor IA"
         disabled={isDisabled}
         className="bg-surface-elevated border-border text-text placeholder:text-text-muted focus:border-primary max-h-26 flex-1 resize-none rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 outline-none disabled:opacity-60"

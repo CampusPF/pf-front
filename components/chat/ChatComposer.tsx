@@ -78,7 +78,7 @@ export default function ChatComposer({
           }
         }}
         rows={1}
-        placeholder="Escribí un mensaje…"
+        placeholder="Escribí o dictá un mensaje…"
         aria-label="Mensaje"
         disabled={isSending}
         className="bg-surface-elevated border-border text-text placeholder:text-text-muted focus:border-primary max-h-26 flex-1 resize-none rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 outline-none disabled:opacity-60"
