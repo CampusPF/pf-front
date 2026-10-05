@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Calendar, Clock,} from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { BLOG_POSTS } from "@/data/blog.mock";
+import { BLOG_AUTHOR, BLOG_POSTS } from "@/data/blog";
 
 export const metadata: Metadata = {
   title: "Blog — Campus",
@@ -57,7 +57,7 @@ export default function BlogPage() {
                 {post.title}
               </h2>
               <p className="text-text-secondary">{post.excerpt}</p>
-              <p className="mt-3 text-sm text-text-muted">Por {post.author}</p>
+              <p className="mt-3 text-sm text-text-muted">Por {BLOG_AUTHOR}</p>
             </Link>
           ))}
         </div>

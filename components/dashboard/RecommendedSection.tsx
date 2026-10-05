@@ -10,9 +10,10 @@ import type { Course } from "@/types/course.types";
 /* Reusa la CourseCard del catálogo para que las recomendaciones se vean y
    linkeen igual que en /courses.
 
-   REAL: cursos del catálogo en los que el usuario todavía no está inscripto.
-   TODO(back): no hay motor de recomendación (intereses, historial); se
-   muestran los más nuevos que no cursa. */
+   Muestra cursos del catálogo en los que el usuario todavía no está
+   inscripto, los más nuevos primero. No hay motor de recomendación por
+   intereses o historial, así que el título tampoco promete uno: antes decía
+   "Recomendado para vos", que es exactamente lo que esto NO hace. */
 export default function RecommendedSection() {
   const { data } = useDashboardData();
   const [courses, setCourses] = useState<Course[] | null>(null);
@@ -43,9 +44,11 @@ export default function RecommendedSection() {
     <section aria-labelledby="recommended-title">
       <div className="mb-4">
         <h2 id="recommended-title" className="text-text text-lg font-semibold">
-          Recomendado para vos
+          Seguí explorando
         </h2>
-        <p className="text-text-muted mt-0.5 text-sm">Cursos que todavía no empezaste</p>
+        <p className="text-text-muted mt-0.5 text-sm">
+          Nuevos en el catálogo que todavía no empezaste
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

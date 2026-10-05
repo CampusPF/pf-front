@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Lock, Package } from "lucide-react";
+import { Package } from "lucide-react";
 
 import ModuleAccordion from "@/components/course/ModuleAccordion";
 import CourseReviews from "@/components/course/reviews/CourseReviews";
@@ -26,7 +25,7 @@ const TABS: { value: Tab; label: string }[] = [
 ];
 
 export default function CourseTabs() {
-  const { course, progress, access, isAuthenticated, isLoading } = useCourseLearning();
+  const { course, progress, access } = useCourseLearning();
   const [tab, setTab] = useState<Tab>("content");
   const modules = [...course.modules].sort((a, b) => a.order - b.order);
   const lessonsPending = course.syllabusStatus === "modules-only";
@@ -81,23 +80,11 @@ export default function CourseTabs() {
             </p>
           )}
 
-          {/* TODO(back): `GET /courses/:id` no trae las lecciones y `GET
-              /lessons` pide sesión, así que sin login sólo se ven los módulos. */}
-          {lessonsPending && !isLoading && !isAuthenticated && modules.length > 0 && (
-            <p className="bg-surface-elevated text-text-secondary mb-4 flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
-              <Lock className="size-4 shrink-0" aria-hidden />
-              <span>
-                <Link
-                  href={`/login?redirect=${encodeURIComponent(`/courses/${course.slug}`)}`}
-                  className="text-primary font-medium hover:underline"
-                >
-                  Iniciá sesión
-                </Link>{" "}
-                para ver las lecciones de cada módulo.
-              </span>
-            </p>
-          )}
-
+          {/* Ya no hace falta el aviso de "iniciá sesión para ver las
+              lecciones": el temario viene completo y es público (ver
+              `GET /courses/slug/:slug` en pf-back). `lessonsPending` queda
+              como fallback por si un curso llega sin lecciones desde otro
+              camino, pero en el detalle no se da. */}
           <div className="space-y-3">
             {lessonsPending
               ? modules.map((courseModule) => (
@@ -184,12 +171,10 @@ export default function CourseTabs() {
             </div>
           </div>
 
-          {/* TODO(back): el User no tiene bio. Texto fijo mientras tanto. */}
-          <p className="text-text-secondary mt-6 leading-relaxed">
-            Arma cursos con el mismo criterio con el que revisa pull requests:
-            menos teoría suelta, más decisiones explicadas. Cada módulo cierra
-            con algo que podés mostrar.
-          </p>
+          {/* Acá iba una bio fija, igual para todos los docentes: en un
+              catálogo con varios instructores se nota que es de relleno. El
+              User del back no tiene `bio`; cuando la tenga, va acá.
+              TODO(back): agregar `bio` al User y mostrarla. */}
         </section>
       )}
     </div>

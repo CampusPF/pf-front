@@ -2,9 +2,10 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-/* TODO(campus): el brief pedía un store de Zustand (`lib/ai-tutor-store.ts`),
-   pero `zustand` no está instalado. Este contexto expone la misma API
-   —isOpen / open / close / toggle— así que migrar es cambiar el import de
+/* El brief original pedía un store de Zustand (`lib/ai-tutor-store.ts`). Se
+   resolvió con Context a propósito: el estado es un booleano y dos strings,
+   no justifica otra dependencia. La API es la misma (isOpen / open / close /
+   toggle), así que si algún día hace falta, migrar es cambiar el import de
    `useAiTutor` y borrar el provider.
 
    Vive en el root layout (ver app/layout.tsx): el FAB y el drawer son

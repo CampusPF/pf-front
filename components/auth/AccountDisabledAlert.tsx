@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { UserX } from "lucide-react";
+
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 /* Aviso de cuenta dada de baja, en /login y /register.
 
@@ -17,10 +18,15 @@ export default function AccountDisabledAlert() {
         <p className="font-semibold">Tu cuenta fue dada de baja</p>
         <p className="text-text-secondary text-xs">
           Ya no podés iniciar sesión ni crear una cuenta nueva con este email. Si creés que es un
-          error, escribinos desde{" "}
-          <Link href="/contacto" className="text-primary font-medium underline">
-            Contacto
-          </Link>{" "}
+          error, escribinos a{" "}
+          {/* mailto directo, no un link a /contacto: es la única persona que
+              no puede entrar a la plataforma, no la mandemos a buscar. */}
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="text-primary font-medium break-all underline"
+          >
+            {SUPPORT_EMAIL}
+          </a>{" "}
           y lo revisamos.
         </p>
       </div>

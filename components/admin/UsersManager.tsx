@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { RotateCcw, Search, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -9,6 +9,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import { inputClass } from "@/components/ui/input-styles";
 import {
   BUTTON_GHOST_DANGER,
+  BUTTON_SECONDARY,
   ErrorBanner,
   Loading,
   SuccessBanner,
@@ -17,13 +18,14 @@ import { adminErrorMessage } from "@/services/admin/admin-errors";
 import {
   deleteUser,
   listUsers,
+  restoreUser,
   updateUserRole,
   type AdminUser,
   type UserRole,
 } from "@/services/admin/admin.service";
 import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
 
-/* Gestión de usuarios: cambiar el rol y dar de baja.
+/* Gestión de usuarios: cambiar el rol, dar de baja y restaurar.
 
    Dos cosas que la UI bloquea y el back no:
    - El admin no puede tocarse a sí mismo (ni bajarse el rol ni eliminarse).
@@ -32,9 +34,10 @@ import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
    - Las dos acciones piden confirmación: cambiar un rol le da (o le saca) a
      alguien el control de todo el catálogo.
 
-   TODO(back): el listado no trae los usuarios dados de baja y no hay forma
-   de listarlos, así que restaurar uno no se puede ofrecer todavía (el
-   endpoint existe: PATCH /users/:id/restore). */
+   Los dados de baja no se listan por defecto (el back los filtra salvo que se
+   pida `?includeDeleted=true`): la lista de todos los días es la de gente que
+   puede entrar. El switch "Ver dados de baja" los trae para restaurarlos —
+   antes una baja era irreversible desde la app, aunque el endpoint existiera. */
 
 const ROLE_LABEL: Record<UserRole, string> = {
   student: "Estudiante",
@@ -65,12 +68,14 @@ function normalize(value: string): string {
 
 type Pending =
   | { kind: "role"; user: AdminUser; role: UserRole }
-  | { kind: "delete"; user: AdminUser };
+  | { kind: "delete"; user: AdminUser }
+  | { kind: "restore"; user: AdminUser };
 
 export default function UsersManager() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [search, setSearch] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -78,12 +83,12 @@ export default function UsersManager() {
 
   const load = useCallback(async () => {
     try {
-      const list = await listUsers();
+      const list = await listUsers(showDeleted);
       setUsers([...list].sort((a, b) => a.name.localeCompare(b.name)));
     } catch (caught) {
       setError(adminErrorMessage(caught, "No pudimos cargar los usuarios."));
     }
-  }, []);
+  }, [showDeleted]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -116,6 +121,9 @@ export default function UsersManager() {
         setNotice(
           `${pending.user.name} ahora es ${ROLE_LABEL[pending.role].toLowerCase()}.`,
         );
+      } else if (pending.kind === "restore") {
+        await restoreUser(pending.user.id);
+        setNotice(`${pending.user.name} puede volver a iniciar sesión.`);
       } else {
         await deleteUser(pending.user.id);
         setNotice(`${pending.user.name} fue dado de baja.`);
@@ -132,9 +140,25 @@ export default function UsersManager() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-text-muted text-sm">
-          {users ? `${users.length} ${users.length === 1 ? "usuario" : "usuarios"}` : " "}
-        </p>
+        <div className="flex flex-wrap items-center gap-4">
+          <p className="text-text-muted text-sm">
+            {users ? `${users.length} ${users.length === 1 ? "usuario" : "usuarios"}` : " "}
+          </p>
+
+          <label className="text-text-secondary flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(event) => {
+                setUsers(null);
+                setShowDeleted(event.target.checked);
+              }}
+              className="border-border bg-surface accent-primary cursor-pointer rounded"
+            />
+            Ver dados de baja
+          </label>
+        </div>
+
         <div className="relative w-full sm:w-72">
           <Search
             className="text-text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -181,9 +205,10 @@ export default function UsersManager() {
             <tbody className="divide-border bg-surface divide-y">
               {visible.map((user) => {
                 const isSelf = user.id === currentUser?.id;
+                const isDeleted = user.status === "deleted";
 
                 return (
-                  <tr key={user.id}>
+                  <tr key={user.id} className={isDeleted ? "opacity-60" : undefined}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <UserAvatar name={user.name} className="size-9 text-sm" />
@@ -221,11 +246,13 @@ export default function UsersManager() {
                       <select
                         id={`role-${user.id}`}
                         value={user.role}
-                        disabled={isSelf || isSaving}
+                        disabled={isSelf || isDeleted || isSaving}
                         title={
                           isSelf
                             ? "No podés cambiar tu propio rol: te quedarías sin acceso al panel."
-                            : ROLE_HINT[user.role]
+                            : isDeleted
+                              ? "La cuenta está dada de baja. Restaurala para poder cambiarle el rol."
+                              : ROLE_HINT[user.role]
                         }
                         onChange={(event) =>
                           setPending({
@@ -245,20 +272,34 @@ export default function UsersManager() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => setPending({ kind: "delete", user })}
-                          disabled={isSelf || isSaving}
-                          aria-label={`Eliminar a ${user.name}`}
-                          title={
-                            isSelf
-                              ? "No podés eliminar tu propia cuenta."
-                              : `Eliminar a ${user.name}`
-                          }
-                          className={BUTTON_GHOST_DANGER}
-                        >
-                          <Trash2 className="size-4" aria-hidden />
-                        </button>
+                        {isDeleted ? (
+                          <button
+                            type="button"
+                            onClick={() => setPending({ kind: "restore", user })}
+                            disabled={isSaving}
+                            aria-label={`Restaurar a ${user.name}`}
+                            title={`Restaurar a ${user.name}`}
+                            className={BUTTON_SECONDARY}
+                          >
+                            <RotateCcw className="size-3.5" aria-hidden />
+                            Restaurar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPending({ kind: "delete", user })}
+                            disabled={isSelf || isSaving}
+                            aria-label={`Eliminar a ${user.name}`}
+                            title={
+                              isSelf
+                                ? "No podés eliminar tu propia cuenta."
+                                : `Eliminar a ${user.name}`
+                            }
+                            className={BUTTON_GHOST_DANGER}
+                          >
+                            <Trash2 className="size-4" aria-hidden />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -273,14 +314,24 @@ export default function UsersManager() {
         open={pending !== null}
         variant={pending?.kind === "delete" ? "danger" : "default"}
         title={
-          pending?.kind === "delete" ? "¿Dar de baja al usuario?" : "¿Cambiar el rol?"
+          pending?.kind === "delete"
+            ? "¿Dar de baja al usuario?"
+            : pending?.kind === "restore"
+              ? "¿Restaurar la cuenta?"
+              : "¿Cambiar el rol?"
         }
         description={
           pending?.kind === "delete" ? (
             <>
               <strong>{pending.user.name}</strong> ({pending.user.email}) no va a poder
-              iniciar sesión. Sus inscripciones y su progreso quedan guardados, pero la
-              cuenta desaparece de esta lista y hoy no se puede restaurar desde el panel.
+              iniciar sesión. Sus inscripciones y su progreso quedan guardados, y podés
+              volver a activar la cuenta cuando quieras desde &laquo;Ver dados de
+              baja&raquo;.
+            </>
+          ) : pending?.kind === "restore" ? (
+            <>
+              <strong>{pending.user.name}</strong> ({pending.user.email}) vuelve a poder
+              iniciar sesión, con el mismo rol y el mismo progreso que tenía.
             </>
           ) : pending ? (
             <>
@@ -291,7 +342,13 @@ export default function UsersManager() {
             </>
           ) : null
         }
-        confirmLabel={pending?.kind === "delete" ? "Sí, dar de baja" : "Sí, cambiar"}
+        confirmLabel={
+          pending?.kind === "delete"
+            ? "Sí, dar de baja"
+            : pending?.kind === "restore"
+              ? "Sí, restaurar"
+              : "Sí, cambiar"
+        }
         isPending={isSaving}
         onConfirm={confirmPending}
         onCancel={() => setPending(null)}

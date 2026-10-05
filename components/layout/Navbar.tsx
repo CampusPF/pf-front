@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
-  CircleUser,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -17,6 +16,7 @@ import Link from 'next/link';
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import ComingSoonLink from "@/components/ui/ComingSoonLink";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type Theme = "light" | "dark";
 
@@ -77,7 +77,7 @@ function applyTheme(next: Theme) {
 
 export default function Navbar() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const { isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -175,10 +175,16 @@ export default function Navbar() {
                   onClick={() => setIsUserMenuOpen((open) => !open)}
                   aria-expanded={isUserMenuOpen}
                   aria-haspopup="menu"
-                  aria-label="Menú de cuenta"
-                  className="text-text-secondary hover:text-text hover:bg-surface-elevated flex cursor-pointer items-center gap-1 rounded-lg p-2 transition-colors duration-150"
+                  aria-label={`Menú de cuenta de ${user?.name ?? "tu cuenta"}`}
+                  className="text-text-secondary hover:text-text hover:bg-surface-elevated flex cursor-pointer items-center gap-2 rounded-lg p-1.5 transition-colors duration-150"
                 >
-                  <CircleUser className="size-5.5" aria-hidden />
+                  {/* Avatar real en vez del ícono genérico: es la señal de que
+                      hay sesión abierta y de quién es. */}
+                  <UserAvatar
+                    name={user?.name ?? "?"}
+                    avatarUrl={user?.avatarUrl}
+                    className="size-7 text-xs"
+                  />
                   <ChevronDown
                     className={`size-3.5 transition-transform duration-150 ${isUserMenuOpen ? "rotate-180" : ""}`}
                     aria-hidden
@@ -188,8 +194,15 @@ export default function Navbar() {
                 {isUserMenuOpen && (
                   <div
                     role="menu"
-                    className="bg-surface border-border absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border shadow-lg"
+                    className="bg-surface border-border absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-xl border shadow-lg"
                   >
+                    <div className="border-border border-b px-4 py-3">
+                      <p className="text-text truncate text-sm font-medium">
+                        {user?.name}
+                      </p>
+                      <p className="text-text-muted truncate text-xs">{user?.email}</p>
+                    </div>
+
                     <Link
                       href="/dashboard"
                       role="menuitem"
@@ -231,6 +244,17 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Mobile: la foto (o la inicial) al lado de la hamburguesa es lo
+              único que dice "tenés la sesión abierta" sin abrir el menú. Antes
+              la navbar se veía igual logueado que deslogueado. */}
+          {!isLoading && isAuthenticated && (
+            <UserAvatar
+              name={user?.name ?? "?"}
+              avatarUrl={user?.avatarUrl}
+              className="size-7 text-xs md:hidden"
+            />
+          )}
+
           {/* Hamburguesa: sólo mobile/tablet */}
           <button
             type="button"
@@ -271,6 +295,18 @@ export default function Navbar() {
           <div className="border-border mt-2 flex flex-col gap-1 border-t pt-2">
             {isLoading ? null : isAuthenticated ? (
               <>
+                <div className="flex items-center gap-3 px-2 py-2">
+                  <UserAvatar
+                    name={user?.name ?? "?"}
+                    avatarUrl={user?.avatarUrl}
+                    className="size-9 text-sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-text truncate text-sm font-medium">{user?.name}</p>
+                    <p className="text-text-muted truncate text-xs">{user?.email}</p>
+                  </div>
+                </div>
+
                 <Link
                   href="/dashboard"
                   onClick={closeMenus}

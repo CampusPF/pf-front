@@ -1,4 +1,4 @@
-import { apiFetch } from "@/services/api-client";
+import { ApiError, apiFetch } from "@/services/api-client";
 import type { PaginatedResponse, PaginationMeta } from "@/services/api.types";
 import { applyClientFilters } from "@/services/courses/courses.client-filter";
 import {
@@ -104,27 +104,35 @@ export async function getCourseById(id: string): Promise<Course> {
 /**
  * Detalle a partir del slug de la URL. `null` si no existe (→ `notFound()`).
  *
- * TODO(back): no hay `GET /courses/slug/:slug`, así que resolvemos slug → id
- * contra el listado (un request de más). Cuando exista, esto pasa a ser un
- * solo `apiFetch`.
+ * Un solo request a `GET /courses/slug/:slug`, que trae el curso con el
+ * temario completo. Antes había que bajar el catálogo entero para traducir
+ * slug → id y después pedir el curso: dos requests, uno de ellos pesado, en
+ * una página que es `force-dynamic` (o sea, en cada visita).
  */
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
   if (USE_MOCK_COURSES) return MOCK_COURSES.find((c) => c.slug === slug) ?? null;
 
-  const { items } = await requestCourseList();
-  const match = items.find((course) => course.slug === slug);
-  if (!match) return null;
-
-  return getCourseById(match.id);
+  try {
+    return toCourse(
+      await apiFetch<RawCourse>(`/courses/slug/${encodeURIComponent(slug)}`),
+    );
+  } catch (error) {
+    // 404 = no existe ese slug; cualquier otra cosa (back caído, 500) tiene
+    // que seguir explotando y no disfrazarse de "curso no encontrado".
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 /**
- * Completa las lecciones de un curso que llegó con `syllabusStatus:
- * "modules-only"`. Requiere sesión (el guard JWT del back es global y
- * `GET /lessons` no es público), así que sólo sirve del lado del cliente.
+ * Red de seguridad: completa las lecciones de un curso que haya llegado con
+ * `syllabusStatus: "modules-only"`.
  *
- * TODO(back): cuando `GET /courses/:id` incluya `modules.lessons` (y sea
- * público), esto devuelve el curso tal cual sin hacer requests.
+ * Hoy no debería pasar nunca — `GET /courses/:id` y `GET /courses/slug/:slug`
+ * traen el temario completo y el adapter marca "complete", así que esto
+ * devuelve el curso tal cual sin pegarle a la red. Queda por si un curso llega
+ * desde otro camino (el listado, por ejemplo) y porque `GET /lessons` sí pide
+ * sesión: ahí sigue siendo la única forma de completarlo.
  */
 export async function loadSyllabus(course: Course): Promise<Course> {
   if (course.syllabusStatus !== "modules-only") return course;

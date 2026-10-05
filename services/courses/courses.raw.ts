@@ -36,7 +36,7 @@ export interface RawModule {
   title: string;
   order: number;
   isActive?: boolean;
-  /** TODO(back): `GET /courses/:id` no la incluye todavía. */
+  /** La traen `GET /courses/:id` y `GET /courses/slug/:slug`; el listado no. */
   lessons?: RawLesson[];
 }
 

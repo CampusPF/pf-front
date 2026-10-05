@@ -204,13 +204,23 @@ export interface AdminUser {
 /**
  * `GET /users` — sólo admin.
  *
- * TODO(back): el listado NO incluye a los usuarios dados de baja
- * (`status: deleted`) y el controller no expone un `?includeDeleted=true`.
- * Por eso, después de eliminar a alguien desaparece de la tabla y no se lo
- * puede restaurar desde acá, aunque `PATCH /users/:id/restore` exista.
+ * Por defecto el back excluye a los dados de baja (`status: deleted`); con
+ * `includeDeleted` vienen todos, que es lo que necesita el panel para poder
+ * restaurarlos (`restoreUser`).
  */
-export function listUsers() {
-  return apiFetch<AdminUser[]>("/users", { auth: true });
+export function listUsers(includeDeleted = false) {
+  return apiFetch<AdminUser[]>(
+    includeDeleted ? "/users?includeDeleted=true" : "/users",
+    { auth: true },
+  );
+}
+
+/** `PATCH /users/:id/restore` — vuelve a dejar la cuenta en `active`. Sólo admin. */
+export function restoreUser(id: string) {
+  return apiFetch<AdminUser>(`/users/${encodeURIComponent(id)}/restore`, {
+    method: "PATCH",
+    auth: true,
+  });
 }
 
 /**

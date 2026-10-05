@@ -59,3 +59,20 @@ export function onNewMessage(callback: (payload: unknown) => void): () => void {
   current.on("message:new", callback);
   return () => current.off("message:new", callback);
 }
+
+export function emitTyping(receiverId: string, isTyping: boolean): void {
+  const current = getChatSocket();
+  if (!current) return;
+
+  current.emit("typing:update", { receiverId, isTyping });
+}
+
+export function onTypingUpdate(
+  callback: (payload: { senderId: string; isTyping: boolean }) => void,
+): () => void {
+  const current = getChatSocket();
+  if (!current) return () => {};
+
+  current.on("typing:update", callback);
+  return () => current.off("typing:update", callback);
+}
