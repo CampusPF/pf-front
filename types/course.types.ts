@@ -38,9 +38,11 @@ export interface Module {
 }
 
 /**
- * "complete" = los módulos traen sus lecciones.
- * "modules-only" = TODO(back): `GET /courses/:id` trae los módulos pero no sus
- * lecciones; hay que pedirlas aparte (con sesión) — ver `loadSyllabus`.
+ * "complete" = los módulos traen sus lecciones. Es lo que devuelven
+ * `GET /courses/:id` y `GET /courses/slug/:slug`.
+ * "modules-only" = llegaron los módulos sin lecciones; hay que pedirlas aparte
+ * con sesión (ver `loadSyllabus`). Queda para cursos que lleguen por otro
+ * camino; el detalle público ya no pasa por ahí.
  */
 export type SyllabusStatus = "complete" | "modules-only";
 
