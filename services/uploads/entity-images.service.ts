@@ -6,10 +6,9 @@ import { toFormData } from "@/services/uploads/uploads";
    muestra) e `imagePublicId` (para borrar la vieja en Cloudinary al
    reemplazarla). Ya no se carga una URL a mano: se sube el archivo.
 
-   TODO(campus): todavía no existen el panel admin de categorías ni el
-   formulario de curso. Cuando se armen, usar `ImageUploader` con estas
-   funciones. En la CREACIÓN de un curso el orden es: primero `POST /courses`,
-   y con el id que devuelve, `uploadCourseImage` — no hay id antes de crear. */
+   Las usan `CategoriesManager` y `CourseForm` a través de `ImageUploader`. En
+   la CREACIÓN de un curso el orden es: primero `POST /courses`, y con el id
+   que devuelve, `uploadCourseImage` — no hay id antes de crear. */
 
 export interface UploadedImageEntity {
   id: string;

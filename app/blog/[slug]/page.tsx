@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { BLOG_POSTS } from "@/data/blog.mock";
+import { BLOG_AUTHOR, BLOG_POSTS } from "@/data/blog";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -65,7 +65,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </h1>
 
         <div className="mb-10 flex flex-wrap items-center gap-4 text-sm text-text-muted">
-          <span>Por {post.author}</span>
+          <span>Por {BLOG_AUTHOR}</span>
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(post.date)}

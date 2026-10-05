@@ -4,18 +4,25 @@ import { Check, Sparkles } from "lucide-react";
 import PremiumCta from "@/components/landing/PremiumCta";
 
 /* Sin cantidades inventadas: "10 cursos", "20 consultas diarias" y "+50
-   cursos" no existían (el catálogo real es chico y el tutor no tiene cupo). */
+   cursos" no existían (el catálogo real es chico y el tutor no tiene cupo).
+
+   Tampoco se anuncian funciones que no existen ("revisiones de código por
+   expertos") ni se vende como exclusivo algo que el plan Free también tiene:
+   el certificado se emite al completar cualquier curso y el chat con el
+   docente no pide Premium (ChatService del back no mira la suscripción). La
+   única diferencia real es el catálogo pago y el límite diario del tutor. */
 const FREE_FEATURES = [
   "Acceso a todos los cursos gratuitos",
-  "Tutor IA en cada lección",
-  "Proyectos guiados básicos"
+  "Tutor IA en cada lección, con un límite diario de mensajes",
+  "Chat en vivo con el docente de tus cursos",
+  "Certificado verificado al completar un curso",
 ];
 
 const PREMIUM_FEATURES = [
+  "Todo lo del plan Free, sin límite diario en el tutor IA",
   "Acceso a todo el catálogo, incluidos los cursos premium",
-  "Tutor IA sin restricciones 24/7",
-  "Certificados verificados con QR oficial",
-  "Revisiones de código personalizadas por expertos"
+  "Sin pagar curso por curso: se renueva mes a mes",
+  "Cancelás cuando quieras y seguís con acceso hasta fin del período",
 ];
 
 export default function PricingSection() {

@@ -1,19 +1,16 @@
 import type { ReactNode } from "react";
 
-/* TODO(campus): renderer mínimo de markdown, hecho a mano a propósito.
-   El plan es reemplazarlo por:
+/* Renderer mínimo de markdown, hecho a mano a propósito y no una lib.
 
-     <article className="prose prose-invert max-w-none">
-       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-         {markdown}
-       </ReactMarkdown>
-     </article>
+   Dos razones para que siga así: el contenido de una lección lo escribe
+   únicamente el docente dueño del curso (no hay markdown de terceros), y
+   nunca se inyecta HTML — cada bloque se arma con elementos de React, así que
+   no hay superficie de XSS que depender de configurar bien.
 
-   pero `react-markdown`, `remark-gfm`, `rehype-highlight` y
-   `@tailwindcss/typography` todavía no están instalados y el build fallaría al
-   importarlos. Cubre headings, listas, citas, énfasis, código inline y bloques
-   cercados — alcanza para el contenido de `data/lesson-content.mock.ts`.
-   Lo que no hace: syntax highlighting ni tablas de GFM. */
+   Cubre headings, listas, citas, énfasis, código inline y bloques cercados.
+   Lo que no hace: syntax highlighting ni tablas de GFM. Si algún día el
+   contenido lo escribe alguien más (alumnos, importaciones), ahí sí conviene
+   `react-markdown` + `rehype-sanitize` — con sanitizado, no sin él. */
 
 type Block =
   | { kind: "code"; lang: string; code: string }

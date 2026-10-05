@@ -58,16 +58,15 @@ export function getTeacherPayments(signal?: AbortSignal): Promise<TeacherPayment
 /**
  * Separa los intentos de pago sobrantes de los que vale la pena mostrar.
  *
- * El back crea un pago "pending" cada vez que se abre el checkout, aunque
- * después no se complete (recargar la página, volver atrás…). Sin esto, una
- * sola compra deja una fila "Pendiente" por cada visita. Se ocultan los
+ * El back ya reusa el intent pendiente del mismo concepto mientras Stripe lo
+ * siga dando por pagable (`reusePendingIntent`), así que abrir el checkout
+ * varias veces no apila filas. Esto sigue acá por los pendientes que quedan
+ * igual: los anteriores a ese cambio, y los intents que Stripe deja de
+ * aceptar (expirados, cancelados) y obligan a crear uno nuevo. Se ocultan los
  * pendientes de un concepto que:
  *  - ya tiene un pago exitoso (esos intentos quedaron obsoletos), o
  *  - tiene otro pendiente más nuevo (sólo importa el último).
  * Los pagos exitosos y los rechazados nunca se ocultan.
- *
- * TODO(back): que reutilice el pago pendiente del mismo curso en vez de crear
- * uno por visita; con eso esta función deja de hacer falta.
  */
 export function splitStaleAttempts<T extends Pick<MyPayment, "id" | "concept" | "status" | "date">>(
   payments: T[],

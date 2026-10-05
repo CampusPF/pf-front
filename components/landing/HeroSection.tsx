@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { Check, Mic, Send } from "lucide-react";
 
+/* El widget de la derecha es una ILUSTRACIÓN, no el tutor: no hay sesión ni
+   lección en la landing, así que nada de acá puede responder. Por eso ningún
+   elemento es focusable ni clickeable (nada de <input>/<button>: escribir una
+   pregunta que nunca se envía es una promesa falsa) y todo el bloque va con
+   role="img" para que un lector de pantalla anuncie el ejemplo una vez en vez
+   de leer una conversación que no existe. */
+
 const CODE_SNIPPET = `function procesarPago(monto, callback) {
   console.log(\`Procesando: $\${monto}\`);
   callback({ success: true });
@@ -67,14 +74,20 @@ export default function HeroSection() {
       </div>
 
       {/* ── Columna derecha — Widget del AI Tutor ─────────────────── */}
-      <div className="bg-surface border-border overflow-hidden rounded-2xl border shadow-xl">
+      <div
+        role="img"
+        aria-label="Ejemplo de una conversación con el tutor de IA: un alumno pregunta qué es un callback en JavaScript y el tutor responde con una explicación y un fragmento de código."
+        className="bg-surface border-border overflow-hidden rounded-2xl border shadow-xl"
+      >
         <div className="bg-surface-elevated border-border flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="bg-success size-2 rounded-full" aria-hidden />
             <span className="text-text text-sm font-medium">Campus AI Tutor</span>
           </div>
+          {/* Antes decía "Tokens 3.5": una métrica inventada que no significa
+              nada para quien entra. Ahora se aclara que es un ejemplo. */}
           <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
-            Tokens 3.5
+            Ejemplo
           </span>
         </div>
 
@@ -101,39 +114,30 @@ export default function HeroSection() {
 
             <div className="flex flex-wrap gap-2">
               {QUICK_ACTIONS.map((action) => (
-                <button
+                <span
                   key={action}
-                  type="button"
-                  className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer rounded-full px-3 py-1 text-xs transition-colors duration-150"
+                  className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs"
                 >
                   {action}
-                </button>
+                </span>
               ))}
             </div>
           </div>
         </div>
 
+        {/* Composer dibujado, no funcional: mismo aspecto que el real del
+            reproductor, pero sin campo ni botones (ver el comentario de
+            arriba). */}
         <div className="bg-surface-elevated border-border flex items-center gap-2 border-t px-4 py-3">
-          <input
-            type="text"
-            placeholder="Escribí tu duda sobre este código..."
-            aria-label="Escribí tu duda sobre este código"
-            className="bg-surface border-border text-text placeholder:text-text-muted focus:border-primary min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm transition-colors duration-150 outline-none"
-          />
-          <button
-            type="button"
-            aria-label="Dictar por voz"
-            className="text-text-muted hover:text-text cursor-pointer rounded-lg p-2 transition-colors duration-150"
-          >
-            <Mic className="size-4" aria-hidden />
-          </button>
-          <button
-            type="button"
-            aria-label="Enviar mensaje"
-            className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg p-2 text-white transition-colors duration-150"
-          >
-            <Send className="size-4" aria-hidden />
-          </button>
+          <p className="bg-surface border-border text-text-muted min-w-0 flex-1 truncate rounded-lg border px-3 py-2 text-sm">
+            Escribí tu duda sobre este código...
+          </p>
+          <span className="text-text-muted rounded-lg p-2" aria-hidden>
+            <Mic className="size-4" />
+          </span>
+          <span className="bg-primary-solid rounded-lg p-2 text-white" aria-hidden>
+            <Send className="size-4" />
+          </span>
         </div>
       </div>
     </section>

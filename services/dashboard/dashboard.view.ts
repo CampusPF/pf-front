@@ -1,7 +1,3 @@
-import {
-  DASHBOARD_STATS,
-  type DashboardStat,
-} from "@/data/dashboard.mock";
 import { gradientFor } from "@/services/courses/courses.adapter";
 import { isSubscriptionCurrentlyActive } from "@/services/subscriptions/subscriptions.service";
 import type {
@@ -66,8 +62,6 @@ export interface DashboardView {
   activeCourses: DashboardActiveCourse[];
   /** REAL PARCIAL: inscripción más reciente sin terminar. */
   continueLearning: DashboardContinue | null;
-  /** MIXTO: "cursos activos" es real; logros sigue mockeado. */
-  stats: DashboardStat[];
 }
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
@@ -113,7 +107,6 @@ export function buildDashboardView({
     activeCoursesCount: enrollments.length,
     activeCourses,
     continueLearning: pickContinueLearning(enrollments),
-    stats: buildStats(enrollments.length),
   };
 }
 
@@ -139,24 +132,10 @@ function pickContinueLearning(
   };
 }
 
-/* Racha y horas estudiadas NO pasan por acá: las cargan StreakCard y
-   StudiedTimeCard desde services/progress/ (endpoints temporales, cada tarjeta
-   con su propio estado de error). Logros sigue FIJO en 0
-   (data/dashboard.mock.ts) hasta que el back tenga el endpoint. */
-function buildStats(activeCoursesCount: number): DashboardStat[] {
-  const mock = new Map(DASHBOARD_STATS.map((stat) => [stat.key, stat]));
-
-  return [
-    // REAL.
-    {
-      key: "activeCourses",
-      value: String(activeCoursesCount),
-      label: "cursos activos",
-    },
-    // TODO(back): no hay endpoint de logros.
-    mock.get("achievements")!,
-  ];
-}
+/* Racha, horas estudiadas y logros NO pasan por acá: los cargan StreakCard,
+   StudiedTimeCard y AchievementsCountCard desde services/progress/ y
+   services/gamification/, cada tarjeta con su propio estado de error. De este
+   archivo sale sólo `activeCoursesCount`. */
 
 function countCompletedByEnrollment(
   progress: RawLessonProgress[],

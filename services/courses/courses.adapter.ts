@@ -22,8 +22,11 @@ import type {
      rating (ratingAverage), reviewsCount, studentsCount.
    - DERIVADO: isPremium (precio > 0), durationHours (suma de lecciones, si
      vienen), coverGradient (fijo por id, sólo se ve si no hay imagen).
-   - NO EXISTE EN EL BACK → null/vacío y la UI lo oculta: subtitle,
-     projectsCount, tags, instructor.title. TODO(back). */
+   - SÓLO EN EL MODO MOCK (`NEXT_PUBLIC_COURSES_SOURCE=mock`) → acá salen
+     null/vacío y la UI los oculta: subtitle, projectsCount, tags,
+     instructor.title. Se mantienen en el tipo porque los fixtures de
+     `data/courses.mock.ts` los usan para maquetar las cards completas; no son
+     deuda pendiente con el back. */
 
 export const LEVEL_LABEL: Record<CourseLevel, string> = {
   beginner: "Principiante",
