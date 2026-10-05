@@ -5,6 +5,7 @@ import { Package } from "lucide-react";
 
 import ModuleAccordion from "@/components/course/ModuleAccordion";
 import CourseReviews from "@/components/course/reviews/CourseReviews";
+import CourseForum from "@/components/forum/CourseForum";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useCourseLearning } from "@/components/course/CourseLearningProvider";
 import {
@@ -15,13 +16,14 @@ import {
   modulesLabel,
 } from "@/lib/course-utils";
 
-type Tab = "content" | "description" | "instructor" | "reviews";
+type Tab = "content" | "description" | "instructor" | "reviews" | "forum";
 
 const TABS: { value: Tab; label: string }[] = [
   { value: "content", label: "Contenido" },
   { value: "description", label: "Descripción" },
   { value: "instructor", label: "Instructor" },
   { value: "reviews", label: "Reseñas" },
+  { value: "forum", label: "Foro" },
 ];
 
 export default function CourseTabs() {
@@ -151,6 +153,13 @@ export default function CourseTabs() {
       {tab === "reviews" && (
         <section id="panel-reviews" role="tabpanel" className="mt-6">
           <CourseReviews />
+        </section>
+      )}
+
+      {/* ── Foro ────────────────────────────────────────────────── */}
+      {tab === "forum" && (
+        <section id="panel-forum" role="tabpanel" className="mt-6">
+          <CourseForum />
         </section>
       )}
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bell, Check, Flame, LoaderCircle, Menu, Trash2 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useChatCenter } from "@/components/chat/ChatCenterProvider";
@@ -14,6 +14,12 @@ import {
   unregisterPush,
 } from "@/services/push/push.service";
 import { useStreak } from "@/services/progress/use-progress-stats";
+import {
+  listMyNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type AppNotification,
+} from "@/services/notifications/notifications.service";
 
 interface BellNotification {
   id: string;
@@ -31,6 +37,7 @@ export default function DashboardTopbar({
 }) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { enabled: chatEnabled, selectedId, isPanelOpen, openConversation } = useChatCenter();
   /* Píldora de racha: sólo con racha real > 0. Cargando, en cero o con error
      no se muestra — el detalle (vacío / error) lo da StreakCard. */
@@ -47,7 +54,10 @@ export default function DashboardTopbar({
   const [pushConfirmationFading, setPushConfirmationFading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const unreadNotifications = notifications.filter((notification) => !notification.read).length;
+  const [serverNotifications, setServerNotifications] = useState<AppNotification[]>([]);
+  const unreadChat = notifications.filter((notification) => !notification.read).length;
+  const unreadServer = serverNotifications.filter((notification) => !notification.read).length;
+  const unreadNotifications = unreadChat + unreadServer;
 
   /* eslint-disable react-hooks/set-state-in-effect -- sincroniza con APIs del navegador (localStorage, Notification) */
   useEffect(() => {
@@ -179,6 +189,40 @@ export default function DashboardTopbar({
     }
   }
 
+  /* Avisos del backend (foros). Se cargan al montar, al abrir la campanita y
+     cada minuto. Si la API falla, la campanita sigue mostrando el chat. */
+  useEffect(() => {
+    if (!user?.id) return;
+    const controller = new AbortController();
+    const load = () => {
+      listMyNotifications(1, controller.signal)
+        .then((result) => setServerNotifications(result.data))
+        .catch(() => undefined);
+    };
+    load();
+    const interval = window.setInterval(load, 60_000);
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+    };
+  }, [user?.id, dropdownOpen]);
+
+  async function openServerNotification(notification: AppNotification) {
+    setServerNotifications((current) => current.map((item) =>
+      item.id === notification.id ? { ...item, read: true } : item,
+    ));
+    setDropdownOpen(false);
+    if (!notification.read) {
+      await markNotificationRead(notification.id).catch(() => undefined);
+    }
+    if (notification.link) router.push(notification.link);
+  }
+
+  async function markAllServerRead() {
+    setServerNotifications((current) => current.map((item) => ({ ...item, read: true })));
+    await markAllNotificationsRead().catch(() => undefined);
+  }
+
   function openNotification(notification: BellNotification) {
     setNotifications((current) => current.map((item) =>
       item.id === notification.id ? { ...item, read: true } : item,
@@ -229,10 +273,13 @@ export default function DashboardTopbar({
               <div className="border-border border-b px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-text text-sm font-semibold">Notificaciones</h2>
-                  {notifications.length > 0 && (
+                  {(notifications.length > 0 || unreadServer > 0) && (
                     <button
                       type="button"
-                      onClick={() => setNotifications([])}
+                      onClick={() => {
+                        setNotifications([]);
+                        void markAllServerRead();
+                      }}
                       aria-label="Limpiar notificaciones"
                       title="Limpiar notificaciones"
                       className="text-text-muted hover:text-text cursor-pointer rounded p-1"
@@ -271,9 +318,26 @@ export default function DashboardTopbar({
                 {pushConfirmation && <p role="status" className={`text-success mt-2 text-xs transition-opacity duration-500 ${pushConfirmationFading ? "opacity-0" : "opacity-100"}`}>{pushConfirmation}</p>}
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
+                {notifications.length === 0 && serverNotifications.length === 0 ? (
                   <p className="text-text-muted px-4 py-8 text-center text-sm">No tienes notificaciones nuevas.</p>
-                ) : notifications.map((notification) => (
+                ) : (
+                  <>
+                {serverNotifications.map((notification) => (
+                  <button
+                    type="button"
+                    key={`server-${notification.id}`}
+                    onClick={() => void openServerNotification(notification)}
+                    className="border-border hover:bg-surface-elevated flex w-full cursor-pointer items-start gap-3 border-b px-4 py-3 text-left last:border-0"
+                  >
+                    <span className={`mt-1 size-2 shrink-0 rounded-full ${notification.read ? "bg-border" : "bg-primary"}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className="text-text block text-sm font-medium">{notification.title}</span>
+                      <span className="text-text-secondary mt-0.5 block truncate text-sm">{notification.message}</span>
+                    </span>
+                    {notification.read && <Check className="text-text-muted size-4 shrink-0" aria-label="Leída" />}
+                  </button>
+                ))}
+                {notifications.map((notification) => (
                   <button
                     type="button"
                     key={notification.id}
@@ -288,6 +352,8 @@ export default function DashboardTopbar({
                     {notification.read && <Check className="text-text-muted size-4 shrink-0" aria-label="Leída" />}
                   </button>
                 ))}
+                  </>
+                )}
               </div>
             </section>
           )}
