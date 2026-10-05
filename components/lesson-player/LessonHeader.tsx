@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Settings } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import AskTutorButton from "@/components/ai-tutor/AskTutorButton";
 import ProgressBar from "@/components/course/ProgressBar";
@@ -53,14 +53,11 @@ export default function LessonHeader({
             </span>
           </div>
 
-          {/* TODO(campus): sin funcionalidad todavía (velocidad, subtítulos, tema). */}
-          <button
-            type="button"
-            aria-label="Preferencias del reproductor"
-            className="text-text-secondary hover:text-text hover:bg-surface-elevated cursor-pointer rounded-lg p-2 transition-colors duration-150"
-          >
-            <Settings className="size-5" aria-hidden />
-          </button>
+          {/* Acá había un botón de "Preferencias del reproductor" que no abría
+              nada. Las tres opciones que iba a tener ya existen: velocidad y
+              subtítulos son controles nativos del <video>, y el tema se cambia
+              desde la navbar. Un engranaje que no responde confunde más de lo
+              que suma: vuelve cuando haya preferencias propias que guardar. */}
         </div>
       </div>
     </header>

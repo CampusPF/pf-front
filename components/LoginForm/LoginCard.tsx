@@ -222,17 +222,10 @@ export const LoginCard = () => {
             )}
           </div>
 
-          {/* Recordarme */}
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
-              id="remember"
-              className="rounded border-border bg-surface accent-primary focus:ring-0 cursor-pointer"
-            />
-            <label htmlFor="remember" className="text-xs text-text-muted cursor-pointer">
-              Recordarme en este dispositivo
-            </label>
-          </div>
+          {/* Acá había un checkbox "Recordarme en este dispositivo" que no
+              estaba conectado a nada: la sesión queda en localStorage siempre
+              (services/auth/token-storage.ts), lo tildes o no. Prometer una
+              opción que no existe es peor que no ofrecerla. */}
 
           {/* Botón Principal Submit */}
           <button

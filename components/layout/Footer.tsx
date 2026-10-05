@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 
+/* Los anclajes van con "/" adelante: el Footer se renderiza en todas las
+   páginas públicas (catálogo, blog, contacto, legales) y un "#precios" suelto
+   no lleva a ningún lado fuera de la landing — el click no hacía nada. */
 const LINK_GROUPS = [
   {
     title: "Plataforma",
     links: [
-      { label: "Cursos", href: "#cursos" },
-      { label: "Cómo funciona", href: "#como-funciona" },
-      { label: "Precios", href: "#precios" },
+      { label: "Cursos", href: "/courses" },
+      { label: "Cómo funciona", href: "/#como-funciona" },
+      { label: "Precios", href: "/#precios" },
     ],
   },
   {
@@ -49,21 +52,12 @@ export default function Footer() {
               <ul className="mt-3 space-y-2">
                 {group.links.map((link) => (
                   <li key={link.label}>
-                    {link.href.startsWith("#") ? (
-                      <a
-                        href={link.href}
-                        className="text-text-muted hover:text-text cursor-pointer text-sm transition-colors duration-150"
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        href={link.href}
-                        className="text-text-muted hover:text-text cursor-pointer text-sm transition-colors duration-150"
-                      >
-                        {link.label}
-                      </Link>
-                    )}
+                    <Link
+                      href={link.href}
+                      className="text-text-muted hover:text-text cursor-pointer text-sm transition-colors duration-150"
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
