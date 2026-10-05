@@ -1,0 +1,185 @@
+<!doctype html>
+<!--
+  Herramienta de diagnóstico de micrófono. Vivía en `public/`, o sea que se
+  servía en producción en /diagnostico-microfono.html: no es parte del
+  producto, es para debuggear "no me escucha" (ver hooks/useVoiceRecorder.ts).
+
+  Cómo usarla: abrí este archivo directamente en el navegador (doble click).
+  No pega contra el back, mide el micrófono en el navegador y nada más; file://
+  es contexto seguro en Chrome y Firefox, así que getUserMedia funciona igual.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Diagnóstico de micrófono — Campus</title>
+<style>
+  :root { color-scheme: light dark; --bg:#0b0b10; --fg:#e8e8f0; --muted:#9a9ab0; --card:#16161f; --line:#2a2a38; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --accent:#818cf8; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--fg); font:15px/1.6 ui-sans-serif,system-ui,Segoe UI,sans-serif; }
+  .wrap { max-width:780px; margin:0 auto; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { color:var(--muted); margin:0 0 24px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  select, button { font:inherit; border-radius:8px; border:1px solid var(--line); background:#1e1e2a; color:var(--fg); padding:9px 12px; }
+  button { cursor:pointer; background:var(--accent); color:#111; font-weight:600; border:none; }
+  button.sec { background:#1e1e2a; color:var(--fg); border:1px solid var(--line); font-weight:400; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .meter { height:28px; background:#11111a; border:1px solid var(--line); border-radius:6px; overflow:hidden; margin:12px 0 6px; position:relative; }
+  .fill { height:100%; width:0%; background:linear-gradient(90deg,#22c55e,#eab308,#ef4444); transition:width .05s linear; }
+  .thr { position:absolute; top:0; bottom:0; width:2px; background:#fff; opacity:.85; }
+  .thr::after { content:"umbral viejo (0,015)"; position:absolute; top:30px; left:-60px; font-size:11px; color:var(--muted); white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td { padding:5px 0; border-bottom:1px solid var(--line); }
+  td:first-child { color:var(--muted); width:46%; }
+  .big { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .verdict { padding:12px 14px; border-radius:8px; font-weight:600; margin-top:12px; display:none; }
+  .verdict.ok { background:rgba(34,197,94,.15); color:#4ade80; display:block; }
+  .verdict.warn { background:rgba(245,158,11,.15); color:#fbbf24; display:block; }
+  .verdict.bad { background:rgba(239,68,68,.15); color:#f87171; display:block; }
+  code { background:#11111a; padding:1px 5px; border-radius:4px; font-size:13px; }
+  ol { padding-left:20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Diagnóstico de micrófono</h1>
+  <p class="sub">Para encontrar por qué el dictado no te escucha. Esta página es temporal y no forma parte de Campus.</p>
+
+  <div class="card">
+    <ol>
+      <li>Elegí abajo el micrófono de <strong>tus auriculares</strong>.</li>
+      <li>Tocá <strong>Empezar</strong> y hablá normal unos 5 segundos.</li>
+      <li>Pasame la captura de los números.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <label for="dev">Micrófono</label>
+    <select id="dev" style="width:100%"><option>Dando permiso…</option></select>
+    <div class="row" style="margin-top:12px">
+      <button id="start">Empezar</button>
+      <button id="stop" class="sec" disabled>Parar</button>
+    </div>
+    <div class="meter"><div class="fill" id="fill"></div><div class="thr" id="thr"></div></div>
+    <div class="row" style="justify-content:space-between">
+      <span class="big" id="now">0,000</span>
+      <span style="color:var(--muted)">pico: <strong id="peak">0,000</strong></span>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><td>Dispositivo en uso</td><td id="used">—</td></tr>
+      <tr><td>Nivel promedio hablando</td><td id="avg">—</td></tr>
+      <tr><td>Pico máximo</td><td id="peak2">—</td></tr>
+      <tr><td>¿Supera el umbral viejo (0,015)?</td><td id="pass">—</td></tr>
+      <tr><td>Muestras sobre el umbral</td><td id="over">—</td></tr>
+      <tr><td>Formato de grabación</td><td id="mime">—</td></tr>
+      <tr><td>Navegador</td><td id="ua">—</td></tr>
+      <tr><td>Contexto seguro</td><td id="sec">—</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toFixed(3).replace(".", ",");
+let stream = null, ctx = null, raf = null;
+let peak = 0, sum = 0, count = 0, over = 0;
+
+$("ua").textContent = navigator.userAgent.slice(0, 90);
+$("sec").textContent = window.isSecureContext ? "sí" : "NO (getUserMedia no va a funcionar)";
+$("mime").textContent = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"]
+  .find((t) => window.MediaRecorder?.isTypeSupported?.(t)) ?? "ninguno soportado";
+// El umbral viejo (0,015) sobre una escala que llega a 0,25 en la barra.
+$("thr").style.left = (0.015 / 0.25 * 100) + "%";
+
+async function listDevices() {
+  const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+  const sel = $("dev");
+  sel.innerHTML = "";
+  for (const d of devices) {
+    const o = document.createElement("option");
+    o.value = d.deviceId;
+    o.textContent = d.label || `Micrófono ${d.deviceId.slice(0, 8)}`;
+    sel.appendChild(o);
+  }
+  if (!devices.length) sel.innerHTML = "<option>No se encontró ningún micrófono</option>";
+}
+
+// Pedir permiso una vez para que enumerateDevices devuelva los nombres.
+navigator.mediaDevices.getUserMedia({ audio: true })
+  .then((s) => { s.getTracks().forEach((t) => t.stop()); return listDevices(); })
+  .catch((e) => { $("dev").innerHTML = `<option>Sin permiso: ${e.name}</option>`; });
+
+$("start").onclick = async () => {
+  peak = 0; sum = 0; count = 0; over = 0;
+  $("verdict").className = "verdict";
+  const deviceId = $("dev").value;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: deviceId ? { exact: deviceId } : undefined,
+               echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+  } catch (e) { alert("No se pudo abrir el micrófono: " + e.name); return; }
+
+  const track = stream.getAudioTracks()[0];
+  $("used").textContent = track.label || "(sin nombre)";
+  $("start").disabled = true; $("stop").disabled = false;
+
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 1024;
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  const buf = new Float32Array(analyser.fftSize);
+
+  const tick = () => {
+    analyser.getFloatTimeDomainData(buf);
+    let s = 0;
+    for (const v of buf) s += v * v;
+    const rms = Math.sqrt(s / buf.length);
+    peak = Math.max(peak, rms); sum += rms; count++;
+    if (rms > 0.015) over++;
+    $("now").textContent = fmt(rms);
+    $("peak").textContent = fmt(peak);
+    $("fill").style.width = Math.min(100, rms / 0.25 * 100) + "%";
+    raf = requestAnimationFrame(tick);
+  };
+  tick();
+};
+
+$("stop").onclick = () => {
+  cancelAnimationFrame(raf);
+  stream?.getTracks().forEach((t) => t.stop());
+  ctx?.close();
+  $("start").disabled = false; $("stop").disabled = true;
+
+  const avg = count ? sum / count : 0;
+  const pct = count ? Math.round(over / count * 100) : 0;
+  $("avg").textContent = fmt(avg);
+  $("peak2").textContent = fmt(peak);
+  $("over").textContent = `${pct}% (${over} de ${count})`;
+  $("pass").textContent = peak > 0.015 ? "sí" : "NO — acá está el problema";
+
+  const v = $("verdict");
+  if (peak < 0.002) {
+    v.className = "verdict bad";
+    v.textContent = "No entra NADA de audio. El micrófono elegido no es el que estás usando, está silenciado en Windows, o el navegador está tomando otro dispositivo.";
+  } else if (peak < 0.015) {
+    v.className = "verdict bad";
+    v.textContent = `Tu voz SÍ entra (pico ${fmt(peak)}) pero queda por debajo del umbral viejo de 0,015. Por eso el dictado decía "No te escuchamos". Es el bug.`;
+  } else if (pct < 5) {
+    v.className = "verdict warn";
+    v.textContent = `El micrófono anda, pero muy justo: sólo el ${pct}% del tiempo supera el umbral. Con poco ruido de fondo el dictado fallaría igual.`;
+  } else {
+    v.className = "verdict ok";
+    v.textContent = `Este micrófono funciona bien (pico ${fmt(peak)}, ${pct}% sobre el umbral). Si el dictado falla, es con OTRO dispositivo: fijate cuál dice "Dispositivo en uso".`;
+  }
+};
+</script>
+</body>
+</html>
