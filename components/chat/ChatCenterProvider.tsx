@@ -12,7 +12,7 @@ import {
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getChatSocket } from "@/services/chat/chat.socket";
+import { getChatSocket, onTypingUpdate } from "@/services/chat/chat.socket";
 import {
   chatRoleFor,
   directConversationId,
@@ -61,6 +61,8 @@ interface ChatCenterValue {
   closePanel: () => void;
   toast: ChatToastData | null;
   dismissToast: () => void;
+  typingConversations: Set<string>;
+  isTyping: (conversationId: string) => boolean;
 }
 
 const ChatCenterContext = createContext<ChatCenterValue | null>(null);
@@ -86,6 +88,29 @@ export default function ChatCenterProvider({ children }: { children: React.React
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [toast, setToast] = useState<ChatToastData | null>(null);
+  const [typingConversations, setTypingConversations] = useState<Set<string>>(new Set());
+  const typingTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const clearTypingTimer = useCallback((conversationId: string) => {
+    const timer = typingTimersRef.current.get(conversationId);
+    if (!timer) return;
+    clearTimeout(timer);
+    typingTimersRef.current.delete(conversationId);
+  }, []);
+
+  const scheduleTypingExpiry = useCallback((conversationId: string) => {
+    clearTypingTimer(conversationId);
+    const timer = setTimeout(() => {
+      setTypingConversations((prev) => {
+        if (!prev.has(conversationId)) return prev;
+        const next = new Set(prev);
+        next.delete(conversationId);
+        return next;
+      });
+      typingTimersRef.current.delete(conversationId);
+    }, 6000);
+    typingTimersRef.current.set(conversationId, timer);
+  }, [clearTypingTimer]);
 
   const onChatsPage = pathname === CHATS_PAGE_PATH;
   // La conversación que el usuario tiene a la vista ahora mismo (no basta
@@ -124,7 +149,15 @@ export default function ChatCenterProvider({ children }: { children: React.React
     setIsPanelOpen(false);
     setToast(null);
     setError(null);
+    setTypingConversations(new Set());
+    typingTimersRef.current.forEach((timer) => clearTimeout(timer));
+    typingTimersRef.current.clear();
   }, [user?.id]);
+
+  useEffect(() => () => {
+    typingTimersRef.current.forEach((timer) => clearTimeout(timer));
+    typingTimersRef.current.clear();
+  }, []);
 
   useEffect(() => {
     if (!enabled || !user) return;
@@ -137,6 +170,14 @@ export default function ChatCenterProvider({ children }: { children: React.React
       if (raw.senderId === myId) return;
 
       const conversationId = directConversationId(raw.senderId);
+      setTypingConversations((prev) => {
+        if (!prev.has(conversationId)) return prev;
+        const next = new Set(prev);
+        next.delete(conversationId);
+        return next;
+      });
+      clearTypingTimer(conversationId);
+
       if (conversationId === viewingIdRef.current) return;
 
       const conversation = fresh?.find((c) => c.id === conversationId);
@@ -153,7 +194,33 @@ export default function ChatCenterProvider({ children }: { children: React.React
       clearInterval(interval);
       unsubscribe();
     };
-  }, [enabled, user, reload]);
+  }, [clearTypingTimer, enabled, user, reload]);
+
+  useEffect(() => {
+    if (!enabled || !user) return;
+
+    const unsubscribe = onTypingUpdate(({ senderId, isTyping }) => {
+      if (senderId === user.id) return;
+
+      const conversationId = directConversationId(senderId);
+
+      setTypingConversations((prev) => {
+        const next = new Set(prev);
+        if (isTyping) next.add(conversationId);
+        else next.delete(conversationId);
+        return next;
+      });
+
+      if (isTyping) scheduleTypingExpiry(conversationId);
+      else clearTypingTimer(conversationId);
+    });
+
+    return () => {
+      unsubscribe();
+      typingTimersRef.current.forEach((timer) => clearTimeout(timer));
+      typingTimersRef.current.clear();
+    };
+  }, [clearTypingTimer, enabled, scheduleTypingExpiry, user]);
 
   // Abrir una conversación la saca de "sin leer" en todos lados a la vez.
   useEffect(() => {
@@ -212,6 +279,10 @@ export default function ChatCenterProvider({ children }: { children: React.React
 
   const closePanel = useCallback(() => setIsPanelOpen(false), []);
   const dismissToast = useCallback(() => setToast(null), []);
+  const isTyping = useCallback(
+    (conversationId: string) => typingConversations.has(conversationId),
+    [typingConversations],
+  );
 
   useEffect(() => {
     if (!enabled) return;
@@ -256,6 +327,8 @@ export default function ChatCenterProvider({ children }: { children: React.React
       closePanel,
       toast,
       dismissToast,
+      typingConversations,
+      isTyping,
     }),
     [
       enabled,
@@ -270,6 +343,8 @@ export default function ChatCenterProvider({ children }: { children: React.React
       closePanel,
       toast,
       dismissToast,
+      typingConversations,
+      isTyping,
     ],
   );
 
