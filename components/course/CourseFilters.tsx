@@ -23,8 +23,9 @@ import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
    - la búsqueda se aplica sola mientras se escribe (debounce), sin depender
      de Enter, y la X nativa del input también la limpia.
 
-   TODO(back): el filtro de duración se sacó — el listado del back no trae
-   las lecciones, así que no hay duración para filtrar. */
+   No hay filtro de duración a propósito: el listado del back no trae las
+   lecciones (no hay duración que filtrar) y, con un catálogo de este tamaño,
+   un filtro más agrega ruido sin acotar nada. */
 
 const PRICES = [
   { value: "", label: "Todos" },
