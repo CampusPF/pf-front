@@ -13,6 +13,8 @@ import {
   LogOut,
   MessageCircle,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   ShieldCheck,
   Sun,
@@ -22,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { applyTheme, useTheme } from "@/lib/use-theme";
+import { setSidebarCollapsed, useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
 import ComingSoonLink from "@/components/ui/ComingSoonLink";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
@@ -43,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
   { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen },
   { label: "Chats", href: "/dashboard/chats", icon: MessageCircle },
-  { label: "Explorar", href: "/courses", icon: Compass },
+  { label: "Explorar", href: "/dashboard/explorar", icon: Compass },
   { label: "Logros", href: "/dashboard/logros", icon: Trophy },
   { label: "Configuración", href: "/dashboard/configuracion", icon: Settings },
 ];
@@ -73,6 +76,15 @@ export default function DashboardSidebar({
   const { data } = useDashboardData();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  /* Colapsado = sólo íconos. Aplica únicamente en lg+ (todas las clases van
+     con prefijo lg:): en mobile el sidebar es un drawer y siempre se ve
+     completo. Los textos quedan como sr-only, no se sacan del DOM, así el
+     lector de pantalla sigue leyendo cada link; el title da el tooltip. */
+  const collapsed = useSidebarCollapsed();
+  const hideWhenCollapsed = collapsed ? "lg:sr-only" : "";
+  const centerWhenCollapsed = collapsed ? "lg:justify-center lg:px-0" : "";
+  const tooltip = (label: string) => (collapsed ? label : undefined);
 
   /* Primero se sale del dashboard y después se cierra la sesión: al revés,
      RequireAuth detecta la sesión vacía antes y manda a /login?redirect=
@@ -115,16 +127,24 @@ export default function DashboardSidebar({
       )}
 
       <aside
-        className={`bg-surface border-border fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r transition-transform duration-300 lg:translate-x-0 ${
+        className={`bg-surface border-border fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-x-hidden border-r transition-[transform,width] duration-300 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${collapsed ? "lg:w-16" : ""}`}
       >
-        {/* Logo + cerrar (mobile) */}
-        <div className="border-border flex h-16 items-center justify-between gap-2 border-b px-5">
+        {/* Logo (lleva a la landing) + cerrar (mobile) / colapsar (desktop).
+            Colapsado no entra el logo junto al botón en 4rem: queda sólo el
+            botón para expandir. */}
+        <div
+          className={`border-border flex h-16 items-center justify-between gap-2 border-b px-5 ${
+            collapsed ? "lg:justify-center lg:px-0" : ""
+          }`}
+        >
           <Link
-            href="/dashboard"
+            href="/"
             onClick={onClose}
-            className="text-text flex items-center gap-2 font-semibold"
+            className={`text-text flex items-center gap-2 font-semibold ${
+              collapsed ? "lg:hidden" : ""
+            }`}
           >
             <GraduationCap className="text-primary size-6" aria-hidden />
             Campus
@@ -137,18 +157,33 @@ export default function DashboardSidebar({
           >
             <X className="size-5" aria-hidden />
           </button>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(!collapsed)}
+            aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expandir menú" : "Contraer menú"}
+            className="text-text-secondary hover:text-text hover:bg-surface-elevated hidden cursor-pointer rounded-lg p-1.5 transition-colors duration-150 lg:inline-flex"
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="size-5" aria-hidden />
+            ) : (
+              <PanelLeftClose className="size-5" aria-hidden />
+            )}
+          </button>
         </div>
 
-        {/* Volver al sitio público: el resto de la navegación es interna al
-            dashboard, esta es la única salida hacia la landing. */}
+        {/* Volver a la portada del dashboard desde cualquier sub-pantalla.
+            La salida hacia la landing es el logo de arriba. */}
         <div className="border-border border-b p-3">
           <Link
-            href="/"
+            href="/dashboard"
             onClick={onClose}
-            className="text-text-secondary hover:text-text hover:bg-surface-elevated flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150"
+            title={tooltip("Volver al dashboard")}
+            className={`text-text-secondary hover:text-text hover:bg-surface-elevated flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${centerWhenCollapsed}`}
           >
-            <ArrowLeft className="size-5" aria-hidden />
-            Volver al inicio
+            <ArrowLeft className="size-5 shrink-0" aria-hidden />
+            <span className={hideWhenCollapsed}>Volver al dashboard</span>
           </Link>
         </div>
 
@@ -175,14 +210,15 @@ export default function DashboardSidebar({
                     href={href}
                     onClick={onClose}
                     aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
+                    title={tooltip(label)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${centerWhenCollapsed} ${
                       active
                         ? "bg-primary-subtle text-primary"
                         : "text-text-secondary hover:text-text hover:bg-surface-elevated"
                     }`}
                   >
-                    <Icon className="size-5" aria-hidden />
-                    {label}
+                    <Icon className="size-5 shrink-0" aria-hidden />
+                    <span className={hideWhenCollapsed}>{label}</span>
                   </Link>
                 </li>
               );
@@ -190,10 +226,17 @@ export default function DashboardSidebar({
           </ul>
         </nav>
 
-        {/* Usuario + toggle de tema */}
-        <div className="border-border flex items-center gap-3 border-t p-4">
-          <UserAvatar name={name} avatarUrl={user?.avatarUrl} />
-          <div className="min-w-0 flex-1">
+        {/* Usuario + toggle de tema. Colapsado: avatar arriba y el toggle
+            abajo, sin nombre ni rol. */}
+        <div
+          className={`border-border flex items-center gap-3 border-t p-4 ${
+            collapsed ? "lg:flex-col lg:px-2" : ""
+          }`}
+        >
+          <span title={tooltip(`${name} · ${roleLabel}`)} className="shrink-0">
+            <UserAvatar name={name} avatarUrl={user?.avatarUrl} />
+          </span>
+          <div className={`min-w-0 flex-1 ${collapsed ? "lg:hidden" : ""}`}>
             <p className="text-text flex items-center gap-1.5 text-sm font-medium">
               <span className="truncate">{name}</span>
               {isPro && (
@@ -228,14 +271,17 @@ export default function DashboardSidebar({
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="text-text-secondary hover:text-danger hover:bg-surface-elevated flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 disabled:cursor-wait disabled:opacity-60"
+            title={tooltip("Cerrar sesión")}
+            className={`text-text-secondary hover:text-danger hover:bg-surface-elevated flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 disabled:cursor-wait disabled:opacity-60 ${centerWhenCollapsed}`}
           >
             {isLoggingOut ? (
-              <Loader2 className="size-5 animate-spin" aria-hidden />
+              <Loader2 className="size-5 shrink-0 animate-spin" aria-hidden />
             ) : (
-              <LogOut className="size-5" aria-hidden />
+              <LogOut className="size-5 shrink-0" aria-hidden />
             )}
-            {isLoggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
+            <span className={hideWhenCollapsed}>
+              {isLoggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
+            </span>
           </button>
         </div>
       </aside>

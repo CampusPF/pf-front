@@ -94,7 +94,7 @@ export default function ActiveCoursesSection() {
       ) : courses.length === 0 ? (
         <p className="text-text-muted border-border rounded-xl border border-dashed p-8 text-center text-sm">
           Todavía no te inscribiste en ningún curso.{" "}
-          <Link href="/courses" className="text-primary font-medium underline">
+          <Link href="/dashboard/explorar" className="text-primary font-medium underline">
             Explorá el catálogo
           </Link>
           .
