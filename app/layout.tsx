@@ -57,7 +57,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="bg-bg text-text flex min-h-full flex-col">
+      {/* suppressHydrationWarning: extensiones del navegador (ColorZilla,
+          Grammarly, etc.) le agregan atributos al <body> antes de hidratar.
+          Sólo silencia los atributos de este elemento, no los de sus hijos. */}
+      <body
+        className="bg-bg text-text flex min-h-full flex-col"
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <AiTutorProvider>
             <ChatCenterProvider>

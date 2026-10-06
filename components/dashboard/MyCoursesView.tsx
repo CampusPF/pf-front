@@ -197,7 +197,7 @@ function EmptyState() {
         progreso para que puedas retomarlo donde lo dejaste.
       </p>
       <Link
-        href="/courses"
+        href="/dashboard/explorar"
         className="bg-primary-solid hover:bg-primary-solid-hover mt-5 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors duration-150"
       >
         <Compass className="size-4" aria-hidden />
