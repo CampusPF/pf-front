@@ -5,6 +5,7 @@ import { Loader2, Send } from "lucide-react";
 
 import { MicButton, RecordingBar, VoiceError, appendDictation } from "@/components/voice/VoiceControls";
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
+import { emitTyping } from "@/services/chat/chat.socket";
 
 /* Mismo comportamiento que components/ai-tutor/ChatInput.tsx (Enter envía,
    Shift+Enter hace salto de línea, crece hasta 4 líneas) pero sin acoplarse
@@ -16,14 +17,49 @@ export default function ChatComposer({
   onSend,
   isSending = false,
   voiceContext = null,
+  typingTargetId = null,
+  onTypingStateChange,
 }: {
   onSend: (text: string) => void;
   isSending?: boolean;
   /** Curso en común: vocabulario para el dictado por voz. */
   voiceContext?: string | null;
+  typingTargetId?: string | null;
+  onTypingStateChange?: (isTyping: boolean) => void;
 }) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isTypingRef = useRef(false);
+  const stopTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopTyping = useCallback(() => {
+    if (!typingTargetId || !isTypingRef.current) {
+      if (stopTypingTimerRef.current) {
+        clearTimeout(stopTypingTimerRef.current);
+        stopTypingTimerRef.current = null;
+      }
+      return;
+    }
+
+    emitTyping(typingTargetId, false);
+    isTypingRef.current = false;
+    onTypingStateChange?.(false);
+
+    if (stopTypingTimerRef.current) {
+      clearTimeout(stopTypingTimerRef.current);
+      stopTypingTimerRef.current = null;
+    }
+  }, [onTypingStateChange, typingTargetId]);
+
+  useEffect(() => () => {
+    if (typingTargetId && isTypingRef.current) {
+      emitTyping(typingTargetId, false);
+    }
+    if (stopTypingTimerRef.current) {
+      clearTimeout(stopTypingTimerRef.current);
+      stopTypingTimerRef.current = null;
+    }
+  }, [typingTargetId]);
 
   useEffect(() => {
     const element = textareaRef.current;
@@ -47,8 +83,36 @@ export default function ChatComposer({
 
   const isEmpty = value.trim().length === 0;
 
+  const handleTypingChange = useCallback((nextValue: string) => {
+    if (!typingTargetId) return;
+
+    if (nextValue.trim().length === 0) {
+      stopTyping();
+      return;
+    }
+
+    if (!isTypingRef.current) {
+      emitTyping(typingTargetId, true);
+      isTypingRef.current = true;
+      onTypingStateChange?.(true);
+    }
+
+    if (stopTypingTimerRef.current) {
+      clearTimeout(stopTypingTimerRef.current);
+    }
+
+    stopTypingTimerRef.current = setTimeout(() => {
+      if (!isTypingRef.current) return;
+      emitTyping(typingTargetId, false);
+      isTypingRef.current = false;
+      onTypingStateChange?.(false);
+      stopTypingTimerRef.current = null;
+    }, 3000);
+  }, [onTypingStateChange, stopTyping, typingTargetId]);
+
   function submit() {
     if (isEmpty || isSending || voice.isActive) return;
+    stopTyping();
     onSend(value.trim());
     setValue("");
     voice.clearError();
@@ -70,7 +134,14 @@ export default function ChatComposer({
       <textarea
         ref={textareaRef}
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          setValue(nextValue);
+          handleTypingChange(nextValue);
+        }}
+        onBlur={() => {
+          if (typingTargetId) stopTyping();
+        }}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
@@ -81,7 +152,7 @@ export default function ChatComposer({
         placeholder="Escribí o dictá un mensaje…"
         aria-label="Mensaje"
         disabled={isSending}
-        className="bg-surface-elevated border-border text-text placeholder:text-text-muted focus:border-primary max-h-26 flex-1 resize-none rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 outline-none disabled:opacity-60"
+        className="bg-surface-elevated border-border text-text placeholder:text-text-muted focus:border-primary max-h-26 flex-1 resize-none rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 disabled:opacity-60"
       />
       )}
 

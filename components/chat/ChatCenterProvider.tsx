@@ -12,7 +12,7 @@ import {
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getChatSocket } from "@/services/chat/chat.socket";
+import { getChatSocket, onTypingUpdate } from "@/services/chat/chat.socket";
 import {
   chatRoleFor,
   directConversationId,
@@ -22,23 +22,11 @@ import {
 } from "@/services/chat/chat.service";
 import type { ChatConversation, ChatRole } from "@/types/chat.types";
 
-/* Estado global del chat en vivo: conversaciones, no leídos, cuál está
-   abierta y el panel lateral. Vive en el root layout (como el tutor IA) para
-   que el aviso de un mensaje nuevo llegue esté donde esté el usuario.
-
-   Es el ÚNICO que carga la lista y escucha el socket: la página
-   /dashboard/chats, el panel, el badge del launcher, el toast y el título de
-   la pestaña leen de acá, así nunca se contradicen (antes ChatsView tenía su
-   propio polling y el resto de la app no se enteraba de nada). */
-
-/* Respaldo por si el socket se cae: con el socket vivo, la lista se refresca
-   al toque con cada `message:new`. */
 const LIST_POLL_MS = 30_000;
 
 export const CHATS_PAGE_PATH = "/dashboard/chats";
 
 export interface ChatToastData {
-  /** Cambia con cada mensaje: sirve de `key` para reiniciar el auto-cierre. */
   id: string;
   conversationId: string;
   title: string;
@@ -47,7 +35,6 @@ export interface ChatToastData {
 }
 
 interface ChatCenterValue {
-  /** `false` sin sesión o para el admin (no participa del chat). */
   enabled: boolean;
   role: ChatRole | null;
   conversations: ChatConversation[] | null;
@@ -55,12 +42,13 @@ interface ChatCenterValue {
   totalUnread: number;
   selectedId: string | null;
   selectConversation: (conversationId: string | null) => void;
-  /** Abre esa conversación: en la página de chats si ya estás ahí, si no en el panel. */
   openConversation: (conversationId?: string) => void;
   isPanelOpen: boolean;
   closePanel: () => void;
   toast: ChatToastData | null;
   dismissToast: () => void;
+  typingConversations: Set<string>;
+  isTyping: (conversationId: string) => boolean;
 }
 
 const ChatCenterContext = createContext<ChatCenterValue | null>(null);
@@ -86,10 +74,31 @@ export default function ChatCenterProvider({ children }: { children: React.React
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [toast, setToast] = useState<ChatToastData | null>(null);
+  const [typingConversations, setTypingConversations] = useState<Set<string>>(new Set());
+  const typingTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const clearTypingTimer = useCallback((conversationId: string) => {
+    const timer = typingTimersRef.current.get(conversationId);
+    if (!timer) return;
+    clearTimeout(timer);
+    typingTimersRef.current.delete(conversationId);
+  }, []);
+
+  const scheduleTypingExpiry = useCallback((conversationId: string) => {
+    clearTypingTimer(conversationId);
+    const timer = setTimeout(() => {
+      setTypingConversations((prev) => {
+        if (!prev.has(conversationId)) return prev;
+        const next = new Set(prev);
+        next.delete(conversationId);
+        return next;
+      });
+      typingTimersRef.current.delete(conversationId);
+    }, 6000);
+    typingTimersRef.current.set(conversationId, timer);
+  }, [clearTypingTimer]);
 
   const onChatsPage = pathname === CHATS_PAGE_PATH;
-  // La conversación que el usuario tiene a la vista ahora mismo (no basta
-  // con que esté seleccionada: puede haber cerrado el panel).
   const viewingId = isPanelOpen || onChatsPage ? selectedId : null;
   const viewingIdRef = useRef(viewingId);
   useEffect(() => {
@@ -100,9 +109,6 @@ export default function ChatCenterProvider({ children }: { children: React.React
     if (!user || !role) return null;
     try {
       const data = await getMyConversations(user, role);
-      // La que está abierta se lee en el momento (ChatThread la marca como
-      // leída): que el refresco no le vuelva a poner la insignia por una
-      // carrera con el PATCH de "leído".
       const current = viewingIdRef.current;
       const next = current
         ? data.map((c) => (c.id === current ? { ...c, unreadCount: 0 } : c))
@@ -116,7 +122,6 @@ export default function ChatCenterProvider({ children }: { children: React.React
     }
   }, [user, role]);
 
-  // Al cambiar de usuario (logout/login) no queda nada del anterior.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset al cambiar la sesión.
     setConversations(null);
@@ -124,7 +129,18 @@ export default function ChatCenterProvider({ children }: { children: React.React
     setIsPanelOpen(false);
     setToast(null);
     setError(null);
+    setTypingConversations(new Set());
+    typingTimersRef.current.forEach((timer) => clearTimeout(timer));
+    typingTimersRef.current.clear();
   }, [user?.id]);
+
+  useEffect(() => {
+    const timers = typingTimersRef.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (!enabled || !user) return;
@@ -137,6 +153,14 @@ export default function ChatCenterProvider({ children }: { children: React.React
       if (raw.senderId === myId) return;
 
       const conversationId = directConversationId(raw.senderId);
+      setTypingConversations((prev) => {
+        if (!prev.has(conversationId)) return prev;
+        const next = new Set(prev);
+        next.delete(conversationId);
+        return next;
+      });
+      clearTypingTimer(conversationId);
+
       if (conversationId === viewingIdRef.current) return;
 
       const conversation = fresh?.find((c) => c.id === conversationId);
@@ -153,9 +177,36 @@ export default function ChatCenterProvider({ children }: { children: React.React
       clearInterval(interval);
       unsubscribe();
     };
-  }, [enabled, user, reload]);
+  }, [clearTypingTimer, enabled, user, reload]);
 
-  // Abrir una conversación la saca de "sin leer" en todos lados a la vez.
+  useEffect(() => {
+    if (!enabled || !user) return;
+
+    const timers = typingTimersRef.current;
+
+    const unsubscribe = onTypingUpdate(({ senderId, isTyping }) => {
+      if (senderId === user.id) return;
+
+      const conversationId = directConversationId(senderId);
+
+      setTypingConversations((prev) => {
+        const next = new Set(prev);
+        if (isTyping) next.add(conversationId);
+        else next.delete(conversationId);
+        return next;
+      });
+
+      if (isTyping) scheduleTypingExpiry(conversationId);
+      else clearTypingTimer(conversationId);
+    });
+
+    return () => {
+      unsubscribe();
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, [clearTypingTimer, enabled, scheduleTypingExpiry, user]);
+
   useEffect(() => {
     if (!viewingId) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza el badge con lo que se está viendo.
@@ -172,9 +223,6 @@ export default function ChatCenterProvider({ children }: { children: React.React
     [conversations],
   );
 
-  // "(3) Campus": se ve aunque la pestaña esté en segundo plano. Next
-  // reescribe el <title> en cada navegación, así que se vuelve a aplicar
-  // cada vez que cambia (el observer ignora el cambio que hace él mismo).
   useEffect(() => {
     const badge = totalUnread > 0 ? `(${totalUnread > 99 ? "99+" : totalUnread}) ` : "";
 
@@ -212,6 +260,10 @@ export default function ChatCenterProvider({ children }: { children: React.React
 
   const closePanel = useCallback(() => setIsPanelOpen(false), []);
   const dismissToast = useCallback(() => setToast(null), []);
+  const isTyping = useCallback(
+    (conversationId: string) => typingConversations.has(conversationId),
+    [typingConversations],
+  );
 
   useEffect(() => {
     if (!enabled) return;
@@ -231,12 +283,11 @@ export default function ChatCenterProvider({ children }: { children: React.React
     if (pathname !== CHATS_PAGE_PATH || !conversations) return;
     const requestedId = new URLSearchParams(window.location.search).get("conversation");
     if (!requestedId || !conversations.some((conversation) => conversation.id === requestedId)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- abrir el link ?conversation=... es un efecto de navegación, no un render.
     selectConversation(requestedId);
     window.history.replaceState(window.history.state, "", pathname);
   }, [pathname, conversations, selectConversation]);
 
-  // Si se navega a la página de chats con el panel abierto, la página toma
-  // la posta (misma selección) y el panel sobra.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- el panel no convive con la página de chats.
     if (onChatsPage) setIsPanelOpen(false);
@@ -256,6 +307,8 @@ export default function ChatCenterProvider({ children }: { children: React.React
       closePanel,
       toast,
       dismissToast,
+      typingConversations,
+      isTyping,
     }),
     [
       enabled,
@@ -270,6 +323,8 @@ export default function ChatCenterProvider({ children }: { children: React.React
       closePanel,
       toast,
       dismissToast,
+      typingConversations,
+      isTyping,
     ],
   );
 

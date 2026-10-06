@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, MessageCircle, Users } from "lucide-react";
 
 import ChatComposer from "@/components/chat/ChatComposer";
+import { useChatCenter } from "@/components/chat/ChatCenterProvider";
 import ChatMessageBubble from "@/components/chat/ChatMessageBubble";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
@@ -34,6 +35,8 @@ export default function ChatThread({
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { isTyping } = useChatCenter();
+  const typingTargetId = conversation.kind === "group" ? null : conversation.otherParticipant?.id ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -166,10 +169,18 @@ export default function ChatThread({
         </p>
       )}
 
+      <p
+        aria-live="polite"
+        className={`text-text-muted px-4 pt-1 text-xs transition-opacity duration-200 ${isTyping(conversation.id) ? "opacity-100" : "opacity-0"}`}
+      >
+        {conversation.title} está escribiendo…
+      </p>
+
       <ChatComposer
         onSend={handleSend}
         isSending={isSending}
         voiceContext={conversation.courseTitle || null}
+        typingTargetId={typingTargetId}
       />
     </div>
   );

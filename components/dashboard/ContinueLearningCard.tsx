@@ -42,7 +42,7 @@ export default function ContinueLearningCard() {
           </p>
         </div>
         <Link
-          href="/courses"
+          href="/dashboard/explorar"
           className="bg-primary-solid hover:bg-primary-solid-hover inline-flex shrink-0 items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-150"
         >
           Ver cursos
