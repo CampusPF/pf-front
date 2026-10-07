@@ -1,4 +1,4 @@
-import { apiFetch } from "@/services/api-client";
+import { API_URL, apiFetch } from "@/services/api-client";
 
 interface PushPublicKeyResponse {
   publicKey: string;
@@ -9,7 +9,36 @@ interface SerializedPushSubscription {
   keys: { p256dh: string; auth: string };
 }
 
-const SERVICE_WORKER_TIMEOUT_MS = 3_000;
+/* 3 s alcanzaban en localhost pero no en un celular con red lenta la primera
+   vez que se instala el SW. Si expira, el usuario ve "Service worker timeout"
+   y cree que las notificaciones están rotas. */
+const SERVICE_WORKER_TIMEOUT_MS = 10_000;
+
+/* El service worker no puede leer el env de Next, pero necesita la URL del
+   back y la clave VAPID para re-suscribirse solo cuando el navegador rota la
+   suscripción (ver `pushsubscriptionchange` en public/sw.js). Se las dejamos
+   en Cache Storage, que el SW sí puede leer. */
+const CONFIG_CACHE = "campus-push-config";
+const CONFIG_URL = "/__push-config";
+
+async function cachePushConfig(publicKey: string): Promise<void> {
+  try {
+    const cache = await caches.open(CONFIG_CACHE);
+    await cache.put(
+      CONFIG_URL,
+      new Response(
+        JSON.stringify({
+          apiUrl: API_URL,
+          publicKey,
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  } catch {
+    // Sin Cache Storage (modo privado) el push sigue andando: lo único que se
+    // pierde es la re-suscripción automática.
+  }
+}
 
 export function isPushSupported(): boolean {
   return (
@@ -42,10 +71,17 @@ export async function registerPush(): Promise<boolean> {
   if (!subscription) {
     const { publicKey } = await apiFetch<PushPublicKeyResponse>("/push/public-key");
     if (!publicKey) throw new Error("El servidor no tiene configurada la clave Web Push.");
+    await cachePushConfig(publicKey);
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: decodeApplicationServerKey(publicKey),
     });
+  } else {
+    // Ya suscripto: igual refrescamos la config por si el SW se instaló antes
+    // de que existiera (o si cambió la URL del back entre deploys).
+    void apiFetch<PushPublicKeyResponse>("/push/public-key")
+      .then(({ publicKey }) => (publicKey ? cachePushConfig(publicKey) : undefined))
+      .catch(() => undefined);
   }
 
   try {
@@ -97,6 +133,46 @@ async function unsubscribeLocally(
     if (await registration.pushManager.getSubscription()) {
       throw new Error("El navegador mantiene activa la suscripción Web Push. Volvé a intentarlo.");
     }
+  }
+}
+
+/**
+ * Re-sincroniza la suscripción del navegador con el back.
+ *
+ * Hace falta porque las dos puntas se pueden desfasar sin que nadie se entere:
+ * el back borra la fila cuando el servicio de push responde 404/410 (endpoint
+ * rotado) o 401/403 (las claves VAPID cambiaron), pero el navegador sigue
+ * teniendo su objeto `subscription` local. El usuario ve el switch en
+ * "activado" y no le llega nada nunca más.
+ *
+ * `POST /push/subscribe` es un upsert por endpoint, así que volver a mandarlo
+ * es barato e idempotente. Devuelve si quedó sincronizada.
+ */
+export async function syncPushSubscription(): Promise<boolean> {
+  if (!isPushSupported() || Notification.permission !== "granted") return false;
+
+  try {
+    /* `register` es idempotente y además dispara el chequeo de actualización
+       del sw.js: sin esto, un arreglo en el service worker podía tardar días
+       en llegar (el navegador revalida solo cada 24 h). */
+    await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    const registration = await withTimeout(
+      navigator.serviceWorker.ready,
+      SERVICE_WORKER_TIMEOUT_MS,
+    );
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return false;
+
+    await apiFetch<void>("/push/subscribe", {
+      method: "POST",
+      auth: true,
+      body: toSerializedSubscription(subscription),
+    });
+    return true;
+  } catch {
+    // Silencioso a propósito: corre de fondo al entrar a la app y no tiene
+    // que molestar a nadie si el back está caído o el SW todavía no arrancó.
+    return false;
   }
 }
 
