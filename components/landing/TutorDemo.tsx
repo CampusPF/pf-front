@@ -13,8 +13,11 @@ import { Check, Mic, Send, X } from "lucide-react";
    Con prefers-reduced-motion se muestra directamente el estado final. */
 
 const QUESTION = "¿Cómo pido una reunión en inglés de forma profesional?";
-const QUIZ_REQUEST = "Dame un quiz rápido ⚡";
-const QUICK_ACTIONS = ["Ver más ejemplos 🔍", QUIZ_REQUEST];
+/* Las burbujas son las REALES del tutor (ver AI_TUTOR_QUICK_ACTIONS y
+   TUTOR_QUICK_ACTIONS en el back): la demo no promete nada que después no
+   esté. Antes decía "Dame un quiz rápido ⚡", una acción que no existía. */
+const QUIZ_REQUEST = "Tomame un quiz ⚡";
+const QUICK_ACTIONS = ["Ejemplos más sencillos", QUIZ_REQUEST];
 
 const TYPE_SPEED = 45;
 const T_SENT = QUESTION.length * TYPE_SPEED + 500;
