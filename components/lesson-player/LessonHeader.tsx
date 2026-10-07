@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 
 import AskTutorButton from "@/components/ai-tutor/AskTutorButton";
 import ProgressBar from "@/components/course/ProgressBar";
+import NotificationsBell from "@/components/notifications/NotificationsBell";
 
 /* Única barra del reproductor: el route group (player) no tiene Navbar ni
    Footer. El botón del tutor vive acá (AskTutorButton) en vez del botón
@@ -53,11 +54,11 @@ export default function LessonHeader({
             </span>
           </div>
 
-          {/* Acá había un botón de "Preferencias del reproductor" que no abría
-              nada. Las tres opciones que iba a tener ya existen: velocidad y
-              subtítulos son controles nativos del <video>, y el tema se cambia
-              desde la navbar. Un engranaje que no responde confunde más de lo
-              que suma: vuelve cuando haya preferencias propias que guardar. */}
+          {/* La campana también acá. El reproductor es la pantalla donde más
+              tiempo se pasa, y hasta ahora era la única sin forma de ver un
+              aviso del foro o un mensaje. Es un ícono, no un panel abierto:
+              no compite con la lección hasta que lo tocás. */}
+          <NotificationsBell />
         </div>
       </div>
     </header>

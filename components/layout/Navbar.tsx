@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import NotificationsBell from "@/components/notifications/NotificationsBell";
 import ComingSoonLink from "@/components/ui/ComingSoonLink";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -149,6 +150,11 @@ export default function Navbar() {
         </ul>
 
         <div className="flex items-center gap-2">
+          {/* Con sesión, la campana también acá: activar las notificaciones
+              del navegador estaba escondido en el dashboard, que es justo
+              donde la gente no entra si viene de la landing. */}
+          {!isLoading && isAuthenticated && <NotificationsBell />}
+
           <button
             type="button"
             onClick={() => applyTheme(theme === "dark" ? "light" : "dark")}

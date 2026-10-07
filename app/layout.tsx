@@ -7,6 +7,7 @@ import AiTutorDrawer from "@/components/ai-tutor/AiTutorDrawer";
 import ChatCenterProvider from "@/components/chat/ChatCenterProvider";
 import ChatPanel from "@/components/chat/ChatPanel";
 import ChatToast from "@/components/chat/ChatToast";
+import NotificationsCenterProvider from "@/components/notifications/NotificationsCenterProvider";
 import FloatingLauncher from "@/components/launcher/FloatingLauncher";
 import BackendWakeNotice from "@/components/ui/BackendWakeNotice";
 
@@ -67,13 +68,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthProvider>
           <AiTutorProvider>
             <ChatCenterProvider>
-              {children}
-              <FloatingLauncher />
-              <AiTutorDrawer />
-              <ChatPanel />
-              <ChatToast />
-              {/* Despierta el back (Render free) al abrir la web y avisa si tarda. */}
-              <BackendWakeNotice />
+              {/* Debajo de ChatCenterProvider: la campana necesita saber qué
+                  conversación está abierta para no avisar de un mensaje que
+                  ya estás leyendo. */}
+              <NotificationsCenterProvider>
+                {children}
+                <FloatingLauncher />
+                <AiTutorDrawer />
+                <ChatPanel />
+                <ChatToast />
+                {/* Despierta el back (Render free) al abrir la web y avisa si tarda. */}
+                <BackendWakeNotice />
+              </NotificationsCenterProvider>
             </ChatCenterProvider>
           </AiTutorProvider>
         </AuthProvider>
