@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import * as authService from "@/services/auth/auth.service";
 import { clearSession, getStoredUser, getToken, isLoggedIn, saveSession } from "@/services/auth/token-storage";
@@ -145,7 +145,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     setUser(session.user);
   }, []);
 
-  const logout = useCallback(async () => {
+  /* Sin useCallback a propósito: depende de `user?.id` y además llama APIs del
+     navegador, así que el React Compiler no podía preservar esa memoización y
+     avisaba en cada lint ("Existing memoization could not be preserved").
+     Declarada como función suelta, la memoiza él. Mismo criterio en
+     NotificationsCenterProvider. */
+  async function logout() {
     try {
       await clearPushState(user?.id);
     } catch (error) {
@@ -157,7 +162,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     // no se cierra, la próxima persona que use el navegador (u otra sesión
     // en la misma pestaña) podría seguir recibiendo sus mensajes.
     disconnectChatSocket();
-  }, [user?.id]);
+  }
 
   /* La pantalla de configuración edita datos que se muestran en el chrome del
      dashboard (el nombre del sidebar, la inicial del avatar). Sin esto habría
@@ -174,19 +179,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return freshUser;
   }, []);
 
-  const value = useMemo(
-    () => ({
-      user,
-      isAuthenticated: !isLoading && user !== null,
-      isLoading,
-      login,
-      register,
-      loginWithGoogleToken,
-      logout,
-      refreshUser,
-    }),
-    [user, isLoading, login, register, loginWithGoogleToken, logout, refreshUser],
-  );
+  /* Sin useMemo manual: lo memoiza el React Compiler. Envolverlo a mano
+     obligaba a listar `logout` como dependencia y, como esa función no se
+     puede memoizar (ver arriba), el compilador salteaba todo el componente. */
+  const value = {
+    user,
+    isAuthenticated: !isLoading && user !== null,
+    isLoading,
+    login,
+    register,
+    loginWithGoogleToken,
+    logout,
+    refreshUser,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

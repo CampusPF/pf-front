@@ -14,6 +14,7 @@ const TABS = [
   // plataforma. El alcance lo decide el back según el rol del token.
   { label: "Ventas", href: "/dashboard/admin/ventas", adminOnly: false },
   { label: "Categorías", href: "/dashboard/admin/categorias", adminOnly: true },
+  { label: "Foro", href: "/dashboard/admin/foro", adminOnly: true },
   { label: "Usuarios", href: "/dashboard/admin/usuarios", adminOnly: true },
 ];
 

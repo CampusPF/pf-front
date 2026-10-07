@@ -98,7 +98,27 @@ export type AiTutorQuickAction =
   | "SIMPLER_EXAMPLES"
   | "SUMMARIZE"
   | "PRACTICE_QUESTIONS"
-  | "EXPLAIN_AGAIN";
+  | "EXPLAIN_AGAIN"
+  | "QUIZ";
+
+/**
+ * Lo que se ve en la burbuja y queda guardado como mensaje del alumno. Es un
+ * espejo del `label` de `TUTOR_QUICK_ACTIONS` en pf-back/src/aiTutor/
+ * tutor-prompt.ts: si cambia allá, cambiarlo acá (el PROMPT real no viaja al
+ * front a propósito — lo decide el servidor para que nadie lo manipule).
+ *
+ * El orden es el que se muestra: de lo más pedido a lo más específico.
+ */
+export const AI_TUTOR_QUICK_ACTIONS: {
+  action: AiTutorQuickAction;
+  label: string;
+  short: string;
+}[] = [
+  { action: "EXPLAIN_AGAIN", label: "Explicámelo de otra forma", short: "Explicámelo de otra forma" },
+  { action: "SIMPLER_EXAMPLES", label: "Dame ejemplos más sencillos para entender esta lección", short: "Ejemplos más sencillos" },
+  { action: "SUMMARIZE", label: "Resumí esta lección", short: "Resumí la lección" },
+  { action: "QUIZ", label: "Tomame un quiz rápido", short: "Tomame un quiz ⚡" },
+];
 
 export type AiTutorMessageInput = { content: string } | { action: AiTutorQuickAction };
 

