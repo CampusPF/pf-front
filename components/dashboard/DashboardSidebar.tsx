@@ -44,7 +44,7 @@ interface NavItem {
    del dashboard. Un ítem "Tutor IA" con `comingSoon` habría quedado al lado
    de un tutor que ya funciona de verdad — más confuso que no tenerlo. */
 const NAV_ITEMS: NavItem[] = [
-  { label: "Inicio", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Mis cursos", href: "/dashboard/mis-cursos", icon: BookOpen },
   { label: "Chats", href: "/dashboard/chats", icon: MessageCircle },
   { label: "Foros", href: "/dashboard/foros", icon: MessagesSquare },
@@ -179,13 +179,13 @@ export default function DashboardSidebar({
             La salida hacia la landing es el logo de arriba. */}
         <div className="border-border border-b p-3">
           <Link
-            href="/dashboard"
+            href="/"
             onClick={onClose}
-            title={tooltip("Volver al dashboard")}
+            title={tooltip("Volver al inicio")}
             className={`text-text-secondary hover:text-text hover:bg-surface-elevated flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${centerWhenCollapsed}`}
           >
             <ArrowLeft className="size-5 shrink-0" aria-hidden />
-            <span className={hideWhenCollapsed}>Volver al dashboard</span>
+            <span className={hideWhenCollapsed}>Volver al inicio</span>
           </Link>
         </div>
 

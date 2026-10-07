@@ -7,9 +7,12 @@ import { Loader2, Sparkles, Trash2, X } from "lucide-react";
 
 import { useAiTutor } from "@/components/ai-tutor/AiTutorProvider";
 import ChatInput from "@/components/ai-tutor/ChatInput";
+import QuizCard from "@/components/ai-tutor/QuizCard";
+import { parseQuizQuestion, quizAnswerMessage } from "@/lib/tutor-quiz";
 import ChatMessage, { type ChatMessageData } from "@/components/ai-tutor/ChatMessage";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import {
+  AI_TUTOR_QUICK_ACTIONS,
   aiTutorErrorMessage,
   createConversation,
   deleteConversation,
@@ -17,6 +20,7 @@ import {
   getUsage,
   isDailyLimitError,
   streamMessage,
+  type AiTutorMessageInput,
 } from "@/services/ai-tutor/ai-tutor.service";
 import type { AiTutorMessage, AiTutorUsage } from "@/types/ai-tutor.types";
 
@@ -72,6 +76,8 @@ export default function AiTutorDrawer() {
   // Respuesta en curso: permite pausarla ("Detener") y cortarla sola si se
   // cierra el drawer o se cambia de lección (el back deja de pedirle a la IA).
   const streamAbortRef = useRef<AbortController | null>(null);
+  /** Contador para los ids locales de las burbujas optimistas (ver `send`). */
+  const localIdRef = useRef(0);
 
   useEffect(() => {
     if (!isOpen) streamAbortRef.current?.abort();
@@ -145,16 +151,27 @@ export default function AiTutorDrawer() {
     if (element) element.scrollTop = element.scrollHeight;
   }, [messages, isOpen]);
 
-  async function send(text: string) {
+  /* `input` es lo que viaja al back ({content} con texto libre, o {action} con
+     una burbuja) y `visibleText` lo que se pinta como mensaje del alumno. Con
+     una burbuja los dos difieren: se muestra "Tomame un quiz rápido" pero al
+     modelo le llega el prompt largo que redacta el servidor. */
+  async function send(input: AiTutorMessageInput, visibleText: string) {
     if (!activeLessonId) return;
 
+    const text = visibleText;
     setIsSending(true);
     setSendError(null);
 
     // Bubble optimista del alumno + una del tutor vacía que se va llenando
     // con el streaming. Si falla antes de que llegue texto, se sacan las dos:
     // no queda un mensaje "mío" que en verdad nunca se mandó.
-    const stamp = Date.now();
+    //
+    // El id sale de un contador y no de Date.now(): alcanza con que sea único
+    // dentro de esta conversación, no se pisa si se mandan dos mensajes en el
+    // mismo milisegundo, y además es puro (Date.now() no lo es, y el React
+    // Compiler lo rechaza cuando la función se usa desde un handler inline).
+    localIdRef.current += 1;
+    const stamp = localIdRef.current;
     const userId = `local-user-${stamp}`;
     const replyId = `local-reply-${stamp}`;
     setMessages((prev) => [
@@ -176,7 +193,7 @@ export default function AiTutorDrawer() {
 
       await streamMessage(
         activeConversationId,
-        { content: text },
+        input,
         (chunk) => {
           receivedText = true;
           setMessages((prev) =>
@@ -337,15 +354,64 @@ export default function AiTutorDrawer() {
         ) : (
           <>
             <div ref={bodyRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
+              {messages.map((message, index) => {
+                /* Si el ÚLTIMO mensaje del tutor es una pregunta de opción
+                   múltiple, se muestra con botones en vez de texto. Sólo el
+                   último: las preguntas ya contestadas quedan como historial.
+                   `parseQuizQuestion` devuelve null ante cualquier duda, y ahí
+                   esto ni se monta (ver lib/tutor-quiz.ts). */
+                const isLast = index === messages.length - 1;
+                const quiz =
+                  isLast && message.role === "assistant" && !isSending
+                    ? parseQuizQuestion(message.text)
+                    : null;
+
+                if (quiz) {
+                  return (
+                    <QuizCard
+                      key={message.id}
+                      quiz={quiz}
+                      disabled={isSending}
+                      onAnswer={(option) =>
+                        void send(
+                          { content: quizAnswerMessage(option) },
+                          `${option.key}) ${option.text}`,
+                        )
+                      }
+                    />
+                  );
+                }
+
+                return <ChatMessage key={message.id} message={message} />;
+              })}
             </div>
 
             {sendError && (
               <p role="alert" className="text-danger border-border shrink-0 border-t px-4 py-2 text-xs">
                 {sendError}
               </p>
+            )}
+
+            {/* Burbujas de acciones rápidas. El back ya las tenía implementadas
+                (TUTOR_QUICK_ACTIONS) y acá no se mostraban: estaban hechas de
+                punta a punta sin que nadie pudiera usarlas. Se ocultan mientras
+                el tutor responde y cuando se acabó el cupo diario. */}
+            {!limitReached && !isSending && (
+              <div className="border-border shrink-0 border-t px-4 py-2">
+                <div className="flex flex-wrap gap-2">
+                  {AI_TUTOR_QUICK_ACTIONS.map(({ action, label, short }) => (
+                    <button
+                      key={action}
+                      type="button"
+                      title={label}
+                      onClick={() => void send({ action }, label)}
+                      className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer rounded-full px-3 py-1 text-xs transition-colors duration-150"
+                    >
+                      {short}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {limitReached ? (
@@ -363,7 +429,7 @@ export default function AiTutorDrawer() {
               </div>
             ) : (
               <ChatInput
-                onSend={send}
+                onSend={(text) => send({ content: text }, text)}
                 isSending={isSending}
                 onStop={() => streamAbortRef.current?.abort()}
                 voiceContext={[courseGreeting, activeLessonTitle].filter(Boolean).join(" · ") || null}
