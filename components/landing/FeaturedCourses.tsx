@@ -29,8 +29,7 @@ export default async function FeaturedCourses() {
             Cursos destacados por la comunidad
           </h2>
           <p className="text-text-secondary mt-2">
-            Aprendé habilidades demandadas en tecnología con proyectos reales y
-            feedback de IA.
+            Aprende las habilidades más buscadas en tecnología con proyectos reales y acompañamiento de IA.
           </p>
         </div>
         <Link

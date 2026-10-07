@@ -16,7 +16,7 @@ const QUESTION = "¿Cómo pido una reunión en inglés de forma profesional?";
 /* Las burbujas son las REALES del tutor (ver AI_TUTOR_QUICK_ACTIONS y
    TUTOR_QUICK_ACTIONS en el back): la demo no promete nada que después no
    esté. Antes decía "Dame un quiz rápido ⚡", una acción que no existía. */
-const QUIZ_REQUEST = "Tomame un quiz ⚡";
+const QUIZ_REQUEST = "Quiero un quiz ⚡";
 const QUICK_ACTIONS = ["Ejemplos más sencillos", QUIZ_REQUEST];
 
 const TYPE_SPEED = 45;
@@ -29,7 +29,7 @@ const T_CORRECT = T_QUIZ + 2200;
 const T_LOOP = T_CORRECT + 4200;
 const TICK = 50;
 
-const STEPS = ["Preguntá", "Aprendé", "Practicá"];
+const STEPS = ["Pregunta", "Aprende", "Practica"];
 
 function subscribeReducedMotion(onChange: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -88,7 +88,7 @@ export default function TutorDemo() {
       <div className="bg-surface-elevated border-border flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="bg-success size-2 rounded-full" aria-hidden />
-          <span className="text-text text-sm font-medium">Campus AI Tutor</span>
+          <span className="text-text text-sm font-medium">Tutor IA</span>
         </div>
         <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
           Ejemplo · Inglés de negocios
@@ -215,7 +215,7 @@ export default function TutorDemo() {
             typed ? "text-text" : "text-text-muted"
           }`}
         >
-          {typed || "Escribí tu duda sobre esta lección..."}
+          {typed || "Escribe tu duda sobre esta lección..."}
           {typed && !typingDone && (
             <span className="bg-text ml-px inline-block h-4 w-px animate-pulse align-middle" />
           )}

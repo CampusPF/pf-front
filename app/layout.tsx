@@ -22,7 +22,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Campus — Aprendé con un tutor de IA a tu lado",
+  title: "Campus — Aprende con un tutor de IA a tu lado",
   description:
     "Cursos estructurados con proyectos del mundo real + un tutor inteligente que te acompaña 24/7.",
 };

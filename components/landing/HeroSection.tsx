@@ -22,13 +22,11 @@ export default function HeroSection() {
         </span>
 
         <h1 className="text-text mt-6 text-3xl leading-tight font-bold md:text-4xl lg:text-5xl">
-          Aprendé con un tutor de IA a tu lado
+          Aprende con un tutor de IA a tu lado
         </h1>
 
         <p className="text-text-secondary mt-5 max-w-prose text-lg">
-          Cursos estructurados con proyectos del mundo real + un tutor inteligente
-          que te acompaña, desbloquea tus dudas y optimiza tu código en tiempo
-          real.
+          Cursos estructurados con proyectos del mundo real + un tutor inteligente que te acompaña, resuelve tus dudas y optimiza tu código en tiempo real.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">

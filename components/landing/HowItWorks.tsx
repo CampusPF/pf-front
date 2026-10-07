@@ -5,25 +5,25 @@ const STEPS = [
     icon: UserPlus,
     title: "Regístrate",
     description:
-      "Creá tu cuenta gratis en menos de 1 minuto y configurá tus intereses técnicos.",
+      "Crea tu cuenta gratis en menos de 1 minuto y configura tus intereses técnicos.", // Creá, configurá
   },
   {
     icon: BookMarked,
-    title: "Elegí un curso",
+    title: "Elige un curso",
     description:
       "Cursos estructurados con proyectos reales para frontend, backend e inteligencia artificial.",
   },
   {
     icon: MessageSquare,
-    title: "Aprendé con el tutor",
+    title: "Aprende con el tutor",
     description:
-      "Preguntá cualquier duda, desbloqueate en errores y recibí consejos instantáneos sobre tu código.",
+      "Pregunta cualquier duda, supera los errores y recibe consejos instantáneos sobre tu código.",
   },
   {
     icon: Award,
-    title: "Obtenés tu certificado",
+    title: "Obtén tu certificado",
     description:
-      "Validá tu competencia con credenciales verificables con código QR y sumalo a tu CV.",
+      "Valida tu competencia con credenciales verificables con código QR y súmalo a tu CV.",
   },
 ];
 
