@@ -132,6 +132,15 @@ export function createPost(threadId: string, body: string) {
   return apiFetch<ForumPost>(threadPath(threadId, "/posts"), { method: "POST", auth: true, body: { body } });
 }
 
+/** `PATCH /forum/posts/:postId` — autor o moderador. Setea `editedAt`. */
+export function updatePost(postId: string, body: string) {
+  return apiFetch<ForumPost>(`/forum/posts/${encodeURIComponent(postId)}`, {
+    method: "PATCH",
+    auth: true,
+    body: { body },
+  });
+}
+
 export function deletePost(postId: string) {
   return apiFetch<null>(`/forum/posts/${encodeURIComponent(postId)}`, { method: "DELETE", auth: true });
 }
