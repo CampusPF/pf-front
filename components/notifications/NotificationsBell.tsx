@@ -98,10 +98,15 @@ export default function NotificationsBell({
       </button>
 
       {open && (
+        /* En mobile va FIJO al viewport y no colgado del botón: la campana
+           tiene otros íconos a su derecha, así que un `absolute right-0` se
+           extendía hacia la izquierda y se salía de la pantalla (limitar el
+           ancho no alcanza — el problema es dónde empieza). Desde `sm` sí
+           cuelga del botón, que es lo natural en desktop. */
         <section
           aria-label="Notificaciones"
-          className={`bg-surface border-border absolute top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border shadow-xl ${
-            align === "right" ? "right-0" : "left-0"
+          className={`bg-surface border-border fixed inset-x-4 top-18 z-50 overflow-hidden rounded-lg border shadow-xl sm:absolute sm:top-full sm:mt-2 sm:w-88 ${
+            align === "right" ? "sm:inset-x-auto sm:right-0" : "sm:inset-x-auto sm:left-0"
           }`}
         >
           <div className="border-border border-b px-4 py-3">
@@ -178,7 +183,9 @@ export default function NotificationsBell({
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
+          {/* En mobile el panel arranca debajo del header, así que el alto se
+              mide contra la pantalla; en desktop alcanza con un tope fijo. */}
+          <div className="max-h-[60vh] overflow-y-auto sm:max-h-80">
             {isEmpty ? (
               <p className="text-text-muted px-4 py-8 text-center text-sm">
                 No tenés notificaciones nuevas.

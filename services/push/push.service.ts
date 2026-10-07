@@ -49,6 +49,47 @@ export function isPushSupported(): boolean {
   );
 }
 
+/** Safari en iPhone/iPad, sin la app agregada a la pantalla de inicio. */
+function isIosWithoutPwa(): boolean {
+  if (typeof window === "undefined") return false;
+  const isIos =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    // iPadOS se hace pasar por Mac, pero tiene pantalla táctil.
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true;
+  return isIos && !standalone;
+}
+
+/**
+ * Traduce el error de `pushManager.subscribe()` a algo accionable.
+ *
+ * El del navegador ("Registration failed - push service error") no le dice
+ * nada a nadie: no distingue entre "estás en Safari sin instalar la app",
+ * "el servicio de push no respondió" y "la clave no sirve".
+ */
+function subscribeErrorMessage(error: unknown): string {
+  if (isIosWithoutPwa()) {
+    return (
+      "En iPhone y iPad las notificaciones sólo funcionan con la app agregada a " +
+      "la pantalla de inicio. Tocá Compartir → “Agregar a inicio”, abrila desde " +
+      "ahí y volvé a activarlas."
+    );
+  }
+
+  const detail = error instanceof Error ? error.message : "";
+  if (/permission/i.test(detail)) {
+    return "El navegador bloqueó las notificaciones para este sitio. Habilitalas desde la configuración del navegador.";
+  }
+
+  return (
+    "El navegador no pudo registrar las notificaciones. Suele ser un problema " +
+    "momentáneo del servicio de push: probá de nuevo en un rato, o desde otro " +
+    "navegador."
+  );
+}
+
 export async function registerPush(): Promise<boolean> {
   if (!isPushSupported() || Notification.permission === "denied") return false;
 
@@ -72,10 +113,30 @@ export async function registerPush(): Promise<boolean> {
     const { publicKey } = await apiFetch<PushPublicKeyResponse>("/push/public-key");
     if (!publicKey) throw new Error("El servidor no tiene configurada la clave Web Push.");
     await cachePushConfig(publicKey);
-    subscription = await registration.pushManager.subscribe({
+
+    const options: PushSubscriptionOptionsInit = {
       userVisibleOnly: true,
       applicationServerKey: decodeApplicationServerKey(publicKey),
-    });
+    };
+
+    try {
+      subscription = await registration.pushManager.subscribe(options);
+    } catch (error) {
+      /* Reintento después de limpiar. El caso que esto arregla: el navegador
+         conserva una suscripción vieja hecha con OTRA clave VAPID (pasa si se
+         regeneraron las claves, o entre entornos), y `subscribe` la rechaza
+         con "Registration failed - push service error" sin decir por qué. Como
+         `getSubscription()` de arriba no devolvió nada, no hay forma de
+         detectarlo antes: sólo se puede limpiar y volver a intentar. */
+      const stale = await registration.pushManager.getSubscription();
+      if (stale) await stale.unsubscribe().catch(() => false);
+
+      try {
+        subscription = await registration.pushManager.subscribe(options);
+      } catch {
+        throw new Error(subscribeErrorMessage(error));
+      }
+    }
   } else {
     // Ya suscripto: igual refrescamos la config por si el SW se instaló antes
     // de que existiera (o si cambió la URL del back entre deploys).
