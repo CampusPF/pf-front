@@ -170,3 +170,19 @@ export function updateCategory(id: string, patch: Partial<Pick<ForumCategory, "n
 export function forumErrorMessage(error: unknown, fallback = "No pudimos completar la acción en el foro."): string {
   return backendMessageOr(error, fallback);
 }
+
+/**
+ * Espejo de ForumAccessService.canUseGeneralForum (pf-back): admin/docente
+ * siempre entran; un alumno necesita suscripción activa o estar inscripto en
+ * algún curso. El back es quien de verdad lo decide (ver 403 de
+ * listCategoryThreads/createCategoryThread); esto sólo evita mostrarle el
+ * formulario a quien seguro no puede participar.
+ */
+export function hasGeneralForumAccess(
+  role: ForumRole | undefined,
+  dashboard: { plan: "FREE" | "PRO"; activeCoursesCount: number } | null,
+): boolean {
+  if (role === "admin" || role === "teacher") return true;
+  if (!dashboard) return false;
+  return dashboard.plan === "PRO" || dashboard.activeCoursesCount > 0;
+}

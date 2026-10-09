@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import * as authService from "@/services/auth/auth.service";
 import { clearSession, getStoredUser, getToken, isLoggedIn, saveSession } from "@/services/auth/token-storage";
 import { disconnectChatSocket } from "@/services/chat/chat.socket";
+import { disconnectForumSocket } from "@/services/forums/forum.socket";
 import { clearPushState } from "@/services/push/push.service";
 import type { LoginPayload, RegisterPayload, User } from "@/services/auth/auth.types";
 
@@ -162,6 +163,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     // no se cierra, la próxima persona que use el navegador (u otra sesión
     // en la misma pestaña) podría seguir recibiendo sus mensajes.
     disconnectChatSocket();
+    disconnectForumSocket();
   }
 
   /* La pantalla de configuración edita datos que se muestran en el chrome del

@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 import ThreadForm from "@/components/forum/ThreadForm";
 import ThreadList from "@/components/forum/ThreadList";
 import {
   createCategoryThread,
   forumErrorMessage,
+  hasGeneralForumAccess,
   listCategories,
   listCategoryThreads,
   type ForumCategory,
@@ -15,6 +18,9 @@ import {
 
 /* Hilos de una categoría del foro general. */
 export default function CategoryThreads({ categoryId }: { categoryId: string }) {
+  const { user } = useAuth();
+  const { data: dashboard } = useDashboardData();
+  const canParticipate = hasGeneralForumAccess(user?.role, dashboard);
   const [category, setCategory] = useState<ForumCategory | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [composing, setComposing] = useState(false);
@@ -59,6 +65,14 @@ export default function CategoryThreads({ categoryId }: { categoryId: string }) 
 
   if (notFound) {
     return <p className="text-text-muted text-sm">Esta categoría no existe o ya no está activa.</p>;
+  }
+
+  if (!canParticipate) {
+    return (
+      <p className="text-text-muted border-border rounded-xl border border-dashed p-8 text-center text-sm">
+        Necesitás una suscripción activa o haber comprado un curso para participar del foro general.
+      </p>
+    );
   }
 
   return (
