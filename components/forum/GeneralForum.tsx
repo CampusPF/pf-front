@@ -4,12 +4,21 @@ import Link from "next/link";
 import { MessagesSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { forumErrorMessage, listCategories, type ForumCategory } from "@/services/forums/forums.service";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
+import { forumErrorMessage, hasGeneralForumAccess, listCategories, type ForumCategory } from "@/services/forums/forums.service";
 
-/* Foro general: el listado de categorías activas. */
+/* Foro general: el listado de categorías activas. Sólo puede participar quien
+   tenga suscripción activa o algún curso comprado/cursado (admin y docente
+   siempre entran) — la regla real vive en el back, acá sólo se evita mostrar
+   categorías a quien seguro no puede entrar. */
 export default function GeneralForum() {
+  const { user } = useAuth();
+  const { data: dashboard } = useDashboardData();
   const [categories, setCategories] = useState<ForumCategory[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const canParticipate = hasGeneralForumAccess(user?.role, dashboard);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -21,6 +30,14 @@ export default function GeneralForum() {
       });
     return () => controller.abort();
   }, []);
+
+  if (!canParticipate) {
+    return (
+      <p className="text-text-muted border-border rounded-xl border border-dashed p-8 text-center text-sm">
+        Necesitás una suscripción activa o haber comprado un curso para participar del foro general.
+      </p>
+    );
+  }
 
   if (error) {
     return (

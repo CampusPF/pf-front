@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ThreadItem } from "@/components/forum/ThreadList";
@@ -10,8 +9,8 @@ import {
   type ForumThread,
 } from "@/services/forums/forums.service";
 
-/* "Mis foros": actividad reciente de mis cursos y de mis hilos, más el acceso
-   al foro general. */
+/* Foros de mis cursos: hilos recientes de los cursos donde participo (como
+   alumno inscripto o como docente) y de mis propias participaciones. */
 export default function MyForums() {
   const [threads, setThreads] = useState<ForumThread[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,16 +28,6 @@ export default function MyForums() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-text-muted text-sm">Hilos de tus cursos y tus propias participaciones.</p>
-        <Link
-          href="/dashboard/foros/general"
-          className="border-border text-text hover:bg-surface-elevated rounded-lg border px-4 py-2 text-sm font-medium"
-        >
-          Foro general
-        </Link>
-      </div>
-
       {error && (
         <p role="alert" className="bg-danger-subtle text-danger rounded-lg px-3 py-2 text-sm">
           {error}

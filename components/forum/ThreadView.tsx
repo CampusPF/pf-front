@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Loader2,
   Lock,
-  LockOpen,
   Pencil,
   Pin,
   PinOff,
@@ -38,6 +37,7 @@ import {
   type ForumPost,
   type ForumThreadDetail,
 } from "@/services/forums/forums.service";
+import { joinThreadRoom, leaveThreadRoom, onThreadChanged } from "@/services/forums/forum.socket";
 
 type Pending = { kind: "thread" } | { kind: "post"; post: ForumPost } | null;
 
@@ -117,6 +117,24 @@ export default function ThreadView({ threadId }: { threadId: string }) {
     };
   }, [threadId]);
 
+  /* Refresco en vivo: mientras el hilo está abierto, cualquier cambio (una
+     respuesta nueva, una edición, un borrado, fijar/cerrar, marcar solución)
+     en cualquier sesión llega acá por WebSocket y recarga desde el REST —
+     el socket sólo avisa "cambió", nunca manda el contenido. */
+  useEffect(() => {
+    joinThreadRoom(threadId);
+    const unsubscribe = onThreadChanged((payload) => {
+      if (payload.threadId !== threadId) return;
+      void refreshThread();
+      void refreshPosts();
+    });
+    return () => {
+      unsubscribe();
+      leaveThreadRoom(threadId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId]);
+
   async function runAction(action: () => Promise<unknown>, fallback: string) {
     setActionError(null);
     try {
@@ -171,7 +189,7 @@ export default function ThreadView({ threadId }: { threadId: string }) {
   }
 
   const backHref = thread.course ? `/courses/${thread.course.slug}` : "/dashboard/foros/general";
-  const backLabel = thread.course ? thread.course.title : "Foro general";
+  const backLabel = thread.course ? thread.course.title : "Foros generales";
   const { permissions } = thread;
 
   return (
@@ -220,12 +238,16 @@ export default function ThreadView({ threadId }: { threadId: string }) {
               {thread.isPinned ? <PinOff className="size-4" aria-hidden /> : <Pin className="size-4" aria-hidden />}
               {thread.isPinned ? "Quitar fijado" : "Fijar hilo"}
             </ActionButton>
-            <ActionButton
-              onClick={() => void runAction(() => moderateThread(threadId, { isLocked: !thread.isLocked }), "No pudimos cerrar el hilo.")}
-            >
-              {thread.isLocked ? <LockOpen className="size-4" aria-hidden /> : <Lock className="size-4" aria-hidden />}
-              {thread.isLocked ? "Reabrir hilo" : "Cerrar hilo"}
-            </ActionButton>
+            {/* Cerrar es definitivo: una vez cerrado no se puede reabrir (el back
+                también lo rechaza), así que el botón desaparece. */}
+            {!thread.isLocked && (
+              <ActionButton
+                onClick={() => void runAction(() => moderateThread(threadId, { isLocked: true }), "No pudimos cerrar el hilo.")}
+              >
+                <Lock className="size-4" aria-hidden />
+                Cerrar hilo
+              </ActionButton>
+            )}
           </div>
         )}
 
