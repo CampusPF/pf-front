@@ -162,7 +162,7 @@ export default function GolondrinaPanel({ lessonTitle }: { lessonTitle: string }
             <div className="mb-3">
               <p className="text-text-muted mb-1.5 text-xs">
                 {enviadoUltimo
-                  ? `${enviadoUltimo}. Así te llegó:`
+                  ? `${enviadoUltimo}. ${ultimo.cuando === "Ahora" ? "Así te llegó:" : "Así te va a llegar:"}`
                   : "Así te va a llegar al celular (conectá el canal para recibirlo):"}
               </p>
               <div className="golondrina-aviso flex items-start gap-3 rounded-2xl bg-white p-3 text-slate-900 shadow-lg ring-1 ring-black/5">
