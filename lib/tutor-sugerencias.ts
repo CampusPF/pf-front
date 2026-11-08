@@ -43,7 +43,14 @@ export function sugerirCurso(todos: Course[], filtros: CourseFilters): Sugerenci
   );
   if (!hayFiltros) return null;
 
-  for (const intento of intentos) {
+  // Sólo sirve aflojar si queda algún filtro en pie: si no, «cumple el resto de
+  // tus filtros» sería falso y se pasa directo al mejor valorado.
+  const quedaAlgo = [
+    Boolean(filtros.levels?.length || filtros.categories?.length || filtros.isFree !== undefined),
+    Boolean(filtros.categories?.length),
+  ];
+  for (const [i, intento] of intentos.entries()) {
+    if (!quedaAlgo[i]) continue;
     const curso = mejor(filterCourses(todos, intento.filtros));
     if (curso) return { curso, motivo: intento.motivo(curso) };
   }
