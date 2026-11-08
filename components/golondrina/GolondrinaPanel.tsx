@@ -41,37 +41,67 @@ export default function GolondrinaPanel({ lessonTitle }: { lessonTitle: string }
     mail: false,
   });
   const [resultados, setResultados] = useState<ResultadoAccion[]>([]);
-  const [avisoVisible, setAvisoVisible] = useState(false);
+  // Qué aviso se muestra en la vista del celular, y en qué fase: "enviando"
+  // es el instante entre que se conecta el canal y que llega el mensaje.
+  const [mostrado, setMostrado] = useState<AccionId | null>(null);
+  const [fase, setFase] = useState<"oculto" | "enviando" | "visible">("oculto");
   const avisoTimer = useRef<number | null>(null);
 
   useEffect(() => () => {
     if (avisoTimer.current) window.clearTimeout(avisoTimer.current);
   }, []);
 
-  function alternarCanal(id: CanalId) {
-    setCanales((prev) => ({ ...prev, [id]: !prev[id] }));
+  const canalDe = (id: AccionId) => ACCIONES.find((a) => a.id === id)!.canal;
+  const nombreCanal = (id: CanalId) => CANALES.find((c) => c.id === id)!.nombre;
+
+  /** Muestra el aviso de `id` como si llegara al celular. Con `enviando`, antes
+      pasa un instante por "Enviando por …", que es lo que se ve al conectar. */
+  function mostrarAviso(id: AccionId, enviando: boolean) {
+    setMostrado(id);
+    if (avisoTimer.current) window.clearTimeout(avisoTimer.current);
+    setFase(enviando ? "enviando" : "oculto");
+    avisoTimer.current = window.setTimeout(() => setFase("visible"), enviando ? 900 : 700);
+  }
+
+  /** Conectar un canal manda en el acto lo que estaba esperando por él. */
+  function alternarCanal(id: CanalId, accionPendiente?: AccionId) {
+    const conectando = !canales[id];
+    setCanales((prev) => ({ ...prev, [id]: conectando }));
+    if (!conectando) return;
+    const pendiente = accionPendiente ?? resultados.find((r) => canalDe(r.accion) === id)?.accion;
+    if (pendiente) mostrarAviso(pendiente, true);
   }
 
   function activar(id: AccionId) {
     const resultado = ejecutarAccion(id, lessonTitle);
     // Si ya estaba, no se duplica: sube arriba de la lista.
     setResultados((prev) => [resultado, ...prev.filter((r) => r.accion !== id)]);
-    // Un instante después aparece cómo le llega el aviso, como en el celular.
-    setAvisoVisible(false);
-    if (avisoTimer.current) window.clearTimeout(avisoTimer.current);
-    avisoTimer.current = window.setTimeout(() => setAvisoVisible(true), 700);
+    // Con el canal ya conectado se manda directo; si no, se muestra cómo llegaría.
+    mostrarAviso(id, canales[canalDe(id)]);
   }
 
   function quitar(id: AccionId) {
     setResultados((prev) => prev.filter((r) => r.accion !== id));
+    if (mostrado === id) {
+      setMostrado(null);
+      setFase("oculto");
+    }
+  }
+
+  /** Estado de envío de una acción: depende sólo de si su canal está conectado. */
+  function envio(r: ResultadoAccion): string | null {
+    const canal = canalDe(r.accion);
+    if (!canales[canal]) return null;
+    if (r.cuando === "Ahora") return `Enviado por ${nombreCanal(canal)}`;
+    if (canal === "calendario") return "Agendado en tu Calendario";
+    return `Activado: te llega por ${nombreCanal(canal)}`;
   }
 
   const activas = new Set(resultados.map((r) => r.accion));
-  const ultimo = resultados[0];
-  const canalUltimo = ultimo ? ACCIONES.find((a) => a.id === ultimo.accion)?.canal : undefined;
-  const nombreCanalUltimo = canalUltimo && canales[canalUltimo]
-    ? CANALES.find((c) => c.id === canalUltimo)?.nombre
-    : null;
+  const ultimo = resultados.find((r) => r.accion === mostrado);
+  const canalUltimo = ultimo ? canalDe(ultimo.accion) : undefined;
+  const nombreCanalUltimo = canalUltimo && canales[canalUltimo] ? nombreCanal(canalUltimo) : null;
+  const enviadoUltimo = ultimo ? envio(ultimo) : null;
 
   return (
     <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
@@ -122,10 +152,18 @@ export default function GolondrinaPanel({ lessonTitle }: { lessonTitle: string }
       {/* 2. Lo que Golondrina va a hacer + vista del aviso */}
       {resultados.length > 0 && (
         <section aria-labelledby="golondrina-resultados" aria-live="polite">
-          {ultimo && avisoVisible && (
+          {ultimo && fase === "enviando" && nombreCanalUltimo && (
+            <p className="text-primary mb-3 flex items-center gap-2 text-xs font-medium">
+              <span className="golondrina-enviando bg-primary size-2 rounded-full" aria-hidden />
+              Enviando por {nombreCanalUltimo}…
+            </p>
+          )}
+          {ultimo && fase === "visible" && (
             <div className="mb-3">
               <p className="text-text-muted mb-1.5 text-xs">
-                Así te va a llegar{nombreCanalUltimo ? ` por ${nombreCanalUltimo}` : " al celular"}:
+                {enviadoUltimo
+                  ? `${enviadoUltimo}. Así te llegó:`
+                  : "Así te va a llegar al celular (conectá el canal para recibirlo):"}
               </p>
               <div className="golondrina-aviso flex items-start gap-3 rounded-2xl bg-white p-3 text-slate-900 shadow-lg ring-1 ring-black/5">
                 <GolondrinaLogo className="h-9 w-8 shrink-0" />
@@ -135,6 +173,11 @@ export default function GolondrinaPanel({ lessonTitle }: { lessonTitle: string }
                     <span>{ultimo.cuando === "Ahora" || ultimo.cuando.startsWith("Apenas") ? "ahora" : "programado"}</span>
                   </p>
                   <p className="text-sm leading-snug">{ultimo.aviso}</p>
+                  {enviadoUltimo && (
+                    <p className="mt-1 flex items-center justify-end gap-1 text-[11px] font-medium text-emerald-700">
+                      <Check className="size-3" aria-hidden /> {ultimo.cuando === "Ahora" ? "Entregado" : "Activado"}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -144,9 +187,9 @@ export default function GolondrinaPanel({ lessonTitle }: { lessonTitle: string }
           </h3>
           <ul className="space-y-2">
             {resultados.map((r) => {
-              const canal = ACCIONES.find((a) => a.id === r.accion)?.canal;
-              const canalInfo = CANALES.find((c) => c.id === canal);
-              const falta = canal && !canales[canal] ? canalInfo : null;
+              const canal = canalDe(r.accion);
+              const falta = !canales[canal] ? CANALES.find((c) => c.id === canal)! : null;
+              const estado = envio(r);
               return (
                 <li key={r.accion} className="border-border bg-surface-elevated rounded-xl border p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -168,14 +211,20 @@ export default function GolondrinaPanel({ lessonTitle }: { lessonTitle: string }
                       <li key={d}>{d}</li>
                     ))}
                   </ul>
-                  {falta && (
+                  {falta ? (
                     <button
                       type="button"
-                      onClick={() => alternarCanal(falta.id)}
-                      className="text-accent mt-2 cursor-pointer text-xs font-medium hover:underline"
+                      onClick={() => alternarCanal(falta.id, r.accion)}
+                      className="bg-primary-solid hover:bg-primary-solid-hover mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors duration-150"
                     >
-                      Conectar {falta.nombre} para que te llegue →
+                      Conectar {falta.nombre} y {r.cuando === "Ahora" ? "enviar" : "activar"}
                     </button>
+                  ) : (
+                    estado && (
+                      <p className="bg-success-subtle text-success-text mt-2 inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium">
+                        <Check className="size-3.5" aria-hidden /> {estado}
+                      </p>
+                    )
                   )}
                 </li>
               );

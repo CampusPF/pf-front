@@ -13,7 +13,10 @@ el asistente le pasa a Golondrina (el motor de avisos de TecnoRosario).
 
 Cada acción muestra qué va a hacer Golondrina, cuándo, y una vista previa de la
 notificación como le llegaría al alumno. Los canales (WhatsApp, Calendario,
-Mail) se conectan con un clic.
+Mail) se conectan con un clic, y al conectar uno se envía en el acto lo que
+estaba esperando por él ("Conectar WhatsApp y enviar" → "Enviando por
+WhatsApp…" → aviso entregado). Si el canal ya estaba conectado, la acción se
+envía directo.
 
 **Es todo simulado en el navegador**: no hay endpoint en pf-back, no se conecta
 a cuentas reales y no se manda nada. No toca el chat del tutor ni su límite
