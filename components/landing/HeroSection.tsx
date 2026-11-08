@@ -34,6 +34,7 @@ export default function HeroSection() {
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             href="/courses"
+            data-recorrido="explorar"
             className="bg-primary-solid hover:bg-primary-solid-hover cursor-pointer rounded-lg px-6 py-3 font-medium text-white transition-colors duration-150"
           >
             Explorar cursos

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
+  CircleHelp,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -18,6 +19,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import ComingSoonLink from "@/components/ui/ComingSoonLink";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { RECORRIDO_ABRIR_EVENT, iniciarRecorrido, recorridoDeRuta } from "@/lib/recorridos";
 
 type Theme = "light" | "dark";
 
@@ -80,6 +82,7 @@ export default function Navbar() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -109,6 +112,21 @@ export default function Navbar() {
     return () => media.removeEventListener("change", closeIfDesktop);
   }, []);
 
+  // El recorrido guiado abre el menú de celular antes de iluminar la barra.
+  useEffect(() => {
+    const abrir = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === "menu") setIsMobileMenuOpen(true);
+    };
+    window.addEventListener(RECORRIDO_ABRIR_EVENT, abrir);
+    return () => window.removeEventListener(RECORRIDO_ABRIR_EVENT, abrir);
+  }, []);
+
+  // «¿Cómo se usa?»: si esta página no tiene recorrido, lleva al Inicio y arranca ahí.
+  const abrirRecorrido = () => {
+    if (recorridoDeRuta(pathname)) iniciarRecorrido();
+    else router.push("/?recorrido");
+  };
+
   const closeMenus = () => {
     setIsMobileMenuOpen(false);
     setIsUserMenuOpen(false);
@@ -132,7 +150,7 @@ export default function Navbar() {
           Campus
         </Link>
 
-        <ul className="hidden items-center gap-8 text-sm md:flex">
+        <ul data-recorrido="barra" className="hidden items-center gap-8 text-sm md:flex">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>
               {link.comingSoon ? (
@@ -147,6 +165,16 @@ export default function Navbar() {
               )}
             </li>
           ))}
+          <li>
+            <button
+              type="button"
+              onClick={abrirRecorrido}
+              className="text-text-secondary hover:text-text flex cursor-pointer items-center gap-1.5 transition-colors duration-150"
+            >
+              <CircleHelp className="size-4" aria-hidden />
+              ¿Cómo se usa?
+            </button>
+          </li>
         </ul>
 
         <div className="flex items-center gap-2">
@@ -280,7 +308,7 @@ export default function Navbar() {
 
       {isMobileMenuOpen && (
         <div className="border-border bg-surface border-t px-6 py-4 md:hidden">
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul data-recorrido="barra" className="flex flex-col gap-1 text-sm">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 {link.comingSoon ? (
@@ -296,6 +324,19 @@ export default function Navbar() {
                 )}
               </li>
             ))}
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenus();
+                  abrirRecorrido();
+                }}
+                className="text-text-secondary hover:text-text flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2.5 text-left transition-colors duration-150"
+              >
+                <CircleHelp className="size-4" aria-hidden />
+                ¿Cómo se usa?
+              </button>
+            </li>
           </ul>
 
           <div className="border-border mt-2 flex flex-col gap-1 border-t pt-2">

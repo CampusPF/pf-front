@@ -29,7 +29,7 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section id="como-funciona" className="mx-auto max-w-6xl px-6 py-20 text-center">
+    <section id="como-funciona" data-recorrido="como-funciona" className="mx-auto max-w-6xl px-6 py-20 text-center">
       <p className="text-primary text-xs font-semibold tracking-wider uppercase">
         El camino directo
       </p>

@@ -12,8 +12,11 @@ export default function CourseGrid({ courses }: { courses: Course[] }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {courses.map((course) => (
-        <CourseCard key={course.id} course={course} />
+      {courses.map((course, index) => (
+        // El primero lo ilumina el recorrido guiado de Cursos.
+        <div key={course.id} data-recorrido={index === 0 ? "primer-curso" : undefined}>
+          <CourseCard course={course} />
+        </div>
       ))}
     </div>
   );

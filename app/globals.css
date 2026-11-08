@@ -447,3 +447,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .golondrina-enviando { animation: none; }
 }
+
+/* Recorrido guiado «¿Cómo se usa?» (components/recorrido/RecorridoGuiado.tsx):
+   borde amarillo en la parte iluminada y el resto de la página en penumbra. */
+.recorrido-foco {
+  border: 3px solid #facc15;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.55);
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recorrido-foco { transition: none; }
+}
+/* Aviso del tutor para retomar una lección (components/lesson-player/RetomarLeccion.tsx). */
+.retomar-leccion { animation: golondrina-aviso-entrada 0.35s ease-out; }
+@media (prefers-reduced-motion: reduce) { .retomar-leccion { animation: none; } }

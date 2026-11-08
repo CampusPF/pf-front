@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Sparkles } from "lucide-react";
 
 import CourseFilters from "@/components/course/CourseFilters";
 import CourseGrid from "@/components/course/CourseGrid";
 import { getCategories, getCourses } from "@/services/courses/courses.service";
 import CourseSort from "@/components/course/CourseSort";
+import { sugerirCurso, type SugerenciaCurso } from "@/lib/tutor-sugerencias";
 import {
   MIN_RATING_OPTIONS,
   SORT_OPTIONS,
@@ -84,6 +85,17 @@ export default async function CourseCatalog({
     error = caught instanceof Error ? caught.message : "No pudimos cargar los cursos.";
   }
 
+  // Sin resultados: el tutor se adelanta y sugiere el curso más cercano.
+  let sugerencia: SugerenciaCurso | null = null;
+  if (result && result.meta.total === 0) {
+    try {
+      const todos = await getCourses({ limit: 500 });
+      sugerencia = sugerirCurso(todos.data, filters);
+    } catch {
+      // sin sugerencia: queda el mensaje de siempre
+    }
+  }
+
   return (
     <div className={className}>
       <header className="pb-6">
@@ -125,7 +137,11 @@ export default async function CourseCatalog({
                   <CourseSort />
                 </Suspense>
               </div>
-              <CourseGrid courses={result.data} />
+              {sugerencia ? (
+                <TutorSugerencia sugerencia={sugerencia} limpiarHref={basePath} />
+              ) : (
+                <CourseGrid courses={result.data} />
+              )}
 
               {result.meta.totalPages > 1 && (
                 <nav aria-label="Paginación" className="mt-8 flex items-center justify-center gap-2">
@@ -148,6 +164,34 @@ export default async function CourseCatalog({
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* Tarjeta del Tutor IA cuando la búsqueda no encontró nada: dice qué pasó y
+   propone un curso concreto, con un atajo para limpiar los filtros. */
+function TutorSugerencia({ sugerencia, limpiarHref }: { sugerencia: SugerenciaCurso; limpiarHref: string }) {
+  const { curso, motivo } = sugerencia;
+  return (
+    <div role="status" className="border-border bg-surface rounded-2xl border p-6">
+      <p className="text-primary flex items-center gap-2 text-sm font-medium">
+        <Sparkles className="size-4" aria-hidden /> Tutor IA
+      </p>
+      <p className="text-text mt-2 text-base">
+        No encontré cursos con esos filtros. Te sugiero{" "}
+        <strong className="font-semibold">«{curso.title}»</strong>: {motivo}.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Link
+          href={`/courses/${curso.slug}`}
+          className="bg-primary-solid hover:bg-primary-solid-hover rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
+        >
+          Ver el curso
+        </Link>
+        <Link href={limpiarHref} className="text-text-secondary hover:text-text text-sm font-medium">
+          Quitar los filtros
+        </Link>
       </div>
     </div>
   );

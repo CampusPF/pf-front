@@ -7,6 +7,7 @@ import { ChevronDown, Loader2, RotateCcw, Search, SlidersHorizontal, Star } from
 import { MIN_RATING_OPTIONS, type CategoryOption } from "@/services/courses/courses.types";
 import { LEVEL_OPTIONS } from "@/services/courses/courses.service";
 import { useRevalidateOnFocus } from "@/lib/use-revalidate-on-focus";
+import { RECORRIDO_ABRIR_EVENT } from "@/lib/recorridos";
 
 /* Los filtros viven en la URL (?q=&nivel=&categoria=&precio=&valoracion=; el
    orden, ?orden=, lo maneja CourseSort arriba de la grilla): el filtro es
@@ -82,6 +83,15 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
   useEffect(() => () => clearTimeout(searchTimer.current), []);
   // En mobile el panel arranca cerrado y se despliega con el botón "Filtrar".
   const [isOpen, setIsOpen] = useState(false);
+
+  // En celular el panel arranca cerrado: el recorrido guiado lo abre para mostrar los filtros.
+  useEffect(() => {
+    const abrir = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === "filtros") setIsOpen(true);
+    };
+    window.addEventListener(RECORRIDO_ABRIR_EVENT, abrir);
+    return () => window.removeEventListener(RECORRIDO_ABRIR_EVENT, abrir);
+  }, []);
 
   const activeCount =
     levels.length + selectedCategories.length + (price ? 1 : 0) + (minRating ? 1 : 0);
@@ -208,7 +218,7 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
         </section>
 
         {categories.length > 0 && (
-          <section className="mb-6">
+          <section className="mb-6" data-recorrido="filtro-categoria">
             <SectionTitle>Categoría</SectionTitle>
             <div className="space-y-2.5">
               {categories.map((category) => (
@@ -229,7 +239,7 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
           </section>
         )}
 
-        <section className="mb-6">
+        <section className="mb-6" data-recorrido="filtro-precio">
           <SectionTitle>Precio</SectionTitle>
           <div className="space-y-2.5">
             {PRICES.map((option) => (
@@ -251,7 +261,7 @@ export default function CourseFilters({ categories }: { categories: CategoryOpti
           </div>
         </section>
 
-        <section className="mb-6">
+        <section className="mb-6" data-recorrido="filtro-valoracion">
           <SectionTitle>Valoración</SectionTitle>
           <div className="space-y-2.5">
             {RATINGS.map((option) => (
