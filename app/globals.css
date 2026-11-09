@@ -430,3 +430,34 @@ body {
     animation: none;
   }
 }
+
+/* Aviso simulado de Golondrina (components/golondrina/GolondrinaPanel.tsx):
+   entra como una notificación del celular. */
+@keyframes golondrina-aviso-entrada {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.golondrina-aviso { animation: golondrina-aviso-entrada 0.35s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .golondrina-aviso { animation: none; }
+}
+/* Punto que late mientras Golondrina "envía" el aviso. */
+@keyframes golondrina-enviando-pulso { 50% { opacity: 0.3; } }
+.golondrina-enviando { animation: golondrina-enviando-pulso 0.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .golondrina-enviando { animation: none; }
+}
+
+/* Recorrido guiado «¿Cómo se usa?» (components/recorrido/RecorridoGuiado.tsx):
+   borde amarillo en la parte iluminada y el resto de la página en penumbra. */
+.recorrido-foco {
+  border: 3px solid #facc15;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.55);
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recorrido-foco { transition: none; }
+}
+/* Aviso del tutor para retomar una lección (components/lesson-player/RetomarLeccion.tsx). */
+.retomar-leccion { animation: golondrina-aviso-entrada 0.35s ease-out; }
+@media (prefers-reduced-motion: reduce) { .retomar-leccion { animation: none; } }

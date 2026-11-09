@@ -81,6 +81,7 @@ export default function TutorDemo() {
 
   return (
     <div
+      data-recorrido="tutor-panel"
       role="img"
       aria-label="Ejemplo animado del tutor de IA: un alumno pregunta cómo pedir una reunión en inglés de forma profesional, el tutor le muestra frases correctas e incorrectas y después le toma un quiz rápido."
       className="bg-surface border-border overflow-hidden rounded-2xl border shadow-xl"

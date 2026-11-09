@@ -11,6 +11,8 @@ import QuizCard from "@/components/ai-tutor/QuizCard";
 import { parseQuizQuestion, quizAnswerMessage } from "@/lib/tutor-quiz";
 import ChatMessage, { type ChatMessageData } from "@/components/ai-tutor/ChatMessage";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import GolondrinaLogo from "@/components/golondrina/GolondrinaLogo";
+import GolondrinaPanel from "@/components/golondrina/GolondrinaPanel";
 import {
   AI_TUTOR_QUICK_ACTIONS,
   aiTutorErrorMessage,
@@ -73,6 +75,10 @@ export default function AiTutorDrawer() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  // Pestaña del drawer: el chat con el tutor o las acciones de Golondrina.
+  // Golondrina no depende del back (es un prototipo local), así que se puede
+  // usar aunque la conversación esté cargando o haya fallado.
+  const [vista, setVista] = useState<"tutor" | "golondrina">("tutor");
   // Respuesta en curso: permite pausarla ("Detener") y cortarla sola si se
   // cierra el drawer o se cambia de lección (el back deja de pedirle a la IA).
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -288,7 +294,7 @@ export default function AiTutorDrawer() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            {conversationId && (
+            {conversationId && vista === "tutor" && (
               <button
                 type="button"
                 onClick={() => setConfirmClearOpen(true)}
@@ -310,7 +316,36 @@ export default function AiTutorDrawer() {
           </div>
         </header>
 
-        {!activeLessonId && isCourseDetailPage && coursePage?.loading ? (
+        {activeLessonId && (
+          <div role="tablist" aria-label="Asistentes de la lección" className="border-border flex shrink-0 gap-1 border-b px-4 py-2">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={vista === "tutor"}
+              onClick={() => setVista("tutor")}
+              className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                vista === "tutor" ? "bg-primary/10 text-primary" : "text-text-secondary hover:bg-surface-elevated hover:text-text"
+              }`}
+            >
+              <Sparkles className="size-3.5" aria-hidden /> Tutor
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={vista === "golondrina"}
+              onClick={() => setVista("golondrina")}
+              className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                vista === "golondrina" ? "bg-primary/10 text-primary" : "text-text-secondary hover:bg-surface-elevated hover:text-text"
+              }`}
+            >
+              <GolondrinaLogo className="h-4 w-3.5" /> Golondrina
+            </button>
+          </div>
+        )}
+
+        {activeLessonId && vista === "golondrina" ? (
+          <GolondrinaPanel key={activeLessonId} lessonTitle={activeLessonTitle ?? "esta lección"} />
+        ) : !activeLessonId && isCourseDetailPage && coursePage?.loading ? (
           <div className="flex flex-1 items-center justify-center gap-2">
             <Loader2 className="text-primary size-5 animate-spin" aria-hidden />
             <span className="text-text-muted text-sm">Cargando el curso…</span>

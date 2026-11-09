@@ -19,7 +19,7 @@ export default async function FeaturedCourses() {
   if (!featured || featured.length === 0) return null;
 
   return (
-    <section id="cursos" className="mx-auto max-w-6xl px-6 py-20">
+    <section id="cursos" data-recorrido="destacados" className="mx-auto max-w-6xl px-6 py-20">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-primary text-xs font-semibold tracking-wider uppercase">

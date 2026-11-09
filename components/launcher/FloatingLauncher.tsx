@@ -6,6 +6,7 @@ import { MessageCircle, MessageSquare, Sparkles, X } from "lucide-react";
 
 import { useAiTutor } from "@/components/ai-tutor/AiTutorProvider";
 import { CHATS_PAGE_PATH, useChatCenter } from "@/components/chat/ChatCenterProvider";
+import { RECORRIDO_ABRIR_EVENT } from "@/lib/recorridos";
 
 function formatBadge(count: number): string {
   return count > 9 ? "9+" : String(count);
@@ -46,6 +47,15 @@ export default function FloatingLauncher() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // El recorrido guiado lo necesita a la vista aunque se haya bajado la página.
+  useEffect(() => {
+    const show = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === "lanzador") setHiddenByScroll(false);
+    };
+    window.addEventListener(RECORRIDO_ABRIR_EVENT, show);
+    return () => window.removeEventListener(RECORRIDO_ABRIR_EVENT, show);
   }, []);
 
   // Menú: foco al primer ítem al abrir; ESC o click afuera lo cierran.
@@ -141,6 +151,7 @@ export default function FloatingLauncher() {
       <button
         ref={buttonRef}
         type="button"
+        data-recorrido="tutor-flotante"
         onClick={chatEnabled ? () => setMenuOpen((prev) => !prev) : openTutor}
         aria-label={chatEnabled ? `Mensajes y tutor IA${unreadLabel}` : "Abrir tutor IA"}
         aria-haspopup={chatEnabled ? "menu" : undefined}

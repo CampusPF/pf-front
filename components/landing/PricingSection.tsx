@@ -27,7 +27,7 @@ const PREMIUM_FEATURES = [
 
 export default function PricingSection() {
   return (
-    <section id="precios" className="mx-auto max-w-6xl px-6 py-20 text-center">
+    <section id="precios" data-recorrido="precios" className="mx-auto max-w-6xl px-6 py-20 text-center">
       <p className="text-primary text-xs font-semibold tracking-wider uppercase">
         Tarifas claras
       </p>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Circle, Loader2, Lock } from "lucide-react";
 
 import LessonTutorContext from "@/components/ai-tutor/LessonTutorContext";
+import RetomarLeccion from "@/components/lesson-player/RetomarLeccion";
 import { useAuth } from "@/components/auth/AuthProvider";
 import LessonContent from "@/components/lesson-player/LessonContent";
 import LessonHeader from "@/components/lesson-player/LessonHeader";
@@ -407,12 +408,16 @@ export default function LessonPlayer({ slug, lessonId }: { slug: string; lessonI
         <main className="min-w-0 flex-1">
           <div className="mx-auto max-w-3xl px-6 py-8">
             {canView ? (
-              <LessonContent
-                lesson={lesson}
-                moduleOrder={courseModule?.order ?? 1}
-                moduleTitle={courseModule?.title ?? ""}
-                content={lesson.content ?? undefined}
-              />
+              <>
+                <LessonContent
+                  lesson={lesson}
+                  moduleOrder={courseModule?.order ?? 1}
+                  moduleTitle={courseModule?.title ?? ""}
+                  content={lesson.content ?? undefined}
+                />
+                {/* Si la dejó por la mitad, el tutor le muestra dónde quedó. */}
+                <RetomarLeccion key={lesson.id} lessonId={lesson.id} />
+              </>
             ) : lesson.isLockedByProgression ? (
               /* Bloqueo por progresión: no le falta pagar ni inscribirse, le
                  falta terminar el módulo anterior. Ofrecer "Comprar curso"
